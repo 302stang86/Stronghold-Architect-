@@ -9,7 +9,7 @@ function battleBuild(c){
  const sv=state.collectors.filter(n=>!inv.knocked.includes(n.id)&&n.id!==c.defenderId);
  if(c.kind==='mc'){party.push({kind:'mc',idx:0,name:c.ally.name,role:'lead'});for(const n of sv.slice(0,3))party.push({kind:'servant',idx:n.look||0,name:n.name,role:'help'})}
  else{const d=servantById(c.defenderId);party.push({kind:'servant',idx:d?.look||0,name:c.ally.name,role:'lead'});party.push({kind:'mc',idx:0,name:'Young Prince',role:'help'});for(const n of sv.slice(0,2))party.push({kind:'servant',idx:n.look||0,name:n.name,role:'help'})}
- const slots=[[28,77,1],[14,72,.82],[40,70,.78],[7,81,.86]];
+ const slots=[[28,78,1],[14,75,.82],[40,74,.8],[7,81,.86]];
  const order=party.map((p,i)=>({p,s:slots[i]})).sort((a,b)=>a.s[1]-b.s[1]);
  const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div></div>';stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.base={x,y};BATTLE_FX.figs.push(f);return f};
  for(const o of order){const f=mk(o.p,o.s[0],o.s[1],o.s[2],false);if(o.p.role==='lead')BATTLE_FX.lead=f}
