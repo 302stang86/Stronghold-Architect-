@@ -14,10 +14,10 @@ function clean(c){const o={...DEFAULT};if(c&&typeof c==='object'){
  const sc=Number(c.emblemScale);if(Number.isFinite(sc))o.emblemScale=Math.min(1.4,Math.max(.5,sc));
  if(typeof c.cloth==='boolean')o.cloth=c.cloth}
  return o}
-let canvas,ctx;
+let canvas,ctx,K=1,OPT={};
 function drawFlag(cfg) {
-      const w = canvas.width;
-      const h = canvas.height;
+      const w = 800;
+      const h = 1000;
       ctx.clearRect(0, 0, w, h);
 
       const pat = cfg.fieldPattern;
@@ -46,7 +46,7 @@ function drawFlag(cfg) {
       ctx.restore();
 
       // 2. Optional Cloth Texture & Lighting Gradient
-      if ((cfg.cloth!==false)) {
+      if ((cfg.cloth!==false)&&!OPT.noCloth) {
         ctx.save();
         // Subtle vertical stripe folds
         ctx.fillStyle = 'rgba(0,0,0,0.06)';
@@ -65,14 +65,14 @@ function drawFlag(cfg) {
       }
 
       // 3. Sculpted 3D Inner Border
-      drawSculptedBorder(w, h, cfg.borderStyle, cfg.borderColor);
+      if(!OPT.noBorder)drawSculptedBorder(w, h, cfg.borderStyle, cfg.borderColor);
 
       // 4. Central Heraldic Emblem
       ctx.save();
       ctx.translate(w/2, h/2);
       const scale = parseFloat(cfg.emblemScale);
       ctx.scale(scale, scale);
-      drawEmblem(cfg.emblem, cfg.emblemColor1, cfg.emblemColor2);
+      if(!OPT.noEmblem)drawEmblem(cfg.emblem, cfg.emblemColor1, cfg.emblemColor2);
       ctx.restore();
     }
 
@@ -172,245 +172,115 @@ function drawFlag(cfg) {
       ctx.restore();
     }
 
-    function drawEmblem(type, c1, c2) {
-      ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 25;
-      ctx.shadowOffsetY = 12;
+function P(d,fill,lw,stroke){const p=new Path2D(d);if(fill){ctx.fillStyle=fill;ctx.fill(p)}if(lw!==0){ctx.lineWidth=lw||6;ctx.strokeStyle=stroke||'#000';ctx.stroke(p)}}
+function L(d,color,lw){ctx.save();ctx.shadowColor='transparent';ctx.strokeStyle=color;ctx.lineWidth=lw||6;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke(new Path2D(d));ctx.restore()}
+function C(x,y,r,fill,lw){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(lw!==0){ctx.lineWidth=lw||5;ctx.strokeStyle='#000';ctx.stroke()}}
+function mirror(fn){fn();ctx.save();ctx.scale(-1,1);fn();ctx.restore()}
+function drawEmblem(type,c1,c2){
+ ctx.save();
+ ctx.shadowColor='rgba(0,0,0,0.7)';ctx.shadowBlur=25*K;ctx.shadowOffsetY=12*K;
+ ctx.lineJoin='round';ctx.lineCap='round';
+ const dark='rgba(0,0,0,.35)';
+ if(type==='citadel'){
+  let bat='';for(let x=-160;x<=100;x+=60)bat+=`M${x} -100V-128H${x+36}V-100Z`;
+  P(bat,c1,5);P('M-160 -100H160V100H-160Z',c1);
+  P('M-215 -150H-105V100H-215ZM105 -150H215V100H105Z',c1);
+  let bt='';for(const x of [-215,105])for(let i=0;i<3;i++)bt+=`M${x+i*40} -150V-176H${x+i*40+30}V-150Z`;P(bt,c1,5);
+  P('M-225 -176L-160 -280L-95 -176ZM95 -176L160 -280L225 -176Z',c2);
+  L('M-160 -280V-320','#d9d3c0',5);P('M-160 -320L-120 -306L-160 -292Z',c2,3);
+  P('M-60 100V40A60 60 0 0 1 60 40V100Z',c2);L('M-30 0V100M0 -15V100M30 0V100M-60 55H60M-55 80H55','#000',4);
+  for(const x of [-120,-70,70,120])P(`M${x-12} -60V-20A12 12 0 0 1 ${x+12} -20V-60A12 12 0 0 1 ${x-12} -60Z`,c2,4);
+  for(const x of [-160,160])P(`M${x-6} -110V-70H${x+6}V-110Z`,'#000',0);
+  ctx.save();ctx.globalAlpha=.3;for(let y=-90;y<100;y+=28)L(`M-160 ${y}H160`,'#000',3);ctx.restore();
+  L('M-215 100H215','#000',8);
+ }else if(type==='swords'){
+  const sword=()=>{
+   P('M-16 -195L0 -225L16 -195V45H-16Z',c1);L('M0 -190V35',c2,7);
+   P('M-70 45H70V65H-70Z',c2);C(-70,55,13,c2,4);C(70,55,13,c2,4);
+   P('M-9 65H9V128H-9Z',c2);L('M-9 80H9M-9 95H9M-9 110H9','#000',3);C(0,142,16,c2,5)};
+  ctx.save();ctx.rotate(Math.PI/4);sword();ctx.restore();
+  ctx.save();ctx.rotate(-Math.PI/4);sword();ctx.restore();
+  C(0,0,34,c1,6);C(0,0,20,c2,4);
 
-      if (type === 'citadel') {
-        // Stone Citadel Castle
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.rect(-160, -100, 320, 200);
-        ctx.fill(); ctx.stroke();
+ }else if(type==='dragon'){
+  mirror(()=>{P('M-30 -40L-225 -205Q-205 -135-195 -100Q-172 -122-165 -66Q-140 -92-128 -36Q-104 -58-88 8Q-60 -12-30 20Z',c2);L('M-30 -40L-222 -202M-40 -30L-193 -98M-45 -20L-163 -64M-50 -5L-126 -34','#000',4);});
+  P('M-70 160C-100 130-90 70-45 30C-15 5-25 -45 5 -80C20 -100 45 -105 62 -120L110 -160L98 -120C112 -105 100 -78 70 -62C52 -50 45 -20 52 25C62 80 55 120 15 150C-5 165-25 190-55 205L-45 160Z',c1);
+  P('M12 -100L8 -150L38 -112Z',c2,4);P('M62 -120L110 -160L96 -122Z',c2,0);C(62,-104,7,c2,3);
+  for(let i=0;i<6;i++)P(`M${6-i*2} ${-60+i*30}C${40} ${-52+i*30} ${45} ${-38+i*30} ${6-i*2} ${-28+i*30}Z`,c2,3);
+  P('M-60 205L-120 215L-80 180Z',c2,4);
+  P('M-45 105L-100 125L-82 95Z',c1);P('M-100 125L-122 132L-108 108Z',c2,3);
+  P('M40 105L95 125L80 90Z',c1);P('M95 125L118 134L104 108Z',c2,3);
+ 
+ }else if(type==='lion'){
+  P('M-70 -5C-130 -30-135 -110-95 -135C-80 -105-105 -55-55 -35Z',c1);C(-95,-140,18,c2,4);
+  P('M35 -60C70 -45 105 -45 130 -90L158 -70C140 -20 100 5 70 10C75 60 80 105 62 155L20 155C25 115 5 90-15 85C-25 120-45 140-85 155L-105 140C-70 105-60 40-50 5C-70 -25 -30 -60 35 -60Z',c1);
+  P('M125 -88L165 -118L172 -88L150 -72Z',c1);P('M158 -70L195 -85L178 -55Z',c2,4);
+  P('M-85 155L-125 160L-100 130Z',c2,4);P('M62 155L102 160L80 128Z',c2,4);
+  for(let i=0;i<12;i++){const a=i/12*Math.PI*2;C(30+Math.cos(a)*52,-118+Math.sin(a)*52,19,c2,4)}
+  C(32,-118,44,c1,5);
+  P('M2 -150L6 -185L30 -158Z',c1,4);P('M50 -158L72 -185L68 -146Z',c1,4);
+  C(18,-122,6,'#000',0);C(48,-125,6,'#000',0);P('M24 -100H44L34 -86Z','#000',2);
+  P('M28 -86Q34 -66 42 -80',c2,3);
+  L('M-10 20C20 30 45 20 55 5M-20 55C10 65 40 55 55 40','#000',3);
+  }else if(type==='stag'){
+  P('M-45 170L-60 40L-95 -30L-50 -100H55L100 -30L65 40L45 170Z',c1);
+  mirror(()=>{L('M-30 -90L-60 -150L-65 -215M-60 -150L-110 -170M-45 -125L-95 -120M-62 -190L-100 -205M-30 -90L-95 -75','#000',18);L('M-30 -90L-60 -150L-65 -215M-60 -150L-110 -170M-45 -125L-95 -120M-62 -190L-100 -205M-30 -90L-95 -75',c2,10)});
+  P('M-60 -75L-120 -100L-95 -45Z',c1);P('M-60 -75L-103 -92L-90 -58Z',c2,0);
+  P('M60 -75L120 -100L95 -45Z',c1);P('M60 -75L103 -92L90 -58Z',c2,0);
+  P('M-30 -20L0 130L30 -20Q0 -60 -30 -20Z',c2,4);
+  C(-28,-50,7,c2,3);C(28,-50,7,c2,3);C(-28,-50,3,'#000',0);C(28,-50,3,'#000',0);
+  P('M-15 20Q0 40 15 20Q0 5 -15 20Z','#000',0);
+ }else if(type==='wolf'){
+  P('M0 150L-70 75L-105 -20L-135 -190L-45 -110L0 -135L45 -110L135 -190L105 -20L70 75Z',c1);
+  mirror(()=>P('M-110 -150L-80 -112L-122 -45Z',c2,0));
+  P('M0 150L-45 60L-20 10H20L45 60Z',c2);
+  mirror(()=>{P('M-58 -55L-20 -35L-30 -15L-70 -30Z','#000',4);P('M-48 -50L-28 -40L-34 -30L-56 -38Z',c2,0)});
+  P('M-14 15H14L0 40Z','#000',3);
+  P('M-22 70L-14 98L-6 70ZM22 70L14 98L6 70Z','#f4f0e4',3);
+  L('M-30 -80L-20 -60M30 -80L20 -60M-85 0L-55 15M85 0L55 15','#000',4);
 
-        // Towers
-        ctx.beginPath();
-        ctx.rect(-200, -160, 80, 260);
-        ctx.rect(120, -160, 80, 260);
-        ctx.fill(); ctx.stroke();
+ }else if(type==='griffin'){
+  mirror(()=>{P('M-30 -40L-225 -205Q-205 -135-195 -100Q-172 -122-165 -66Q-140 -92-128 -36Q-104 -58-88 8Q-60 -12-30 20Z',c2);L('M-30 -40L-222 -202M-40 -30L-193 -98M-45 -20L-163 -64M-50 -5L-126 -34','#000',4);P('M-225 -205Q-205 -135-195 -100L-175 -150Z',c1,3)});
+  P('M-50 170L-70 85C-85 50-60 5-30 -20L-20 -70H20L30 -20C60 5 85 50 70 85L50 170L12 130L-12 170Z',c1);
+  P('M-60 -60L-45 -120C-20 -150 20 -150 45 -120L60 -60Q30 -85 0 -85Q-30 -85 -60 -60Z',c1);
+  P('M-12 -108L45 -90L8 -48Z',c2,4);C(-16,-112,6,'#000',0);
+  P('M-38 -128L-52 -178L-18 -145Z',c1,4);P('M38 -128L52 -178L18 -145Z',c1,4);
+  P('M-45 170L-90 200L-70 160ZM45 170L90 200L70 160Z',c2,4);
+  P('M68 85C115 70 140 20 125 -35C150 15 160 75 95 120Z',c1);C(128,-40,15,c2,4);
+  L('M-35 -5C-10 5 10 5 35 -5M-45 35C-15 50 15 50 45 35M-40 80C-10 95 10 95 40 80','#000',3);
+  }else if(type==='helm'){
+  P('M-70 -190C-110 -200-135 -240-95 -270C-40 -250-30 -215-35 -190Z',c2,5);
+  P('M-95 -160C-95 -215 95 -215 95 -160V90C95 130 60 150 0 160C-60 150 -95 130 -95 90Z',c1);
+  P('M-95 -40H95V-5H-95Z',c2,5);
+  P('M-80 -35H80V-12H-80Z','#000',0);
+  P('M-10 -5H10V140H-10Z',c2,4);
+  for(const [x,y] of [[-78,-160],[78,-160],[-78,80],[78,80]])C(x,y,7,c2,3);
+  for(let i=0;i<4;i++){C(-55+i*0,20+i*28,4,'#000',0);C(55,20+i*28,4,'#000',0)}
+  L('M-60 -150C-40 -185 40 -185 60 -150','#000',4);
+  P('M-95 90Q0 60 95 90','#000',0);
+ }else if(type==='axe'){
+  const axe=()=>{P('M-9 -180H9V180H-9Z',c2,5);P('M-9 -150C-120 -200-170 -90-110 -20C-80 -45-40 -45-9 -70Z',c1);L('M-20 -140C-90 -165-130 -100-100 -45','#000',3);P('M-12 150H12V190H-12Z',c1,4)};
+  ctx.save();ctx.rotate(Math.PI/6);axe();ctx.restore();ctx.save();ctx.rotate(-Math.PI/6);ctx.scale(-1,1);axe();ctx.restore();
+  P('M-85 -85H85V20C85 80 40 125 0 145C-40 125 -85 80 -85 20Z',c1);
+  P('M-70 -70H70V20C70 68 34 108 0 125C-34 108 -70 68 -70 20Z',c1,4);
+  P('M-10 -70H10V125H-10ZM-70 -20H70V0H-70Z',c2,4);C(0,-10,20,c2,5);C(0,-10,8,c1,3);
+ }else if(type==='eagle'){
+  mirror(()=>{P('M-28 -40C-90 -70-170 -60-215 -10C-190 -10-175 0-165 8C-185 15-170 30-150 40C-165 50-145 70-125 75C-135 88-110 100-90 98C-80 120-50 120-30 105Z',c1);
+   P('M-215 -10C-190 -10-175 0-165 8C-185 15-170 30-150 40C-170 20-200 10-215 -10Z',c2,3);
+   L('M-60 -35L-165 10M-55 -5L-145 42M-48 25L-122 76','#000',3)});
+  P('M-38 -75C-40 20-48 90-30 135L0 175L30 135C48 90 40 20 38 -75Q0 -110 -38 -75Z',c1);
+  P('M-26 -70L0 -45L26 -70L22 -100C10 -115-10 -115-22 -100Z',c1);
+  P('M4 -108L40 -90L5 -72Z',c2,4);C(-6,-98,5,'#000',0);
+  P('M-30 -130L-42 -190L-14 -158L0 -200L14 -158L42 -190L30 -130Z',c2);
+  P('M-30 -130H30V-118H-30Z',c2,3);
+  P('M-20 135L-50 190L-28 160L-24 195L-8 150Z',c2,4);P('M20 135L50 190L28 160L24 195L8 150Z',c2,4);
+  ctx.save();ctx.globalAlpha=.9;P('M-22 -20L0 0L22 -20L0 -40Z','#000',0);ctx.restore();
+  L('M-24 30H24M-24 60H24M-20 90H20','#000',3);
+ }
+ ctx.restore();
+}
 
-        // Gate
-        ctx.fillStyle = c2;
-        ctx.beginPath();
-        ctx.arc(0, 60, 50, Math.PI, 0, false);
-        ctx.lineTo(50, 100); ctx.lineTo(-50, 100);
-        ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-        // Turret Roofs
-        ctx.fillStyle = c2;
-        ctx.beginPath();
-        ctx.moveTo(-200, -160); ctx.lineTo(-160, -260); ctx.lineTo(-120, -160); ctx.closePath();
-        ctx.moveTo(120, -160); ctx.lineTo(160, -260); ctx.lineTo(200, -160); ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-      } else if (type === 'swords') {
-        // Crossed Swords
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        
-        // Sword 1
-        ctx.save();
-        ctx.rotate(Math.PI / 4);
-        ctx.fillRect(-15, -180, 30, 300);
-        ctx.strokeRect(-15, -180, 30, 300);
-        // Hilt
-        ctx.fillStyle = c2;
-        ctx.fillRect(-60, -40, 120, 16);
-        ctx.beginPath(); ctx.arc(0, 40, 25, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-        ctx.restore();
-
-        // Sword 2
-        ctx.save();
-        ctx.rotate(-Math.PI / 4);
-        ctx.fillStyle = c1;
-        ctx.fillRect(-15, -180, 30, 300);
-        ctx.strokeRect(-15, -180, 30, 300);
-        ctx.fillStyle = c2;
-        ctx.fillRect(-60, -40, 120, 16);
-        ctx.beginPath(); ctx.arc(0, 40, 25, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-        ctx.restore();
-
-      } else if (type === 'dragon') {
-        // Heraldic Wyrm Dragon
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        // Body curve
-        ctx.beginPath();
-        ctx.moveTo(-40, 120);
-        ctx.bezierCurveTo(-160, 120, -180, -60, -100, -140);
-        ctx.bezierCurveTo(-40, -180, 0, -100, 60, -140);
-        ctx.bezierCurveTo(160, -180, 180, 0, 100, 120);
-        ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-        // Wings
-        ctx.fillStyle = c2;
-        ctx.beginPath();
-        ctx.moveTo(-20, -40); ctx.lineTo(-180, -160); ctx.lineTo(-120, 20); ctx.closePath();
-        ctx.moveTo(20, -40); ctx.lineTo(180, -160); ctx.lineTo(120, 20); ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-      } else if (type === 'lion') {
-        // Lion Rampant
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        // Simplified majestic lion silhouette
-        ctx.beginPath();
-        ctx.moveTo(-40, 150);
-        ctx.lineTo(-80, 40);
-        ctx.lineTo(-120, -40);
-        ctx.lineTo(-80, -120);
-        ctx.lineTo(-20, -140);
-        ctx.lineTo(20, -80);
-        ctx.lineTo(80, -140);
-        ctx.lineTo(140, -40);
-        ctx.lineTo(100, 60);
-        ctx.lineTo(60, 150);
-        ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-        // Mane & Details
-        ctx.fillStyle = c2;
-        ctx.beginPath();
-        ctx.arc(40, -80, 45, 0, Math.PI*2);
-        ctx.fill(); ctx.stroke();
-
-      } else if (type === 'stag') {
-        // Royal Stag
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        // Head & neck
-        ctx.beginPath();
-        ctx.moveTo(-30, 160); ctx.lineTo(-30, 40); ctx.lineTo(-70, -40); ctx.lineTo(-40, -80);
-        ctx.lineTo(20, -80); ctx.lineTo(50, -20); ctx.lineTo(30, 160); ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-        // Majestic Antlers
-        ctx.strokeStyle = c2;
-        ctx.lineWidth = 12;
-        ctx.beginPath();
-        ctx.moveTo(0, -70); ctx.lineTo(-100, -220);
-        ctx.moveTo(0, -70); ctx.lineTo(100, -220);
-        ctx.stroke();
-
-      } else if (type === 'wolf') {
-        // Dire Wolf Head
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.moveTo(0, 120);
-        ctx.lineTo(-90, -40);
-        ctx.lineTo(-120, -180);
-        ctx.lineTo(-30, -100);
-        ctx.lineTo(0, -140);
-        ctx.lineTo(30, -100);
-        ctx.lineTo(120, -180);
-        ctx.lineTo(90, -40);
-        ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-        // Glowing eyes / accents
-        ctx.fillStyle = c2;
-        ctx.beginPath();
-        ctx.arc(-35, -90, 12, 0, Math.PI*2);
-        ctx.arc(35, -90, 12, 0, Math.PI*2);
-        ctx.fill();
-
-      } else if (type === 'griffin') {
-        // Winged Griffin
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.moveTo(-50, 140); ctx.lineTo(-80, 20); ctx.lineTo(-40, -80);
-        ctx.lineTo(-100, -140); ctx.lineTo(0, -100); ctx.lineTo(80, -140);
-        ctx.lineTo(50, 20); ctx.lineTo(50, 140); ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-        ctx.fillStyle = c2;
-        ctx.beginPath();
-        ctx.moveTo(0, -40); ctx.lineTo(-160, -180); ctx.lineTo(-100, 0); ctx.closePath();
-        ctx.moveTo(0, -40); ctx.lineTo(160, -180); ctx.lineTo(100, 0); ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-      } else if (type === 'helm') {
-        // Knight's Great Helm
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.roundRect(-90, -120, 180, 240, 20);
-        ctx.fill(); ctx.stroke();
-
-        // Visor slit
-        ctx.fillStyle = c2;
-        ctx.fillRect(-70, -30, 140, 25);
-        ctx.strokeRect(-70, -30, 140, 25);
-
-        // Cross vents
-        ctx.fillRect(-20, -5, 40, 70);
-        ctx.strokeRect(-20, -5, 40, 70);
-
-      } else if (type === 'axe') {
-        // Battle Axe & Shield
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        // Handle
-        ctx.fillRect(-12, -180, 24, 360);
-        ctx.strokeRect(-12, -180, 24, 360);
-
-        // Double Axe Blade
-        ctx.fillStyle = c2;
-        ctx.beginPath();
-        ctx.moveTo(0, -140);
-        ctx.bezierCurveTo(120, -180, 140, -60, 0, -40);
-        ctx.moveTo(0, -140);
-        ctx.bezierCurveTo(-120, -180, -140, -60, 0, -40);
-        ctx.fill(); ctx.stroke();
-
-      } else if (type === 'eagle') {
-        // Crowned Imperial Eagle
-        ctx.fillStyle = c1;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 6;
-        // Body & spread wings
-        ctx.beginPath();
-        ctx.moveTo(0, 140);
-        ctx.lineTo(-40, 20);
-        ctx.lineTo(-180, -60);
-        ctx.lineTo(-80, -100);
-        ctx.lineTo(-40, -60);
-        ctx.lineTo(0, -140);
-        ctx.lineTo(40, -60);
-        ctx.lineTo(80, -100);
-        ctx.lineTo(180, -60);
-        ctx.lineTo(40, 20);
-        ctx.closePath();
-        ctx.fill(); ctx.stroke();
-
-        // Crown
-        ctx.fillStyle = c2;
-        ctx.beginPath();
-        ctx.moveTo(-30, -140); ctx.lineTo(-40, -190); ctx.lineTo(-10, -165); ctx.lineTo(0, -195); ctx.lineTo(10, -165); ctx.lineTo(40, -190); ctx.lineTo(30, -140); ctx.closePath();
-        ctx.fill(); ctx.stroke();
-      }
-
-      ctx.restore();
-    }
-
-    
-function draw(cv,cfg){canvas=cv;ctx=cv.getContext('2d');drawFlag(clean(cfg))}
+function draw(cv,cfg,opt){canvas=cv;ctx=cv.getContext('2d');OPT=opt||{};if(OPT.bump)cfg={...clean(cfg),fieldPattern:'solid',colorPrimary:'#3a3a3a',colorSecondary:'#3a3a3a',emblemColor1:'#ffffff',emblemColor2:'#d0d0d0',borderColor:'#ffffff',cloth:false};K=cv.width/800;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(cv.width/800,0,0,cv.height/1000,0,0);drawFlag(clean(cfg));ctx.setTransform(1,0,0,1,0,0)}
 const cache=new Map();
 function url(cfg,w=80,h=100){const c=clean(cfg),key=JSON.stringify(c)+w+'x'+h;if(cache.has(key))return cache.get(key);
  const big=document.createElement('canvas');big.width=800;big.height=1000;draw(big,c);
