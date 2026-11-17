@@ -257,7 +257,7 @@ body.shake main{animation:screen-shake .65s ease-in-out}
 @keyframes servantWork{0%,100%{transform:rotate(-3deg) scaleY(1)}50%{transform:rotate(4deg) scaleY(.93)}}
 @keyframes toolSwing{0%,100%{transform:rotate(-35deg)}50%{transform:rotate(30deg)}}
 @media(prefers-reduced-motion:reduce){.collector-sprite.working .servant-art,.servant-tool{animation:none}}
-dialog#mapdialog{width:min(1180px,96vw);max-width:96vw;max-height:94dvh;height:min(92dvh,900px);padding:0;border:1px solid #b38b55;border-radius:12px;background:#100d16;overflow:hidden}#mapdialog[open]{display:flex;flex-direction:column}#mapdialog::backdrop{background:#000d}
-.map-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:linear-gradient(165deg,#3a2347,#1a1027);color:#e2c28d;border-bottom:1px solid #b38b5566;font-family:Georgia,serif}
+dialog#mapdialog{width:min(1180px,96vw);max-width:96vw;max-height:94dvh;height:min(92dvh,900px);padding:0;border:1px solid #b39b67;border-radius:12px;background:#101615;overflow:hidden}#mapdialog[open]{display:flex;flex-direction:column}#mapdialog::backdrop{background:#000d}
+.map-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#17221e;color:#e8c578;border-bottom:1px solid #b39b6755}
 .map-close{width:34px;height:34px;border-radius:50%;font-size:22px;line-height:1;padding:0}
-#mapframe{flex:1;width:100%;border:0;background:#100d16}
+#mapframe{flex:1;width:100%;border:0;background:#101615}

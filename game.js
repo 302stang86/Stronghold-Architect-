@@ -171,6 +171,7 @@ function renderRoomViewer(){
  const actions=$('room-actions');actions.replaceChildren();renderRoomEconomy(room,actions);renderResourceUpgrade(room,actions);if(room.type===16)renderTrapOptions(actions);else if(!Object.keys(roomRates(room)).length){const p=document.createElement('p');p.className='muted';p.textContent='This room has no resource upgrades.';actions.append(p)}
  if(room.type===0){const p=document.createElement('p');p.className='room-role-note';p.textContent='The evil prince wanders only inside this throne room and automatically collects its gold and stone. He follows the throne when relocated. He eats 1 food per day.';actions.append(p);const move=document.createElement('button');move.textContent='Relocate throne · 50 gold + 25 stone';move.disabled=state.over;move.onclick=()=>{$('roomdialog').close();relocating=true;blueprint=null;render()};actions.append(move)}
  renderMC();
+ if(room.type===17){const wm=document.createElement('button');wm.textContent='View world map';wm.onclick=openWorldMap;actions.append(wm)}
  const rotate=document.createElement('button');rotate.textContent='Rotate room · 10 gold ↻';rotate.disabled=state.over||room.type===17||state.gold<ROTATION_COST||!!state.invasion.active;if(state.invasion.active){rotate.textContent='Rotate locked during invasion';rotate.title='Finish the invasion first'}rotate.onclick=()=>{selected=room;rotateSelected()};actions.append(rotate);
  if(![0,17].includes(room.type)){const del=document.createElement('button');del.textContent=room.trap?'Remove trap before demolishing room':`Demolish room · ${DEMOLISH_COST} gold`;del.disabled=state.over||!!room.trap||state.gold<DEMOLISH_COST||!!state.invasion.active;if(state.invasion.active){del.textContent='Demolish locked during invasion';del.title='Finish the invasion first'}del.onclick=()=>{selected=room;demolish()};actions.append(del)}
 }
@@ -245,3 +246,6 @@ $('opt-motion').onchange=e=>{settings.reduceMotion=e.target.checked;saveSettings
 const GLOSSARY={Gold:'Gold pays for building, upgrading, rotating and demolishing rooms. Gold Mines and the throne room make it.',Stone:'Stone is the building material for rooms, upgrades and moving the throne.',Food:'Food: the prince and each servant eat 1 per day. Without it fighters weaken, then starve.',Research:'Research points come from Research Rooms and unlock new room blueprints.'};
 $('resources').onclick=e=>{const d=e.target.closest('#resources>div');if(!d)return;toast(GLOSSARY[d.querySelector('span').textContent]||'')};
 showTab('keep');renderAlarm();
+
+function openWorldMap(){const dlg=$('mapdialog'),fr=$('mapframe');if($('roomdialog')?.open)$('roomdialog').close();if(!fr.getAttribute('src'))fr.src='worldmap/index.html?embed=1';if(!dlg.open)dlg.showModal()}
+$('closemap').onclick=()=>$('mapdialog').close();
