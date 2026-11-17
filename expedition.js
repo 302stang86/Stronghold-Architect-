@@ -20,7 +20,7 @@ function expTile(key){const c=expCastle();return c?c.tiles.find(t=>roomKey(t)===
 function expNeighbors(t,tiles){return DIRS.map(([dx,dy],d)=>{const b=tiles.find(r=>r.x===t.x+dx&&r.y===t.y+dy);return b&&compatible(t,b,d)?{room:b,d}:null}).filter(Boolean)}
 function expReason(mode,id){
  const c=castleById(id);if(!state.world||!c)return'That stronghold is not part of this game.';
- if(state.over)return'Your keep has fallen.';if(state.expedition)return'An expedition is already under way.';
+ if(c.ownerId==='player')return'This stronghold already belongs to you.';if(state.over)return'Your keep has fallen.';if(state.expedition)return'An expedition is already under way.';
  if(state.invasion.active||state.invasion.combat)return'Finish the invasion first.';
  if(mode==='raid'&&!state.guards.length)return'A raid needs at least one guard. Hire one at your Barracks.';return''}
 function startExpedition(mode,castleId){
@@ -69,8 +69,8 @@ function expeditionEnd(result){
  const exp=state.expedition,c=expCastle();if(!exp)return;
  const loot=exp.loot,parts=EXP_RES.filter(k=>loot[k]>0).map(k=>`${loot[k]} ${RESOURCE_INFO[k].name.toLowerCase()}`);
  if(result==='defeat'){if(c)for(const k of EXP_RES)c.treasury[k]=roundResource(c.treasury[k]+(loot[k]||0));note(`The expedition against ${c?.rulingName||'the stronghold'} failed.${parts.length?' The loot was returned.':''}`);toast('The expedition failed. Carried loot was returned.')}
- else{for(const k of EXP_RES)state[k]=roundResource(state[k]+(loot[k]||0));note(`Expedition against ${c?.rulingName||'the stronghold'} ended. ${parts.length?'You brought home '+parts.join(', ')+'.':'You brought home nothing.'}`);toast(parts.length?'You brought home '+parts.join(', ')+'.':'You returned empty-handed.')}
- state.expedition=null;if($('expdialog').open)$('expdialog').close();if(window.cloudPushSoon)cloudPushSoon();save();render()}
+ else{for(const k of EXP_RES)state[k]=roundResource(state[k]+(loot[k]||0));if(result==='takeover'){note(`${c.rulingName} is now yours. Its prince and defenders swear loyalty, and it sends you 25% of what it makes each day.`);toast(`${c.rulingName} is now yours!`)}else note(`Expedition against ${c?.rulingName||'the stronghold'} ended. ${parts.length?'You brought home '+parts.join(', ')+'.':'You brought home nothing.'}`);if(result!=='takeover')toast(parts.length?'You brought home '+parts.join(', ')+'.':'You returned empty-handed.')}
+ state.expedition=null;if($('expdialog').open)$('expdialog').close();if(window.cloudPushSoon)cloudPushSoon();save();render();if(result==='takeover')checkConquest()}
 function enterRoom(key){
  const exp=state.expedition;if(!exp||exp.status!=='exploring')return false;
  const cur=expTile(exp.current),t=expTile(key);if(!cur||!t)return false;
@@ -91,6 +91,8 @@ function arrowClick(fromKey,toKey){if(!moveTo(fromKey))return;enterRoom(toKey)}
 async function leaveExpedition(){
  const exp=state.expedition;if(!exp||exp.status!=='exploring')return;
  if(await askConfirm('Leave the stronghold?','You keep everything you have collected. A later expedition starts with the rooms hidden again.','Leave and keep loot','Keep exploring'))expeditionEnd('left')}
+function takeOver(){const exp=state.expedition,c=expCastle();if(!exp||exp.status!=='victoryChoice'||!c)return;c.ownerId='player';c.flag='player';c.capturedDay=state.day;c.shield=3;expeditionEnd('takeover')}
+function checkConquest(){if(!state.world||state.worldWon||!state.world.castles.every(c=>c.ownerId==='player'))return;state.worldWon=true;note('Every stronghold on the map is yours. You rule them all!');save();askConfirm('You rule them all!','Every stronghold on the world map now belongs to you. You may keep playing.','Keep playing','Close')}
 function stealResources(){if(state.expedition?.status==='victoryChoice')expeditionEnd('steal')}
 const EXP_ARROW=['▲','▶','▼','◀'];
 function renderExpedition(){
@@ -120,5 +122,5 @@ function showExpedition(){
  const exp=state.expedition;if(!exp||awaitingResume)return;
  if(exp.status==='battle'&&!state.invasion.combat){exp.status='exploring';const k=exp.current,c=expCastle();if(c&&expTile(k)&&((expTile(k).type===0)||(c.defenders[k]&&!exp.cleared.includes(k)))){beginExpBattle(expInfo(k,expTile(k).type===0),k);return}}
  renderExpedition()}
-$('exp-leave').onclick=leaveExpedition;$('exp-steal').onclick=stealResources;$('expdialog').addEventListener('cancel',e=>e.preventDefault());
+$('exp-leave').onclick=leaveExpedition;$('exp-steal').onclick=stealResources;$('exp-take').onclick=takeOver;$('expdialog').addEventListener('cancel',e=>e.preventDefault());
 window.addEventListener('message',e=>{const d=e.data;if(d&&d.type==='startExpedition'&&typeof d.castleId==='string'&&(d.mode==='raid'||d.mode==='attack'))startExpedition(d.mode,d.castleId)});

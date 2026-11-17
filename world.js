@@ -31,9 +31,56 @@ function generate(){
  const count=7+ri(7),cand=[];for(let y=0;y<GRID;y++)for(let x=0;x<GRID;x++)cand.push({x,y});
  const placed=[];for(const p of shuf(cand)){if(sep(p,HOME)&&placed.every(q=>sep(p,q)))placed.push(p);if(placed.length===count)break}
  const names=shuf(NAMES),arms=shuf(ARMS);
- return {version:1,id:Date.now().toString(36)+'-'+ri(1e9).toString(36),createdAt:new Date().toISOString(),castles:placed.map((p,i)=>rival('castle-'+(i+1),p,names[i],arms[i]))};
+ return fix({version:1,id:Date.now().toString(36)+'-'+ri(1e9).toString(36),createdAt:new Date().toISOString(),castles:placed.map((p,i)=>rival('castle-'+(i+1),p,names[i],arms[i]))});
 }
 function valid(w){return !!w&&w.version===1&&typeof w.id==='string'&&Array.isArray(w.castles)&&w.castles.length>=7&&w.castles.length<=13&&w.castles.every(c=>c&&Number.isInteger(c.x)&&Number.isInteger(c.y)&&typeof c.id==='string'&&typeof c.rulingName==='string'&&typeof c.armsId==='string'&&Array.isArray(c.tiles)&&c.tiles.length>=4&&c.prince&&Number.isInteger(c.prince.level)&&c.defenders&&typeof c.defenders==='object'&&c.treasury&&RESOURCE_KEYS.every(k=>Number.isFinite(c.treasury[k])&&c.treasury[k]>=0))}
-function daily(w){for(const c of w.castles)for(const t of c.tiles){const r=roomRates(t);for(const k of Object.keys(r))c.treasury[k]=Math.round((c.treasury[k]+r[k])*1e6)/1e6}}
-return {generate,valid,daily};
+
+const PROFILE=[{lvl:6,build:8,raid:24},{lvl:4,build:6,raid:16},{lvl:3,build:4,raid:11}];
+const BUILD_POOL=[18,18,2,2,19,5,16,1,3,4,10];
+function fix(w){for(const c of w.castles){if(typeof c.ownerId!=='string')c.ownerId=c.id;if(typeof c.flag!=='string')c.flag=c.armsId;c.guards=Number.isInteger(c.guards)?Math.max(0,Math.min(2,c.guards)):0;const P=PROFILE[c.profile]||PROFILE[1];for(const k of ['levelClock','buildClock','raidClock','shield']){if(!Number.isFinite(c[k]))c[k]=k==='raidClock'?ri(P.raid):0}if(c.capturedDay!==undefined&&!Number.isFinite(c.capturedDay))delete c.capturedDay}return w}
+const power=L=>hpForLevel(L)*powerForLevel(L);
+const guardCostFor=L=>30+10*(L-1);
+const flagOf=(w,ownerId)=>ownerId==='player'?'player':(w.castles.find(c=>c.id===ownerId)?.armsId||'');
+const ownerName=(w,c)=>c.ownerId==='player'?'you':(w.castles.find(x=>x.id===c.ownerId)?.rulingName||c.rulingName);
+function tryBuild(c,cap){
+ if(c.tiles.length>=18)return;
+ const hasBarracks=c.tiles.some(t=>t.type===1),options=shuf(BUILD_POOL);
+ for(const type of options){
+  if(type===1&&hasBarracks)continue;if(type!==16&&type!==1&&!prereqsMet(type,c.tiles))continue;
+  const cost=TYPES[type];if(c.treasury.gold<cost[1]||c.treasury.stone<cost[2])continue;
+  for(let n=0;n<60;n++){
+   const base=c.tiles[ri(c.tiles.length)];if(base.type===0)continue;const d=ri(4),x=base.x+DIRS[d][0],y=base.y+DIRS[d][1];
+   if(x<1||y<1||x>22||y>22||c.tiles.some(t=>t.x===x&&t.y===y)||c.tiles.some(t=>t.type===0&&Math.abs(t.x-x)+Math.abs(t.y-y)<=1))continue;
+   const nt={x,y,type,rot:0,level:1};if(!placement(nt,c.tiles))continue;
+   c.treasury.gold=Math.round((c.treasury.gold-cost[1])*1e6)/1e6;c.treasury.stone=Math.round((c.treasury.stone-cost[2])*1e6)/1e6;c.tiles.push(nt);
+   if(![0,12,13,14,15,17].includes(type)&&Math.random()<.5)c.defenders[x+','+y]={name:SERVANT_NAMES[ri(SERVANT_NAMES.length)],level:Math.max(1,Math.min(cap,c.prince.level-ri(2))),variant:ri(4)};
+   return}}
+}
+function invade(w,c,ctx){
+ const targets=w.castles.filter(t=>t!==c&&t.ownerId!==c.ownerId&&!(t.shield>0));if(!targets.length)return;
+ const wts=targets.map(t=>1/(1+Math.hypot(t.x-c.x,t.y-c.y)));let r=Math.random()*wts.reduce((a,b)=>a+b,0),t=targets[0];for(let i=0;i<targets.length;i++){r-=wts[i];if(r<=0){t=targets[i];break}}
+ const mode=c.guards>=1&&Math.random()<.6?'raid':'attack',L=Math.min(c.prince.level,ctx.cap);
+ const A=c.guards*power(L)+(mode==='attack'?power(L):0),defs=shuf(Object.values(t.defenders)).slice(0,3);
+ const D=defs.reduce((a,d)=>a+power(Math.min(d.level,ctx.cap)),0)+(mode==='attack'?power(Math.min(t.prince.level,ctx.cap))*1.2:0)+power(1)*.5;
+ const win=Math.random()<Math.max(.1,Math.min(.9,A/(A+D))),lost=Array.from({length:c.guards}).filter(()=>Math.random()<(win?.25:.7)).length;
+ c.guards-=lost;t.shield=5;
+ const mine=t.ownerId==='player',loot=()=>{const got=[];for(const k of ['gold','stone','food','rp']){const amt=Math.floor(t.treasury[k]*.12);if(amt>0){t.treasury[k]=Math.round((t.treasury[k]-amt)*1e6)/1e6;c.treasury[k]=Math.round((c.treasury[k]+amt)*1e6)/1e6;got.push(amt+' '+k)}}return got};
+ if(!win){if(mine)ctx.notify(`${c.rulingName} ${mode==='raid'?'raided':'attacked'} your outpost ${t.rulingName} and was driven off.`,true);return}
+ if(mode==='raid'){loot();if(mine)ctx.notify(`${c.rulingName} raided your outpost ${t.rulingName} and carried off some of its stores.`,true);return}
+ if(c.prince.level>=t.prince.level&&Math.random()<.5){t.ownerId=c.ownerId;t.flag=flagOf(w,c.ownerId);delete t.capturedDay;ctx.notify(mine?`${c.rulingName} seized your outpost ${t.rulingName}!`:`${c.rulingName} conquered ${t.rulingName}.`,mine)}
+ else{loot();if(mine)ctx.notify(`${c.rulingName} defeated the prince of your outpost ${t.rulingName} and plundered it.`,true)}
+}
+function dayTick(w,ctx){
+ fix(w);const cap=ctx.cap,order=shuf(w.castles);
+ for(const c of w.castles){if(c.shield>0)c.shield--}
+ for(const c of order){
+  const P=PROFILE[c.profile]||PROFILE[1],tribute=c.ownerId==='player'&&c.capturedDay!==undefined&&ctx.day>c.capturedDay;
+  for(const t of c.tiles){const r=roomRates(t);for(const k of Object.keys(r)){if(tribute){ctx.tribute(k,r[k]*.25);c.treasury[k]=Math.round((c.treasury[k]+r[k]*.75)*1e6)/1e6}else c.treasury[k]=Math.round((c.treasury[k]+r[k])*1e6)/1e6}}
+  if(++c.levelClock>=P.lvl){c.levelClock=0;if(c.prince.level<cap)c.prince.level++;for(const d of Object.values(c.defenders))if(d.level<cap&&d.level<c.prince.level&&Math.random()<.6)d.level++}
+  if(++c.buildClock>=P.build){c.buildClock=0;tryBuild(c,cap)}
+  if(c.tiles.some(t=>t.type===1)&&c.guards<2&&c.treasury.gold>=guardCostFor(c.prince.level)+60){c.treasury.gold=Math.round((c.treasury.gold-guardCostFor(c.prince.level))*1e6)/1e6;c.guards++}
+ }
+ for(const c of order){if(c.ownerId==='player')continue;const P=PROFILE[c.profile]||PROFILE[1];if(++c.raidClock>=P.raid+ri(5)){c.raidClock=0;invade(w,c,ctx)}}
+}
+return {generate,valid,fix,dayTick,flagOf,ownerName};
 })();

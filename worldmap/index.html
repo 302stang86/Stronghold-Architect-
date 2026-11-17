@@ -121,27 +121,27 @@ function wmCrenels(x,y,w,f){const n=Math.max(2,Math.floor(w/6)),cw=w/(2*n-1);let
 function wmTower(x,y,w,h,roof,f,round){const rx=round?5:0;let s=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${f}" stroke="#241f1c" stroke-width="1.4"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="url(#wmB)"/>`;s+=roof?`<path d="M${x-2.5} ${y+.5}L${x+w/2} ${y-15}L${x+w+2.5} ${y+.5}Z" fill="url(#wmR)" stroke="#241f1c" stroke-width="1.2"/>`:wmCrenels(x,y,w,f);s+=`<rect x="${x+w/2-1}" y="${y+7}" width="2" height="7" fill="#1c1818"/>`;return s}
 function wmWall(x,y,w,h,f){return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}" stroke="#241f1c" stroke-width="1.4"/><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#wmB)"/>`+wmCrenels(x,y,w,f)}
 function wmGate(x,y,w,h){return `<path d="M${x} ${y+h}V${y+w/2}A${w/2} ${w/2} 0 0 1 ${x+w} ${y+w/2}V${y+h}Z" fill="#1b1614" stroke="#241f1c" stroke-width="1"/><path d="M${x+w/3} ${y+w/2}V${y+h}M${x+2*w/3} ${y+w/2}V${y+h}" stroke="#4a3d33" stroke-width=".8"/>`}
-function markerSvg3d(arms,home,seed){
+function markerSvg3d(arms,home,seed,mine){
  const cr=window.Castle3D&&Castle3D.ok()?Castle3D.render(home?0:seed%4,home):null;if(!cr)return null;
- const px=cr.pole.x*100,py=cr.pole.y*120,bu=home?homeBannerUrl(120,150):null;
+ const px=cr.pole.x*100,py=cr.pole.y*120,bu=(home||mine)?homeBannerUrl(120,150):null;
  let flag;if(bu)flag=`<image href="${bu}" x="${px+1.5}" y="${py+3}" width="26" height="32.5" preserveAspectRatio="none"/><rect x="${px+1.5}" y="${py+3}" width="26" height="32.5" fill="none" stroke="#141014" stroke-width="1"/>`;
  else flag=arms.svg.replace('<svg ',`<svg x="${px+1.5}" y="${py+3}" width="40" height="28" `)+`<rect x="${px+1.5}" y="${py+3}" width="40" height="28" fill="none" stroke="#141014" stroke-width="1.2"/>`;
  return `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><image href="${cr.url}" x="0" y="0" width="100" height="120"/><g class="wm-flag" style="animation-delay:-${(seed%7)*.5}s">${flag}</g></svg>`}
-function markerSvg(arms,home=false,seed=0){
- const m3=markerSvg3d(arms,home,seed);if(m3)return m3;
+function markerSvg(arms,home=false,seed=0,mine=false){
+ const m3=markerSvg3d(arms,home,seed,mine);if(m3)return m3;
  const f=home?'url(#wmH)':'url(#wmS)',v=home?0:seed%4;let body,ax=50,ay;
  if(v===0){ay=2;body=wmWall(10,26,80,32,f)+wmTower(12,14,18,44,true,f)+wmTower(70,14,18,44,true,f)+wmTower(34,2,32,56,false,f)+wmGate(44,34,12,24)}
  else if(v===1){ay=14;body=wmWall(20,30,60,28,f)+wmTower(7,8,22,50,true,f,true)+wmTower(71,8,22,50,true,f,true)+wmTower(38,14,24,44,false,f)+wmGate(44,38,12,20)}
  else if(v===2){ay=-16;body=wmWall(8,34,84,24,f)+wmTower(13,22,15,36,true,f)+wmTower(72,22,15,36,true,f)+wmTower(40,-2,20,60,true,f)+wmGate(44,40,12,18)}
  else{ay=12;body=wmWall(6,30,88,28,f)+wmTower(3,18,20,40,false,f)+wmTower(77,18,20,40,false,f)+wmTower(40,12,20,46,false,f)+wmGate(43,40,14,18)}
- const bu=home?homeBannerUrl(120,150):null,flag=bu?`<image href="${bu}" x="51" y="1" width="28" height="35" preserveAspectRatio="none"/>`:(home?HOME_ARMS:arms.svg).replace('<svg ','<svg x="51" y="3" width="46" height="32" ');const frame=bu?'<rect x="51" y="1" width="28" height="35" fill="none" stroke="#141014" stroke-width="1.4"/>':'<rect x="51" y="3" width="46" height="32" fill="none" stroke="#141014" stroke-width="1.4"/>';
+ const bu=(home||mine)?homeBannerUrl(120,150):null,flag=bu?`<image href="${bu}" x="51" y="1" width="28" height="35" preserveAspectRatio="none"/>`:(home?HOME_ARMS:arms.svg).replace('<svg ','<svg x="51" y="3" width="46" height="32" ');const frame=bu?'<rect x="51" y="1" width="28" height="35" fill="none" stroke="#141014" stroke-width="1.4"/>':'<rect x="51" y="3" width="46" height="32" fill="none" stroke="#141014" stroke-width="1.4"/>';
  const glow=home?'<ellipse cx="50" cy="112" rx="46" ry="6" fill="#e2c28d" opacity=".35"/>':'<ellipse cx="50" cy="112" rx="42" ry="5" fill="#000" opacity=".35"/>';
  return `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${WM_DEFS}${glow}<g transform="translate(0 56)">${body}</g><path d="M${ax} ${56+ay}V3" stroke="#e6d7ad" stroke-width="2" stroke-linecap="round"/>${flag}${frame}</svg>`;
 }
 function addMarker(c,home=false){
- const tile=tiles.get(c.x+','+c.y),b=document.createElement('button'),a=ARMS_POOL.find(a=>a.id===c.armsId);
+ const tile=tiles.get(c.x+','+c.y),b=document.createElement('button'),mine=!home&&c.flag==='player',a=ARMS_POOL.find(a=>a.id===(c.flag&&c.flag!=='player'?c.flag:c.armsId))||ARMS_POOL.find(a=>a.id===c.armsId);
  tile.dataset.type=home?'stronghold':'castle';tile.dataset.castleId=c.id;
- b.className='castle-button'+(home?' home':'');b.type='button';b.title=(home?homeName():c.rulingName)+' · Tile '+(c.x+1)+', '+(c.y+1);b.setAttribute('aria-label',b.title+' — open details');b.innerHTML=markerSvg(a,home,parseInt(String(c.id).replace(/\D/g,''))||0);tile.appendChild(b);
+ b.className='castle-button'+(home?' home':'');b.type='button';b.title=(home?homeName():c.rulingName)+' · Tile '+(c.x+1)+', '+(c.y+1);b.setAttribute('aria-label',b.title+' — open details');b.className+=mine?' mine':'';b.innerHTML=markerSvg(a,home,parseInt(String(c.id).replace(/\D/g,''))||0,mine);tile.appendChild(b);
 }
 function renderWorld(){
  selectedTileEl?.classList.remove('selected');selectedTileEl=null;
@@ -158,14 +158,15 @@ function renderWorld(){
  document.getElementById('count-label').textContent=world?world.castles.length+' castles + your stronghold':'Your stronghold';
 }
 function showDetails(c,home){
- const a=ARMS_POOL.find(a=>a.id===c.armsId);
+ const mine=!home&&c.flag==='player',a=ARMS_POOL.find(a=>a.id===(c.flag&&c.flag!=='player'?c.flag:c.armsId))||ARMS_POOL.find(a=>a.id===c.armsId),ownerC=(!home&&world)?world.castles.find(x=>x.id===c.ownerId):null,foreign=!home&&!mine&&ownerC&&ownerC.id!==c.id;
  document.getElementById('castle-name').textContent=home?homeName():c.rulingName;
- document.getElementById('castle-kind').textContent=home?'Seat of the player':'Hostile ruling house';
- {const bu=home?homeBannerUrl(300,375):null;document.getElementById('castle-arms').innerHTML=bu?`<img src="${bu}" alt="Your stronghold banner" style="display:block;margin:0 auto;max-height:230px;width:auto;border-radius:3px;box-shadow:0 7px 10px #0008">`:(home?HOME_ARMS:a.svg)}
+ document.getElementById('castle-kind').textContent=home?'Seat of the player':mine?'Held by you':foreign?'Hostile · ruled by '+ownerC.rulingName:'Hostile ruling house';
+ {const bu=(home||mine)?homeBannerUrl(300,375):null;document.getElementById('castle-arms').innerHTML=bu?`<img src="${bu}" alt="Your stronghold banner" style="display:block;margin:0 auto;max-height:230px;width:auto;border-radius:3px;box-shadow:0 7px 10px #0008">`:(home?HOME_ARMS:a.svg)}
  document.getElementById('charge-name').textContent=home?(homeMotto()||'The central stronghold'):a.name+' · Coat of arms';
  document.getElementById('castle-location').textContent=`Column ${c.x+1}, row ${c.y+1}`;
- document.getElementById('castle-type').textContent=home?'Player stronghold':'Ruling castle';
- const extra=document.getElementById('castle-extra');extra.replaceChildren();if(!home){const r=document.createElement('span');r.className='relation';r.textContent='Hostile'+(c.prince?' · Prince level '+c.prince.level:'');const box=document.createElement('div');box.className='foe-actions';const hs=homeState(),live=!!(hs.world&&c.tiles),why={raid:'',attack:''};
+ document.getElementById('castle-type').textContent=home?'Player stronghold':mine?'Captured outpost':'Ruling castle';
+ const extra=document.getElementById('castle-extra');extra.replaceChildren();if(mine){const r=document.createElement('span');r.className='relation';r.textContent='Yours · Prince level '+c.prince.level;const n=document.createElement('p');n.className='foe-note';n.textContent='Its prince and defenders are loyal to you. It keeps building on its own and sends you 25% of what it makes each day. Other houses may try to take it.';extra.append(r,n)}
+ else if(!home){const r=document.createElement('span');r.className='relation';r.textContent='Hostile'+(c.prince?' · Prince level '+c.prince.level:'');const box=document.createElement('div');box.className='foe-actions';const hs=homeState(),live=!!(hs.world&&c.tiles),why={raid:'',attack:''};
   if(!live){why.raid=why.attack='Raids and attacks need a stronghold started with rival strongholds. Start a new stronghold to play them.'}
   else if(hs.expedition){why.raid=why.attack='An expedition is already under way.'}
   else if(hs.invasion&&(hs.invasion.active||hs.invasion.combat)){why.raid=why.attack='Finish the invasion at your gate first.'}
