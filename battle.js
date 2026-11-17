@@ -1,17 +1,19 @@
 /* Full-screen party battle scene. Rules stay in characters.js; this file only draws and animates. */
 const BATTLE_FX={key:'',seen:0,prev:null,figs:[],lead:null,enemy:null,busy:0};
+const BATTLE_BG={0:'throne',1:'barracks',2:'kitchen',3:'armory',4:'warroom',5:'library',6:'chapel',7:'dungeon',8:'greathall',9:'alchemy',10:'vault',11:'dungeon',17:'gatehouse'},BATTLE_BG_SPARE=['greathall','dungeon','winecellar','smithy','bedchamber'];
+function battleBackdrop(c){const inv=state.invasion.active,room=c.kind==='mc'?state.tiles.find(t=>t.type===0):roomFromKey(inv.room);let name=BATTLE_BG[room?room.type:0];if(!name)name=BATTLE_BG_SPARE[Math.floor(Math.random()*BATTLE_BG_SPARE.length)];const bg=$('bs-bg');bg.style.backgroundImage=`url("backdrops/${name}.jpg")`;bg.dataset.room=name}
 function battleFig(el,kind,idx,role){return{el,mover:el.querySelector('.bf-move'),art:el.querySelector('.bf-art'),atlas:COMBAT_ART[kind][idx]||COMBAT_ART[kind][0],role,until:0,row:0,hit:0,heal:0}}
 function battleBuild(c){
- const inv=state.invasion.active,stage=$('bs-stage');stage.replaceChildren();BATTLE_FX.figs=[];
+ const inv=state.invasion.active,stage=$('bs-stage');stage.replaceChildren();battleBackdrop(c);BATTLE_FX.figs=[];
  const party=[];
  const sv=state.collectors.filter(n=>!inv.knocked.includes(n.id)&&n.id!==c.defenderId);
  if(c.kind==='mc'){party.push({kind:'mc',idx:0,name:c.ally.name,role:'lead'});for(const n of sv.slice(0,3))party.push({kind:'servant',idx:n.look||0,name:n.name,role:'help'})}
  else{const d=servantById(c.defenderId);party.push({kind:'servant',idx:d?.look||0,name:c.ally.name,role:'lead'});party.push({kind:'mc',idx:0,name:'Young Prince',role:'help'});for(const n of sv.slice(0,2))party.push({kind:'servant',idx:n.look||0,name:n.name,role:'help'})}
- const slots=[[27,66,1],[13,60,.82],[39,58,.78],[6,70,.86]];
+ const slots=[[28,77,1],[14,72,.82],[40,70,.78],[7,81,.86]];
  const order=party.map((p,i)=>({p,s:slots[i]})).sort((a,b)=>a.s[1]-b.s[1]);
  const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div><span class="bf-name"></span></div>';el.querySelector('.bf-name').textContent=p.name;stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.base={x,y};BATTLE_FX.figs.push(f);return f};
  for(const o of order){const f=mk(o.p,o.s[0],o.s[1],o.s[2],false);if(o.p.role==='lead')BATTLE_FX.lead=f}
- BATTLE_FX.enemy=mk({kind:'invader',idx:inv.variant,name:inv.name,role:'lead'},75,66,1.05,true);BATTLE_FX.enemy.atlas=COMBAT_ART.invader[inv.variant]||COMBAT_ART.invader[0];
+ BATTLE_FX.enemy=mk({kind:'invader',idx:inv.variant,name:inv.name,role:'lead'},74,77,1.05,true);BATTLE_FX.enemy.atlas=COMBAT_ART.invader[inv.variant]||COMBAT_ART.invader[0];
  for(const f of BATTLE_FX.figs)f.art.style.backgroundImage='url("'+f.atlas+'")';
 }
 function battleCenter(f){const r=f.art.getBoundingClientRect(),s=$('bs-stage').getBoundingClientRect();return{x:r.left+r.width/2-s.left,y:r.top+r.height*.4-s.top}}
