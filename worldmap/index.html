@@ -38,10 +38,14 @@ html.embed .castle-button.home{outline:none;background:none;border-radius:5px;wi
 html.embed .tile[data-x="0"] .castle-button{left:0;transform:none}
 html.embed .tile[data-x="29"] .castle-button{left:auto;right:0;transform:none}
 html.embed .tile[data-y="0"] .castle-button,html.embed .tile[data-y="1"] .castle-button{top:0;bottom:auto}
+
+.zbtn{display:none}html.embed .zbtn{display:inline-block}
+html.embed #map-wrapper{touch-action:none;cursor:grab}html.embed #map-wrapper.panning{cursor:grabbing}
+#map-stage{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
 </style>
 </head>
 <body><script>if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add("embed")</script><main class="page">
-<header><div><button id="back-home" class="btn primary" type="button">← Back to stronghold</button><span class="eyebrow">A realm divided</span><h1>Realms of the Thirty Houses</h1><p>Your stronghold endures. The ruling houses await.<br>Select a castle or a ruling name to view its heraldry.</p><p class="objective">Objective: rule them all. Every house is hostile to your stronghold.</p></div><div class="actions"><button id="grid-toggle" class="btn" aria-pressed="false">Show grid</button><button id="new-game" class="btn primary">New Game</button></div></header>
+<header><div><button id="back-home" class="btn primary" type="button">← Back to stronghold</button><span class="eyebrow">A realm divided</span><h1>Realms of the Thirty Houses</h1><p>Your stronghold endures. The ruling houses await.<br>Select a castle or a ruling name to view its heraldry.</p><p class="objective">Objective: rule them all. Every house is hostile to your stronghold.</p></div><div class="actions"><button id="zoom-out" class="btn zbtn" type="button" aria-label="Zoom out">−</button><button id="zoom-in" class="btn zbtn" type="button" aria-label="Zoom in">+</button><button id="zoom-reset" class="btn zbtn" type="button">Reset view</button><button id="grid-toggle" class="btn" aria-pressed="false">Show grid</button><button id="new-game" class="btn primary">New Game</button></div></header>
 <div class="layout"><section class="map-column" aria-label="World map"><div id="map-wrapper"><img id="map-image" src="world-map.png" alt="Medieval fantasy world with mountains, forests, rivers and a central stronghold"><div id="image-warning" class="hidden">The map image could not load. Keep world-map.png in the same folder as this HTML file.</div><div id="tile-grid" role="group" aria-label="30 by 30 interactive world map"></div></div><div class="map-footer"><span><span class="gold">◉</span> Your stronghold &nbsp; · &nbsp; Flags mark other castles</span><span id="count-label">Preparing realm…</span></div></section>
 <details class="roster" open><summary>Ruling houses</summary><p class="roster-intro">Every house and banner is unique in this realm.</p><div id="roster-list"></div></details></div>
 <p id="status" role="status" aria-live="polite"></p><p class="bottom-note">30 × 30 tiles · 7–13 rival castles · Minimum separation: 3 tiles · No terrain restrictions<br>Saved in this browser. New Game replaces the current realm. Clearing browser storage also removes the save.</p><noscript>Enable JavaScript to generate castles, save your realm and open castle details.</noscript>
@@ -185,4 +189,31 @@ window.addEventListener('storage',e=>{
 // Read-only integration API. UI New Game is the sole layout replacement action.
 window.CastleWorld=Object.freeze({getWorld:()=>world?structuredClone(world):null,getRulingNames:()=>[...RULING_NAMES],getArmsPool:()=>structuredClone(ARMS_POOL),getStronghold:()=>({...STRONGHOLD_COORDS}),getSaveKey:()=>SAVE_KEY,openCastle:id=>{const c=id==='stronghold'?{id,x:14,y:14}:world?.castles.find(c=>c.id===id);if(c)selectTile(tiles.get(c.x+','+c.y),c.x,c.y);return Boolean(c)}});
 boot();
+// Pan and zoom (embedded view only)
+(function(){
+ if(!document.documentElement.classList.contains('embed'))return;
+ const wrap=document.getElementById('map-wrapper'),stage=document.createElement('div');stage.id='map-stage';
+ while(wrap.firstChild)stage.appendChild(wrap.firstChild);wrap.appendChild(stage);
+ let z=1,x=0,y=0,moved=false,justDragged=false;const MAXZ=5,pts=new Map();let pinch=null;
+ function clamp(){const W=wrap.clientWidth,H=wrap.clientHeight;x=Math.min(0,Math.max(W-W*z,x));y=Math.min(0,Math.max(H-H*z,y))}
+ function apply(){clamp();stage.style.transform=`translate(${x}px,${y}px) scale(${z})`}
+ function zoomAt(f,cx,cy){const nz=Math.min(MAXZ,Math.max(1,z*f)),r=nz/z;x=cx-(cx-x)*r;y=cy-(cy-y)*r;z=nz;apply()}
+ function local(e){const b=wrap.getBoundingClientRect();return [e.clientX-b.left,e.clientY-b.top]}
+ wrap.addEventListener('wheel',e=>{e.preventDefault();const [cx,cy]=local(e);zoomAt(Math.exp(-Math.max(-60,Math.min(60,e.deltaY))*.0025),cx,cy)},{passive:false});
+ wrap.addEventListener('pointerdown',e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY});moved=false;if(pts.size===2){const [a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z};moved=true}});
+ wrap.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;
+  if(pts.size===2&&pinch){p.x=e.clientX;p.y=e.clientY;const [a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y),bb=wrap.getBoundingClientRect(),cx=(a.x+b.x)/2-bb.left,cy=(a.y+b.y)/2-bb.top;zoomAt(Math.min(MAXZ,Math.max(1,pinch.z*d/pinch.d))/z,cx,cy);return}
+  const dx=e.clientX-p.x,dy=e.clientY-p.y;
+  if(!moved&&Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>5){moved=true;wrap.classList.add('panning');try{wrap.setPointerCapture(e.pointerId)}catch(err){}}
+  if(moved&&pts.size===1){x+=dx;y+=dy;apply()}
+  p.x=e.clientX;p.y=e.clientY});
+ function end(e){pts.delete(e.pointerId);if(pts.size<2)pinch=null;if(!pts.size){wrap.classList.remove('panning');if(moved){justDragged=true;setTimeout(()=>{justDragged=false},60)}moved=false}}
+ wrap.addEventListener('pointerup',end);wrap.addEventListener('pointercancel',end);
+ wrap.addEventListener('click',e=>{if(justDragged){e.stopPropagation();e.preventDefault()}},true);
+ const c=()=>[wrap.clientWidth/2,wrap.clientHeight/2];
+ document.getElementById('zoom-in').onclick=()=>zoomAt(1.5,...c());
+ document.getElementById('zoom-out').onclick=()=>zoomAt(1/1.5,...c());
+ document.getElementById('zoom-reset').onclick=()=>{z=1;x=0;y=0;apply()};
+ window.addEventListener('resize',apply);
+})();
 </script></body></html>
