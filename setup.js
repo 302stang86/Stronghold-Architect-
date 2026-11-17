@@ -1,6 +1,7 @@
 /* New stronghold setup: name, motto and banner designer. */
 (function(){
-const B=window.Banner,SWATCHES=['#1b3b2b','#4a1515','#152a4a','#32154a','#4a3815','#2b2b2b','#6b531d','#822626'];
+const B=window.Banner,SWATCHES=['#d4af37','#e2c04a','#c0c8d0','#f4f0e4','#15151a','#5b5f68','#8b1e1e','#b32a2a','#c4651e','#a9743a','#5a3a1c','#6b6b2a','#1b3b2b','#2f7a3f','#1f6b6b','#2a5aa8','#152a4a','#32154a','#6b3d8c','#b25a7a'];
+const TARGETS=[['colorPrimary','Field'],['colorSecondary','Field 2'],['emblemColor1','Emblem'],['emblemColor2','Accent'],['borderColor','Border']];
 let dlg,pending=null,cfg;
 function opt(list,val){return list.map(([v,l])=>`<option value="${v}"${v===val?' selected':''}>${l}</option>`).join('')}
 function build(){
@@ -11,27 +12,33 @@ function build(){
   <section class="setup-preview"><canvas id="setup-canvas" width="800" height="1000" aria-label="Banner preview"></canvas><h3 id="setup-showname">Your Stronghold</h3><p id="setup-showmotto" class="muted"></p></section>
   <section class="setup-controls">
    <div class="sgroup"><label for="s-name">Stronghold name</label><input id="s-name" maxlength="30" autocomplete="off" placeholder="The Ashen Keep"><label for="s-motto">Motto (optional)</label><input id="s-motto" maxlength="40" autocomplete="off" placeholder="Vigilance &amp; Steel"></div>
-   <div class="sgroup"><label for="s-pattern">Field pattern</label><select id="s-pattern">${opt(B.PATTERNS,cfg.fieldPattern)}</select>
-    <div class="srow"><div><label for="s-c1">Primary color</label><input type="color" id="s-c1"></div><div><label for="s-c2">Secondary color</label><input type="color" id="s-c2"></div></div>
-    <div class="swatches" id="s-swatches">${SWATCHES.map(c=>`<button type="button" class="swatch" data-c="${c}" style="background:${c}" aria-label="Use ${c}"></button>`).join('')}</div></div>
-   <div class="sgroup"><label for="s-emblem">Central emblem</label><select id="s-emblem">${opt(B.EMBLEMS,cfg.emblem)}</select>
-    <div class="srow"><div><label for="s-e1">Emblem color</label><input type="color" id="s-e1"></div><div><label for="s-e2">Accent color</label><input type="color" id="s-e2"></div></div>
+   <div class="sgroup"><label>Colors</label><div class="targets" id="s-targets">${TARGETS.map(([k,l])=>`<button type="button" class="target" data-k="${k}"><i></i><span>${l}</span></button>`).join('')}</div>
+    <p class="muted" id="s-hint"></p>
+    <div class="swatches" id="s-swatches">${SWATCHES.map(c=>`<button type="button" class="swatch" data-c="${c}" style="background:${c}" aria-label="Use ${c}"></button>`).join('')}<label class="custom">Custom <input type="color" id="s-custom"></label></div></div>
+   <div class="sgroup"><label>Field pattern</label><div class="tiles" id="s-pattern"></div></div>
+   <div class="sgroup"><label>Central emblem</label><div class="tiles" id="s-emblem"></div>
     <label for="s-scale">Emblem size <span id="s-scaleval"></span></label><input type="range" id="s-scale" min="0.5" max="1.4" step="0.05"></div>
-   <div class="sgroup"><label for="s-border">Border</label><select id="s-border">${opt(B.BORDERS,cfg.borderStyle)}</select>
-    <div class="srow"><div><label for="s-bc">Border tint</label><input type="color" id="s-bc"></div><label class="check"><input type="checkbox" id="s-cloth"> Woven cloth shading</label></div></div>
+   <div class="sgroup"><label>Border</label><div class="tiles" id="s-border"></div>
+    <label class="check"><input type="checkbox" id="s-cloth"> Woven cloth shading</label></div>
    <div class="setup-actions"><button type="button" id="s-random">Randomize banner</button><button type="button" id="s-cancel" hidden>Back to my stronghold</button><button type="button" id="s-begin" class="primary">Begin stronghold</button></div>
   </section>
  </div></div>`;
  document.body.append(dlg);
  const $=id=>dlg.querySelector('#'+id);
- const map={'s-pattern':'fieldPattern','s-c1':'colorPrimary','s-c2':'colorSecondary','s-emblem':'emblem','s-e1':'emblemColor1','s-e2':'emblemColor2','s-border':'borderStyle','s-bc':'borderColor'};
- function redraw(){B.draw($('setup-canvas'),cfg);$('s-scaleval').textContent=Number(cfg.emblemScale).toFixed(2)+'x';$('setup-showname').textContent=$('s-name').value.trim()||'Your Stronghold';$('setup-showmotto').textContent=$('s-motto').value.trim()}
- function sync(){for(const [id,k] of Object.entries(map))$(id).value=cfg[k];$('s-scale').value=cfg.emblemScale;$('s-cloth').checked=cfg.cloth;redraw()}
- for(const [id,k] of Object.entries(map))$(id).addEventListener('input',()=>{cfg[k]=$(id).value;redraw()});
+ let target='colorPrimary',raf=0;const use3d=!!(window.Banner3D&&Banner3D.ok());let live=null;if(use3d){const cv=$('setup-canvas');cv.width=560;cv.height=700;live=Banner3D.live(cv)}
+ const tileSets={'s-pattern':['fieldPattern',B.PATTERNS,{noEmblem:true,noBorder:true}],'s-emblem':['emblem',B.EMBLEMS,{noBorder:true}],'s-border':['borderStyle',B.BORDERS,{noEmblem:true}]};
+ for(const [id,[key,list]] of Object.entries(tileSets)){const box=$(id);for(const [v,l] of list){const b=document.createElement('button');b.type='button';b.className='tile';b.dataset.v=v;b.title=l;b.setAttribute('aria-label',l);b.innerHTML=(use3d?'<img width="84" height="105" alt="">':'<canvas width="84" height="105"></canvas>')+'<span>'+l+'</span>';box.append(b)}
+  box.addEventListener('click',e=>{const t=e.target.closest('.tile');if(t){cfg[key]=t.dataset.v;redraw()}})}
+ function thumbs(){for(const [id,[key,list,opt]] of Object.entries(tileSets)){for(const t of $(id).children){const c={...cfg,[key]:t.dataset.v,emblemScale:id==='s-emblem'?1.15:1};if(id==='s-border')c.emblem='citadel';if(use3d)t.querySelector('img').src=Banner3D.still(c,168,210,opt);else B.draw(t.querySelector('canvas'),c,opt);t.classList.toggle('on',cfg[key]===t.dataset.v)}}}
+ function chips(){for(const t of $('s-targets').children){t.querySelector('i').style.background=cfg[t.dataset.k];t.classList.toggle('on',t.dataset.k===target)}$('s-custom').value=cfg[target];$('s-hint').textContent=(target==='colorSecondary'&&cfg.fieldPattern==='solid')?'The second field color shows on split and quartered patterns. Pick one below.':''}
+ function redraw(){if(live)live.set(cfg);else B.draw($('setup-canvas'),cfg);$('s-scaleval').textContent=Number(cfg.emblemScale).toFixed(2)+'x';$('setup-showname').textContent=$('s-name').value.trim()||'Your Stronghold';$('setup-showmotto').textContent=$('s-motto').value.trim();chips();cancelAnimationFrame(raf);raf=requestAnimationFrame(thumbs)}
+ function sync(){$('s-scale').value=cfg.emblemScale;$('s-cloth').checked=cfg.cloth;redraw()}
+ $('s-targets').addEventListener('click',e=>{const t=e.target.closest('.target');if(t){target=t.dataset.k;chips()}});
  $('s-scale').addEventListener('input',()=>{cfg.emblemScale=Number($('s-scale').value);redraw()});
  $('s-cloth').addEventListener('change',()=>{cfg.cloth=$('s-cloth').checked;redraw()});
  $('s-name').addEventListener('input',redraw);$('s-motto').addEventListener('input',redraw);
- $('s-swatches').addEventListener('click',e=>{const b=e.target.closest('.swatch');if(b){cfg.colorPrimary=b.dataset.c;sync()}});
+ $('s-swatches').addEventListener('click',e=>{const b=e.target.closest('.swatch');if(b){cfg[target]=b.dataset.c;redraw()}});
+ $('s-custom').addEventListener('input',()=>{cfg[target]=$('s-custom').value;redraw()});
  $('s-random').onclick=()=>{const r=a=>a[Math.floor(Math.random()*a.length)],col=()=>'#'+[0,0,0].map(()=>Math.floor(40+Math.random()*130).toString(16).padStart(2,'0')).join('');
   cfg=B.clean({fieldPattern:r(B.PATTERNS)[0],colorPrimary:r(SWATCHES),colorSecondary:col(),emblem:r(B.EMBLEMS)[0],emblemColor1:r(['#d4af37','#e8e0c8','#c0c8d0','#e2a24a']),emblemColor2:col(),emblemScale:1,borderStyle:r(B.BORDERS)[0],borderColor:r(['#d4af37','#c0c8d0','#a9743a']),cloth:true});sync()};
  $('s-begin').onclick=()=>finish({name:$('s-name').value.trim().slice(0,30)||'Your Stronghold',motto:$('s-motto').value.trim().slice(0,40),banner:B.clean(cfg)});
