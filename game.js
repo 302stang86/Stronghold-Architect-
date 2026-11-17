@@ -18,6 +18,7 @@ function fresh(){
  const result={version:5,clockVersion:1,dayElapsedMs:0,entranceLegacy:false,day:1,gold:220,stone:120,food:START_FOOD,rp:0,hungryDays:0,researched:[],over:false,won:false,tiles,log:[`Day 1 · Castle entrance established on the bottom row. Your keep starts with ${hallCount} hallway${hallCount>1?'s':''} and ${emptyCount} empty room${emptyCount>1?'s':''}.`]};initEconomy(result);return result;
 }
 function validate(s){
+ if(s&&s.strongholdName!==undefined&&(typeof s.strongholdName!=='string'||s.strongholdName.length>30))delete s.strongholdName;
  if(!s||s.version!==5||!Array.isArray(s.tiles)||s.tiles.length<1||s.tiles.length>FIELD_SIZE*FIELD_SIZE)throw Error('Invalid save');
  for(const k of ['day','gold','stone','food'])if(!Number.isFinite(s[k])||s[k]<0)throw Error('Invalid save');
  if(!Number.isInteger(s.day)||s.day<1||!Number.isInteger(s.hungryDays)||s.hungryDays<0||typeof s.over!=='boolean'||typeof s.won!=='boolean'||!Array.isArray(s.log)||s.log.some(l=>typeof l!=='string'))throw Error('Invalid save');
@@ -223,7 +224,7 @@ function resumeGame(){awaitingResume=false;clockSuspended=false;lastClockTick=Da
 
 $('resume-dialog').addEventListener('cancel',e=>e.preventDefault());$('resume-game').onclick=resumeGame;showResumePrompt();
 function askConfirm(title,text,okLabel='Confirm',cancelLabel='Cancel',hold=false){return new Promise(resolve=>{const dlg=$('confirm-dialog'),ok=$('confirm-ok');$('confirm-title').textContent=title;$('confirm-text').textContent=text;ok.textContent=okLabel;$('confirm-cancel').textContent=cancelLabel;ok.classList.toggle('hold-btn',hold);ok.classList.remove('holding');let done=false,timer=null;const finish=v=>{if(done)return;done=true;clearTimeout(timer);ok.onclick=ok.onpointerdown=ok.onpointerup=ok.onpointerleave=ok.onpointercancel=ok.onkeydown=ok.onkeyup=null;ok.classList.remove('hold-btn','holding');$('confirm-cancel').onclick=null;dlg.onclose=null;if(dlg.open)dlg.close();resolve(v)};const stop=()=>{clearTimeout(timer);ok.classList.remove('holding')},go=()=>{if(timer)clearTimeout(timer);ok.classList.add('holding');timer=setTimeout(()=>finish(true),1200)};if(hold){ok.onpointerdown=e=>{e.preventDefault();go()};ok.onpointerup=ok.onpointerleave=ok.onpointercancel=stop;ok.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.repeat){e.preventDefault();go()}};ok.onkeyup=stop;ok.onclick=e=>e.preventDefault()}else ok.onclick=()=>finish(true);$('confirm-cancel').onclick=()=>finish(false);dlg.onclose=()=>finish(false);dlg.showModal()})}
-async function startNewStronghold(){if(!await askConfirm('Start a New Stronghold?','Your current stronghold on this device'+(window.cloudSignedIn&&cloudSignedIn()?' and your cloud save':'')+' will be replaced. This cannot be undone. Use Export save first if you want to keep it.','Hold to start new','Keep playing',true))return;state=fresh();for(const id of ['battle-dialog','roomdialog','builddialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();resetDayClock();selected=null;blueprint=null;relocating=false;buildTarget=null;save();render();scheduleThroneCenter()}
+async function startNewStronghold(){if(!await askConfirm('Start a New Stronghold?','Your current stronghold on this device'+(window.cloudSignedIn&&cloudSignedIn()?' and your cloud save':'')+' will be replaced. This cannot be undone. Use Export save first if you want to keep it.','Hold to start new','Keep playing',true))return;state=fresh();for(const id of ['battle-dialog','roomdialog','builddialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();resetDayClock();selected=null;blueprint=null;relocating=false;buildTarget=null;try{localStorage.removeItem('medieval-world-castles-v1')}catch{}$('mapframe').removeAttribute('src');save();render();scheduleThroneCenter();askName()}
 
 
 /* ---------- Phase 2 interface ---------- */
@@ -247,5 +248,11 @@ const GLOSSARY={Gold:'Gold pays for building, upgrading, rotating and demolishin
 $('resources').onclick=e=>{const d=e.target.closest('#resources>div');if(!d)return;toast(GLOSSARY[d.querySelector('span').textContent]||'')};
 showTab('keep');renderAlarm();
 
-function openWorldMap(){const dlg=$('mapdialog'),fr=$('mapframe');if($('roomdialog')?.open)$('roomdialog').close();if(!fr.getAttribute('src'))fr.src='worldmap/index.html?embed=1';if(!dlg.open)dlg.showModal()}
-$('closemap').onclick=()=>$('mapdialog').close();
+function openWorldMap(){const dlg=$('mapdialog'),fr=$('mapframe');if($('roomdialog')?.open)$('roomdialog').close();fr.src='worldmap/index.html?embed=1&v='+Date.now();if(!dlg.open)dlg.showModal()}
+window.addEventListener('message',e=>{if(e.data&&e.data.type==='closeWorldMap'&&$('mapdialog').open)$('mapdialog').close()});
+
+function askName(){const dlg=$('namedialog'),input=$('nameinput');if(dlg.open)return;input.value=state.strongholdName&&state.strongholdName!=='Your Stronghold'?state.strongholdName:'';dlg.showModal();input.focus()}
+$('nameform').addEventListener('submit',()=>{const v=$('nameinput').value.trim().slice(0,30);state.strongholdName=v||'Your Stronghold';save();$('mapframe').removeAttribute('src')});
+$('namedialog').addEventListener('cancel',()=>{if(!state.strongholdName){state.strongholdName='Your Stronghold';save()}});
+$('rename').onclick=()=>{$('settingsdialog').close();askName()};
+setInterval(()=>{if(!state.strongholdName&&!state.over&&!awaitingResume&&!document.querySelector('dialog[open]'))askName()},1000);
