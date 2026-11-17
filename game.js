@@ -1,7 +1,7 @@
 
 'use strict';
 const DIRS=[[0,-1],[1,0],[0,1],[-1,0]],$=id=>document.getElementById(id),KEY='stronghold-architect-v2';
-const SETTINGS_KEY='stronghold-architect-settings';let settings=(()=>{const d={reduceMotion:false,seenAlarm:false};try{return {...d,...JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}}catch{return d}})(),activeTab='keep',fxEl=null,shakeTimer=null;
+const SETTINGS_KEY='stronghold-architect-settings';let settings=(()=>{const d={reduceMotion:false,seenAlarm:false};try{return {...d,...JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}}catch{return d}})(),activeTab='keep',fxEl=null,shakeTimer=null,lastSaveBody='';
 function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings))}catch{}}
 function motionOK(){return !settings.reduceMotion&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)}
 
@@ -43,7 +43,7 @@ function validate(s){
  return s;
 }
 try{state=validate(JSON.parse(localStorage.getItem(KEY)))}catch{state=fresh()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch{toast('Device storage unavailable. Use Export save to keep your progress.')}}
+function save(){try{const body=JSON.stringify({...state,savedAt:0});if(body!==lastSaveBody){lastSaveBody=body;state.savedAt=Date.now()}localStorage.setItem(KEY,JSON.stringify(state))}catch{toast('Device storage unavailable. Use Export save to keep your progress.')}}
 function exits(t){const d=t.ports|| (t.type===17?[0]:t.type===12?[0,2]:t.type===13?[0,1]:t.type===14?[0,1,3]:[0,1,2,3]);return d.map(n=>(n+t.rot)%4)}
 function at(x,y,tiles=state.tiles){return tiles.find(t=>t.x===x&&t.y===y)}
 function compatible(a,b,d){return exits(a).includes(d)&&exits(b).includes((d+2)%4)}
@@ -52,14 +52,14 @@ function blocksHallDoor(a,b,d){const opposite=(d+2)%4,ao=exits(a).includes(d),bo
 function placement(t,tiles=state.tiles){if(entranceBlocked(t.x,t.y,tiles))return false;let joins=0;for(let d=0;d<4;d++){const b=at(t.x+DIRS[d][0],t.y+DIRS[d][1],tiles);if(b){if(blocksHallDoor(t,b,d))return false;if(compatible(t,b,d))joins++}}return joins>0}
 function connected(tiles){const root=tiles.find(t=>t.type===0);if(!root)return false;const seen=new Set([root]),q=[root];while(q.length){const a=q.shift();DIRS.forEach(([dx,dy],d)=>{const b=at(a.x+dx,a.y+dy,tiles);if(b&&!seen.has(b)&&compatible(a,b,d)){seen.add(b);q.push(b)}})}return seen.size===tiles.length}
 function unlocked(i){return START_UNLOCKED.includes(i)||state.researched.includes(i)}
-function research(i){if(state.over||unlocked(i)||!RESEARCH_COST[i])return;if(!state.tiles.some(t=>t.type===19))return toast('Build a research room first.');if(state.rp<RESEARCH_COST[i])return toast('Not enough research points. Research Rooms add points as time passes.');state.rp-=RESEARCH_COST[i];state.researched.push(i);note(TYPES[i][0]+' blueprint researched.');save();render();toast(TYPES[i][0]+' unlocked!')}
+function research(i){if(state.over||unlocked(i)||!RESEARCH_COST[i])return;if(!state.tiles.some(t=>t.type===19))return toast('Build a research room first.');if(state.rp<RESEARCH_COST[i])return toast('Not enough research points. Research Rooms add points as time passes.');state.rp-=RESEARCH_COST[i];state.researched.push(i);note(TYPES[i][0]+' blueprint researched.');gainXp('mc',15);save();render();toast(TYPES[i][0]+' unlocked!')}
 function income(){const total={gold:0,stone:0,rp:0,food:0};for(const room of state.tiles)for(const [k,v]of Object.entries(roomRates(room)))total[k]+=v;return total}
 function toast(t){$('toast').textContent=t;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3500)}
 function note(t){state.log.unshift(`Day ${state.day} · ${t}`);state.log=state.log.slice(0,12)}
 function art(i){return TILE_ART[i]}
 function renderResources(){const need=foodNeed(),days=Math.floor(state.food/need),tone=state.hungryDays>0||days<=1?'danger':days<=3?'warn':'',label=state.hungryDays>0?'Hungry · day '+state.hungryDays:days+' day'+(days===1?'':'s')+' left';$('resources').innerHTML=[['Gold',state.gold,''],['Stone',state.stone,''],['Food',state.food,`<em class="food-days ${tone}">${label}</em>`],['Research',state.rp,'']].map(([n,v,x])=>`<div><span>${n}</span><strong>${fmt(v)}</strong>${x}</div>`).join('')}
 function render(){
-const inc=income();renderResources();
+const inc=income();renderResources();renderPrince();
 renderBuildPopup();
 renderResearch();$('rotate').disabled=!!state.invasion.active;$('rotate').title=state.invasion.active?'Locked during an invasion':'';
 $('grid').style.setProperty('--size',size+'px');$('grid').innerHTML='';for(let y=0;y<FIELD_SIZE;y++)for(let x=0;x<FIELD_SIZE;x++){
@@ -89,7 +89,7 @@ function renderBuildPopup(){
 function buildAt(type,x,y,rot){if(state.invasion.active){toast('Finish the invasion before changing the castle layout.');return false}
  if(state.over||!inField(x,y)||at(x,y)||!unlocked(type)||[0,17].includes(type)||!Number.isInteger(rot)||rot<0||rot>3||!prereqsMet(type))return false;
  const nt={x,y,type,rot},t=TYPES[type];if(!placement(nt))return false;if(state.gold<t[1]||state.stone<t[2])return false;
- state.gold-=t[1];state.stone-=t[2];state.tiles.push(nt);note(t[0]+' constructed.');buildTarget=null;blueprint=null;selected=null;if($('builddialog').open)$('builddialog').close();save();render();return true;
+ state.gold-=t[1];state.stone-=t[2];state.tiles.push(nt);note(t[0]+' constructed.');gainXp('mc',10);buildTarget=null;blueprint=null;selected=null;if($('builddialog').open)$('builddialog').close();save();render();return true;
 }
 function rotationAllowed(tile,rot,tiles=state.tiles){
  const candidate={...tile,rot},layout=tiles.map(t=>t===tile?candidate:t);
@@ -104,7 +104,7 @@ function rotateSelected(){if(state.invasion.active){toast('Finish the invasion b
  toast('No other rotation fits without blocking a doorway or disconnecting the keep.');return false;
 }
 function demolish(){if(state.invasion.active){toast('Finish the invasion before changing the castle layout.');return false}if(state.over||!selected||[0,17].includes(selected.type))return;if(selected.trap)return toast('Demolish the installed trap at its listed cost before removing this room.');if(roomCollector(selected)){toast('Unassign the servant before demolishing this room.');return}if(state.gold<DEMOLISH_COST){toast(`Demolition costs ${DEMOLISH_COST} gold.`);return}if(Object.values(selected.stock||{}).some(v=>v>0)){toast('Collect this room’s ready resources before demolition.');return}const tiles=state.tiles.filter(t=>t!==selected);if(!connected(tiles))return toast('Removing this tile would disconnect your keep.');const name=TYPES[selected.type][0];state.gold-=DEMOLISH_COST;state.tiles=tiles;selected=null;repathServants();note(`${name} demolished for ${DEMOLISH_COST} gold.`);save();render()}
-function completeDay(){if(state.over)return;const need=foodNeed();if(state.food>=need){state.food=roundResource(state.food-need);if(state.hungryDays>0)note('The keep is fed again. Hunger penalties are lifted.');state.hungryDays=0}else{state.food=0;state.hungryDays++;applyHunger()}if(!state.over){state.day++;note('A new day begins.');foodWarning();if(state.day%5===0)toast(`Day ${state.day} reached. Open Settings to export a backup copy of your save.`)}save();render()}
+function completeDay(){if(state.over)return;const need=foodNeed();if(state.food>=need){state.food=roundResource(state.food-need);if(state.hungryDays>0)note('The keep is fed again. Hunger penalties are lifted.');state.hungryDays=0}else{state.food=0;state.hungryDays++;applyHunger()}if(!state.over){state.day++;note('A new day begins.');foodWarning();if(window.cloudPushSoon)cloudPushSoon();if(state.day%5===0)toast(`Day ${state.day} reached. Open Settings to export a backup copy of your save.`)}save();render()}
 function applyHunger(){const d=state.hungryDays;if(d===1)note('Hunger: servants fight 30% weaker until the keep is fed.');if(d===2)note('Hunger: the prince fights 25% weaker until the keep is fed.');if(d>=3&&state.collectors.length){const dying=state.collectors.reduce((a,b)=>b.id>a.id?b:a);state.collectors=state.collectors.filter(n=>n!==dying);if(state.invasion.active)state.invasion.active.knocked=state.invasion.active.knocked.filter(id=>id!==dying.id);note(`${dying.name} starved to death. Hire a replacement.`);toast(`${dying.name} starved to death.`)}if(d===5)note('The prince is starving: he has 20% less health in battle.');if(d>=7){state.over=true;state.invasion.active=null;state.invasion.combat=null;const modal=$('battle-dialog');if(modal?.open)modal.close();note('The prince starved. The keep has fallen.')}}
 function foodWarning(){if(state.hungryDays>0)return;const days=Math.floor(state.food/foodNeed());if(days===0){note('Warning: not enough food for tomorrow.');toast('Not enough food for tomorrow. Hunger starts at day end.')}else if(days===1){note('Warning: food lasts only one more day.');toast('Food lasts only one more day.')}}
 
@@ -138,7 +138,7 @@ function installTrap(id){
  if(state.over||!selected||!state.tiles.includes(selected)||selected.type!==16||!Object.hasOwn(TRAPS,id))return false;
  if(selected.trap){toast('Demolish the installed trap before buying another style.');return false}
  const trap=TRAPS[id];if(state.gold<trap.price){toast('Not enough gold to install this trap.');return false}
- state.gold-=trap.price;selected.trap=id;selected.trapLevel=1;note(`${trap.name} installed. It hurts invaders only.`);save();render();return true;
+ state.gold-=trap.price;selected.trap=id;selected.trapLevel=1;note(`${trap.name} installed. It hurts invaders only.`);gainXp('mc',10);save();render();return true;
 }
 function demolishTrap(){
  if(state.over||!selected||!state.tiles.includes(selected)||selected.type!==16||!selected.trap)return false;
@@ -215,14 +215,14 @@ function roomKey(room){return room.x+','+room.y}
 function roomFromKey(key,tiles=state.tiles){if(!key)return null;return tiles.find(t=>roomKey(t)===key)||null}
 requestAnimationFrame(animateMC);
 
-requestAnimationFrame(animateCombatVisuals);$('battle-dialog').addEventListener('cancel',e=>e.preventDefault());$('battle-export').onclick=()=>$('export').click();
+requestAnimationFrame(animateCombatVisuals);$('battle-dialog').addEventListener('cancel',e=>e.preventDefault());$('battle-export').onclick=()=>$('export').click();$('battle-skip').onclick=skipBattle;
 function pauseForReturn(){if(!clockSuspended)tickDayClock();clockSuspended=true;awaitingResume=true;lastClockTick=Date.now();save()}
-function showResumePrompt(){if(document.hidden)return;clockSuspended=true;awaitingResume=true;lastClockTick=Date.now();for(const id of ['roomdialog','builddialog','helpdialog','battle-dialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();const modal=$('resume-dialog');$('resume-day').textContent=`Day ${state.day} · Your stronghold is paused`;if(!modal.open)modal.showModal()}
+function showResumePrompt(){if(document.hidden)return;clockSuspended=true;awaitingResume=true;lastClockTick=Date.now();for(const id of ['roomdialog','builddialog','helpdialog','battle-dialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();const modal=$('resume-dialog');$('resume-day').textContent=`Day ${state.day} · Your stronghold is paused`;if(!modal.open)modal.showModal();if(window.cloudPull)cloudPull().then(()=>{$('resume-day').textContent=`Day ${state.day} · Your stronghold is paused`})}
 function resumeGame(){awaitingResume=false;clockSuspended=false;lastClockTick=Date.now();lastClockSave=lastClockTick;if($('resume-dialog').open)$('resume-dialog').close();renderClock();renderBattle();save()}
 
 $('resume-dialog').addEventListener('cancel',e=>e.preventDefault());$('resume-game').onclick=resumeGame;showResumePrompt();
 function askConfirm(title,text,okLabel='Confirm',cancelLabel='Cancel',hold=false){return new Promise(resolve=>{const dlg=$('confirm-dialog'),ok=$('confirm-ok');$('confirm-title').textContent=title;$('confirm-text').textContent=text;ok.textContent=okLabel;$('confirm-cancel').textContent=cancelLabel;ok.classList.toggle('hold-btn',hold);ok.classList.remove('holding');let done=false,timer=null;const finish=v=>{if(done)return;done=true;clearTimeout(timer);ok.onclick=ok.onpointerdown=ok.onpointerup=ok.onpointerleave=ok.onpointercancel=ok.onkeydown=ok.onkeyup=null;ok.classList.remove('hold-btn','holding');$('confirm-cancel').onclick=null;dlg.onclose=null;if(dlg.open)dlg.close();resolve(v)};const stop=()=>{clearTimeout(timer);ok.classList.remove('holding')},go=()=>{if(timer)clearTimeout(timer);ok.classList.add('holding');timer=setTimeout(()=>finish(true),1200)};if(hold){ok.onpointerdown=e=>{e.preventDefault();go()};ok.onpointerup=ok.onpointerleave=ok.onpointercancel=stop;ok.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.repeat){e.preventDefault();go()}};ok.onkeyup=stop;ok.onclick=e=>e.preventDefault()}else ok.onclick=()=>finish(true);$('confirm-cancel').onclick=()=>finish(false);dlg.onclose=()=>finish(false);dlg.showModal()})}
-async function startNewStronghold(){if(!await askConfirm('Start a New Stronghold?','Your current stronghold on this device will be replaced. This cannot be undone. Use Export save first if you want to keep it.','Hold to start new','Keep playing',true))return;state=fresh();for(const id of ['battle-dialog','roomdialog','builddialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();resetDayClock();selected=null;blueprint=null;relocating=false;buildTarget=null;save();render();scheduleThroneCenter()}
+async function startNewStronghold(){if(!await askConfirm('Start a New Stronghold?','Your current stronghold on this device'+(window.cloudSignedIn&&cloudSignedIn()?' and your cloud save':'')+' will be replaced. This cannot be undone. Use Export save first if you want to keep it.','Hold to start new','Keep playing',true))return;state=fresh();for(const id of ['battle-dialog','roomdialog','builddialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();resetDayClock();selected=null;blueprint=null;relocating=false;buildTarget=null;save();render();scheduleThroneCenter()}
 
 
 /* ---------- Phase 2 interface ---------- */
