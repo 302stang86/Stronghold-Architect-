@@ -165,7 +165,14 @@ function showDetails(c,home){
  document.getElementById('charge-name').textContent=home?(homeMotto()||'The central stronghold'):a.name+' · Coat of arms';
  document.getElementById('castle-location').textContent=`Column ${c.x+1}, row ${c.y+1}`;
  document.getElementById('castle-type').textContent=home?'Player stronghold':'Ruling castle';
- const extra=document.getElementById('castle-extra');extra.replaceChildren();if(!home){const r=document.createElement('span');r.className='relation';r.textContent='Hostile';const box=document.createElement('div');box.className='foe-actions';for(const label of ['Raid for loot','Attack stronghold']){const b=document.createElement('button');b.className='btn';b.type='button';b.disabled=true;b.textContent=label;box.append(b)}const n=document.createElement('p');n.className='foe-note';n.textContent='Raids and attacks are not available yet.';extra.append(r,box,n)}
+ const extra=document.getElementById('castle-extra');extra.replaceChildren();if(!home){const r=document.createElement('span');r.className='relation';r.textContent='Hostile'+(c.prince?' · Prince level '+c.prince.level:'');const box=document.createElement('div');box.className='foe-actions';const hs=homeState(),live=!!(hs.world&&c.tiles),why={raid:'',attack:''};
+  if(!live){why.raid=why.attack='Raids and attacks need a stronghold started with rival strongholds. Start a new stronghold to play them.'}
+  else if(hs.expedition){why.raid=why.attack='An expedition is already under way.'}
+  else if(hs.invasion&&(hs.invasion.active||hs.invasion.combat)){why.raid=why.attack='Finish the invasion at your gate first.'}
+  else if(hs.over){why.raid=why.attack='Your keep has fallen.'}
+  else if(!(hs.guards&&hs.guards.length)){why.raid='A raid needs at least one guard. Hire one at your Barracks.'}
+  for(const [mode,label] of [['raid','Raid for loot'],['attack','Attack stronghold']]){const b=document.createElement('button');b.className='btn';b.type='button';b.disabled=!!why[mode];b.textContent=label;if(!why[mode])b.addEventListener('click',()=>{try{parent.postMessage({type:'startExpedition',mode,castleId:c.id},'*')}catch(e){}});box.append(b)}
+  const n=document.createElement('p');n.className='foe-note';n.textContent=why.raid||why.attack||(live?'Raid: up to two guards, no throne room. Attack: your prince and up to two guards, throne room open.':'');extra.append(r,box,n)}
  if(!detailDialog.open)detailDialog.showModal();
 }
 function selectTile(tile,x,y){
@@ -180,6 +187,7 @@ function startNewGame(){
 }
 function boot(){
  buildGrid();
+ {const gw=homeState().world;if(gw&&validWorld(gw)){world=gw;renderWorld();setStatus('Rival strongholds are part of your saved stronghold.');return}}
  let saved;
  try{saved=localStorage.getItem(SAVE_KEY)}catch(e){storageAvailable=false;saved=null;}
  if(saved!==null){

@@ -361,3 +361,35 @@ dialog#battle-dialog[open]{display:block}
 @media(max-width:700px){#bs-bars{width:94vw}.bs-row b{font-size:12px;min-width:62px}}
 .bf-shadow{left:14%;right:14%;bottom:-1.5%;height:7%;border-radius:50%;background:radial-gradient(ellipse,#000f 0,#000d 35%,#0000 72%);filter:blur(1.5px)}
 .bf-shadow:before{content:'';position:absolute;left:22%;right:22%;top:25%;bottom:25%;border-radius:50%;background:#000;opacity:.85;filter:blur(2px)}
+
+/* ===== Expedition screen ===== */
+dialog#expdialog{width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:radial-gradient(ellipse at 50% 0,#3a2748,#150f1e 70%)!important;color:#f1e6f6;overflow:hidden;inset:0}
+dialog#expdialog[open]{display:block}
+#exp-wrap{height:100%;display:flex;flex-direction:column;position:relative}
+.exp-top{display:flex;gap:14px;align-items:center;padding:10px 14px;background:linear-gradient(#000a,transparent);flex-wrap:wrap}
+.exp-head small{letter-spacing:2px;color:#e2c28d;font-size:11px}.exp-head h2{margin:0;font:24px Georgia,serif;color:#f4e3c2}
+#exp-party{display:flex;gap:10px;flex:1;flex-wrap:wrap}
+.exp-member{display:flex;align-items:center;gap:7px;background:#161020d9;border:2px ridge #b68c55;border-radius:10px;padding:5px 10px}
+.exp-member.down{opacity:.4}.exp-member b{font:600 12px Georgia,serif;color:#f4e3c2}
+.exp-face{width:34px;height:48px;background-size:800% 400%;background-position:0 0;filter:drop-shadow(0 3px 3px #000a)}
+.exp-member i{display:block;width:70px;height:8px;border-radius:5px;background:#0b0610;border:1px solid #c49a62;overflow:hidden}.exp-member u{display:block;height:100%;background:linear-gradient(#ff8d96,#c8303f)}
+.exp-right{display:flex;align-items:center;gap:12px}#exp-loot{margin:0;font:600 13px Georgia,serif;color:#ffd98a}
+#exp-field{flex:1;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:18px}
+#exp-grid{--ecell:clamp(92px,18vh,150px);display:grid;gap:3px;margin:auto}
+.exp-cell{position:relative;border:2px solid #6a5636;border-radius:6px;overflow:hidden;background:#0b0610}
+.exp-cell img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.92)}
+.exp-cell.here{border-color:#ffd98a;box-shadow:0 0 18px #ffd98a88}.exp-cell.go{cursor:pointer}.exp-cell.go:hover{border-color:#c49a62}
+.exp-cell.looted:after{content:'';position:absolute;inset:0;background:#0006}
+.exp-label{position:absolute;left:0;right:0;top:0;text-align:center;font:600 11px Georgia,serif;background:#000a;padding:1px 3px}
+.exp-flag{position:absolute;left:4px;bottom:3px;font-size:11px;background:#000a;padding:1px 5px;border-radius:7px;color:#9fe3a8}
+.exp-party-token{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);display:flex;gap:0}
+.exp-party-token span{width:calc(var(--ecell)*.22);height:calc(var(--ecell)*.31);background-size:800% 400%;background-position:0 0;filter:drop-shadow(0 3px 3px #000)}
+.exp-arrow{position:absolute;width:30px;height:30px;border-radius:50%;border:2px solid #b6f2bd;background:#1f7a3acc;color:#eaffee;font-size:14px;cursor:pointer;padding:0;display:grid;place-items:center;animation:exparr 1.2s ease-in-out infinite;z-index:3}
+.exp-arrow:disabled{opacity:.35;animation:none;cursor:default}
+.exp-arrow.d0{left:50%;top:6px;transform:translateX(-50%)}.exp-arrow.d2{left:50%;bottom:6px;transform:translateX(-50%)}.exp-arrow.d1{right:6px;top:50%;transform:translateY(-50%)}.exp-arrow.d3{left:6px;top:50%;transform:translateY(-50%)}
+@keyframes exparr{50%{box-shadow:0 0 14px #7be6a1}}
+#exp-choice{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;background:linear-gradient(145deg,#3a2248,#1b1129);border:3px ridge #c49a62;border-radius:14px;padding:20px 26px;text-align:center;max-width:90vw}
+#exp-choice[hidden]{display:none}#exp-choice h3{margin:0 0 6px;color:#e2c28d;font:22px Georgia,serif}#exp-choice button{display:block;width:100%;margin-top:8px}
+#exp-status{margin:0;text-align:center;padding:6px 12px;font-size:13px;color:#f4dab1;background:#0009}
+#exp-log{margin:0;padding:6px 14px 10px;font:12px/1.5 system-ui,sans-serif;color:#cbbbda;background:#0009;max-height:84px;overflow:auto;white-space:pre-wrap}
+@media(max-width:700px){#exp-grid{--ecell:clamp(78px,22vw,110px)}.exp-head h2{font-size:18px}.exp-member i{width:48px}}
