@@ -217,7 +217,7 @@ function roomKey(room){return room.x+','+room.y}
 function roomFromKey(key,tiles=state.tiles){if(!key)return null;return tiles.find(t=>roomKey(t)===key)||null}
 requestAnimationFrame(animateMC);
 
-requestAnimationFrame(animateCombatVisuals);$('battle-dialog').addEventListener('cancel',e=>e.preventDefault());$('battle-export').onclick=()=>$('export').click();$('battle-skip').onclick=skipBattle;
+requestAnimationFrame(animateCombatVisuals);$('battle-dialog').addEventListener('cancel',e=>e.preventDefault());$('battle-skip').onclick=skipBattle;
 function pauseForReturn(){if(!clockSuspended)tickDayClock();clockSuspended=true;awaitingResume=true;lastClockTick=Date.now();save()}
 function showResumePrompt(){if(document.hidden||$('setupdialog')?.open)return;clockSuspended=true;awaitingResume=true;lastClockTick=Date.now();for(const id of ['roomdialog','builddialog','helpdialog','battle-dialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();const modal=$('resume-dialog');$('resume-day').textContent=`Day ${state.day} · Your stronghold is paused`;if(!modal.open)modal.showModal();if(window.cloudPull)cloudPull().then(()=>{$('resume-day').textContent=`Day ${state.day} · Your stronghold is paused`})}
 function resumeGame(){awaitingResume=false;clockSuspended=false;lastClockTick=Date.now();lastClockSave=lastClockTick;if($('resume-dialog').open)$('resume-dialog').close();renderClock();renderBattle();save()}

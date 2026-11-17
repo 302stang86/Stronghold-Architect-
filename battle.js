@@ -11,7 +11,7 @@ function battleBuild(c){
  else{const d=servantById(c.defenderId);party.push({kind:'servant',idx:d?.look||0,name:c.ally.name,role:'lead'});party.push({kind:'mc',idx:0,name:'Young Prince',role:'help'});for(const n of sv.slice(0,2))party.push({kind:'servant',idx:n.look||0,name:n.name,role:'help'})}
  const slots=[[28,77,1],[14,72,.82],[40,70,.78],[7,81,.86]];
  const order=party.map((p,i)=>({p,s:slots[i]})).sort((a,b)=>a.s[1]-b.s[1]);
- const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div><span class="bf-name"></span></div>';el.querySelector('.bf-name').textContent=p.name;stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.base={x,y};BATTLE_FX.figs.push(f);return f};
+ const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div></div>';stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.base={x,y};BATTLE_FX.figs.push(f);return f};
  for(const o of order){const f=mk(o.p,o.s[0],o.s[1],o.s[2],false);if(o.p.role==='lead')BATTLE_FX.lead=f}
  BATTLE_FX.enemy=mk({kind:'invader',idx:inv.variant,name:inv.name,role:'lead'},74,77,1.05,true);BATTLE_FX.enemy.atlas=COMBAT_ART.invader[inv.variant]||COMBAT_ART.invader[0];
  for(const f of BATTLE_FX.figs)f.art.style.backgroundImage='url("'+f.atlas+'")';
@@ -43,7 +43,7 @@ function renderBattle(){
  const actor=c[c.turn];
  $('battle-title').textContent=c.kind==='mc'?'Defend the Throne':'Servant Skirmish';
  $('battle-subtitle').textContent=`Turn ${c.turnNumber} · ${actor.name}’s turn`;
- for(const side of ['ally','enemy']){const a=c[side];$('battle-'+side+'-name').textContent=`${a.name} · Level ${a.level}`;$('battle-'+side+'-stats').textContent=`Health ${Math.ceil(a.hp)} / ${a.maxHp}${a.block?' · Block '+a.block:''}`;$('battle-'+side+'-hp').style.width=Math.max(0,a.hp/a.maxHp*100)+'%';$('battle-'+side+'-blk').style.width=Math.min(100,a.block/a.maxHp*100)+'%';$('battle-'+side+'-pips').textContent='●'.repeat(a.energy)+'○'.repeat(10-a.energy)}
+ {const a=actor;$('bs-hp-fill').style.width=Math.max(0,a.hp/a.maxHp*100)+'%';$('bs-blk-fill').style.width=Math.min(100,a.block/a.maxHp*100)+'%';$('bs-hp-val').textContent=Math.ceil(a.hp)+' / '+a.maxHp;$('bs-en-fill').style.width=a.energy*10+'%';$('bs-en-val').textContent=a.energy+' / 10';$('bs-bars').classList.toggle('foe',c.turn==='enemy')}
  for(const f of BATTLE_FX.figs)f.el.classList.toggle('bf-guarded',f.enemy?c.enemy.block>0:c.ally.block>0);
  if(c.lastCount!==BATTLE_FX.seen){BATTLE_FX.seen=c.lastCount;battleEffect(c)}
  BATTLE_FX.prev={ally:{hp:c.ally.hp,block:c.ally.block,energy:c.ally.energy},enemy:{hp:c.enemy.hp,block:c.enemy.block,energy:c.enemy.energy}};
@@ -55,7 +55,6 @@ function renderBattle(){
  const hand=$('battle-hand'),sig=[c.turn,actor.hand.join(','),actor.energy,actor.level,canAct].join('|');
  if(hand.dataset.sig!==sig){hand.dataset.sig=sig;hand.replaceChildren();actor.hand.forEach((id,i)=>{const card=CARD_BY_ID[id],b=document.createElement('button');b.className='hand-card'+(card.cost>actor.energy?' unplayable':'');b.style.setProperty('--i',i-(actor.hand.length-1)/2);b.disabled=!canAct||card.cost>actor.energy;b.innerHTML=cardHTML(card,actor.level);b.setAttribute('aria-label',`Play ${card.name}, ${card.cost} energy`);b.onclick=()=>choosePlayerCard(i);hand.append(b)});if(!actor.hand.length){const p=document.createElement('p');p.className='muted';p.textContent='No cards left this turn.';hand.append(p)}}
  $('battle-skip').hidden=!(c.auto&&!c.winner);
- const log=$('battle-log');log.textContent=c.log.join('\n');
 }
 function animateCombatVisuals(now){
  const c=state?.invasion?.combat;

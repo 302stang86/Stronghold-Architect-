@@ -347,3 +347,15 @@ dialog#battle-dialog[open]{display:block}
 .bf{--fh:clamp(140px,31vh,300px)}
 #battle-action-status{position:fixed;left:50%;top:74px;transform:translateX(-50%);width:max-content;max-width:60vw;margin:0;z-index:6}
 @media(max-width:700px){#battle-action-status{top:auto;bottom:196px;max-width:90vw}}
+.bs-top .bs-hud,#battle-log,.bf-name{display:none!important}
+#bs-bars{width:min(520px,92vw);margin:0 auto 6px;display:flex;flex-direction:column;gap:5px}
+.bs-row{display:flex;align-items:center;gap:10px}
+.bs-row b{min-width:74px;text-align:left;font:600 14px Georgia,serif;color:#f4e3c2;text-shadow:0 1px 3px #000}
+.bs-bar{position:relative;flex:1;height:18px;border-radius:10px;background:linear-gradient(#0b0610,#1b1026);border:2px ridge #c49a62;box-shadow:0 0 0 2px #1c1122,inset 0 2px 5px #000c,0 3px 8px #000a;overflow:hidden}
+.bs-bar.en{height:13px}
+.bs-bar span{position:absolute;left:0;top:0;bottom:0;transition:width .3s}
+.bs-bar.hp #bs-hp-fill{background:linear-gradient(#ff8d96,#d33a4a 45%,#8a1228)}
+.bs-bar.en #bs-en-fill{background:linear-gradient(#a6f0b5,#34b45c 45%,#17753a)}
+.bs-bar.hp #bs-blk-fill{top:auto;height:4px;background:linear-gradient(#bfe0ff,#4a8fd4)}
+.bs-bar:after{content:'';position:absolute;left:0;right:0;top:0;height:42%;background:linear-gradient(#fff5,transparent);pointer-events:none}
+@media(max-width:700px){#bs-bars{width:94vw}.bs-row b{font-size:12px;min-width:62px}}
