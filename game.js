@@ -18,7 +18,7 @@ function fresh(){
  const result={version:5,clockVersion:1,dayElapsedMs:0,entranceLegacy:false,day:1,gold:220,stone:120,food:START_FOOD,rp:0,hungryDays:0,researched:[],over:false,won:false,tiles,log:[`Day 1 · Castle entrance established on the bottom row. Your keep starts with ${hallCount} hallway${hallCount>1?'s':''} and ${emptyCount} empty room${emptyCount>1?'s':''}.`]};initEconomy(result);return result;
 }
 function validate(s){
- if(s&&s.strongholdName!==undefined&&(typeof s.strongholdName!=='string'||s.strongholdName.length>30))delete s.strongholdName;
+ if(s&&typeof s==='object'){s.strongholdName=(typeof s.strongholdName==='string'&&s.strongholdName.trim())?s.strongholdName.trim().slice(0,30):'Your Stronghold';s.motto=typeof s.motto==='string'?s.motto.slice(0,40):'';s.banner=Banner.clean(s.banner)}
  if(!s||s.version!==5||!Array.isArray(s.tiles)||s.tiles.length<1||s.tiles.length>FIELD_SIZE*FIELD_SIZE)throw Error('Invalid save');
  for(const k of ['day','gold','stone','food'])if(!Number.isFinite(s[k])||s[k]<0)throw Error('Invalid save');
  if(!Number.isInteger(s.day)||s.day<1||!Number.isInteger(s.hungryDays)||s.hungryDays<0||typeof s.over!=='boolean'||typeof s.won!=='boolean'||!Array.isArray(s.log)||s.log.some(l=>typeof l!=='string'))throw Error('Invalid save');
@@ -43,7 +43,7 @@ function validate(s){
  initEconomy(s);validateEconomy(s);validateMC(s);validateInvasion(s);
  return s;
 }
-try{state=validate(JSON.parse(localStorage.getItem(KEY)))}catch{state=fresh()}
+let needsSetup=false;try{state=validate(JSON.parse(localStorage.getItem(KEY)))}catch{state=fresh();needsSetup=true}
 function save(){try{const body=JSON.stringify({...state,savedAt:0});if(body!==lastSaveBody){lastSaveBody=body;state.savedAt=Date.now()}localStorage.setItem(KEY,JSON.stringify(state))}catch{toast('Device storage unavailable. Use Export save to keep your progress.')}}
 function exits(t){const d=t.ports|| (t.type===17?[0]:t.type===12?[0,2]:t.type===13?[0,1]:t.type===14?[0,1,3]:[0,1,2,3]);return d.map(n=>(n+t.rot)%4)}
 function at(x,y,tiles=state.tiles){return tiles.find(t=>t.x===x&&t.y===y)}
@@ -59,7 +59,7 @@ function toast(t){$('toast').textContent=t;$('toast').classList.add('show');clea
 function note(t){state.log.unshift(`Day ${state.day} · ${t}`);state.log=state.log.slice(0,12)}
 function art(i){return TILE_ART[i]}
 function renderResources(){const need=foodNeed(),days=Math.floor(state.food/need),tone=state.hungryDays>0||days<=1?'danger':days<=3?'warn':'',label=state.hungryDays>0?'Hungry · day '+state.hungryDays:days+' day'+(days===1?'':'s')+' left';$('resources').innerHTML=[['Gold',state.gold,''],['Stone',state.stone,''],['Food',state.food,`<em class="food-days ${tone}">${label}</em>`],['Research',state.rp,'']].map(([n,v,x])=>`<div><span>${n}</span><strong>${fmt(v)}</strong>${x}</div>`).join('')}
-function render(){
+function render(){renderIdentity();
 const inc=income();renderResources();renderPrince();
 renderBuildPopup();
 renderResearch();$('rotate').disabled=!!state.invasion.active;$('rotate').title=state.invasion.active?'Locked during an invasion':'';
@@ -219,12 +219,12 @@ requestAnimationFrame(animateMC);
 
 requestAnimationFrame(animateCombatVisuals);$('battle-dialog').addEventListener('cancel',e=>e.preventDefault());$('battle-export').onclick=()=>$('export').click();$('battle-skip').onclick=skipBattle;
 function pauseForReturn(){if(!clockSuspended)tickDayClock();clockSuspended=true;awaitingResume=true;lastClockTick=Date.now();save()}
-function showResumePrompt(){if(document.hidden)return;clockSuspended=true;awaitingResume=true;lastClockTick=Date.now();for(const id of ['roomdialog','builddialog','helpdialog','battle-dialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();const modal=$('resume-dialog');$('resume-day').textContent=`Day ${state.day} · Your stronghold is paused`;if(!modal.open)modal.showModal();if(window.cloudPull)cloudPull().then(()=>{$('resume-day').textContent=`Day ${state.day} · Your stronghold is paused`})}
+function showResumePrompt(){if(document.hidden||$('setupdialog')?.open)return;clockSuspended=true;awaitingResume=true;lastClockTick=Date.now();for(const id of ['roomdialog','builddialog','helpdialog','battle-dialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();const modal=$('resume-dialog');$('resume-day').textContent=`Day ${state.day} · Your stronghold is paused`;if(!modal.open)modal.showModal();if(window.cloudPull)cloudPull().then(()=>{$('resume-day').textContent=`Day ${state.day} · Your stronghold is paused`})}
 function resumeGame(){awaitingResume=false;clockSuspended=false;lastClockTick=Date.now();lastClockSave=lastClockTick;if($('resume-dialog').open)$('resume-dialog').close();renderClock();renderBattle();save()}
 
 $('resume-dialog').addEventListener('cancel',e=>e.preventDefault());$('resume-game').onclick=resumeGame;showResumePrompt();
 function askConfirm(title,text,okLabel='Confirm',cancelLabel='Cancel',hold=false){return new Promise(resolve=>{const dlg=$('confirm-dialog'),ok=$('confirm-ok');$('confirm-title').textContent=title;$('confirm-text').textContent=text;ok.textContent=okLabel;$('confirm-cancel').textContent=cancelLabel;ok.classList.toggle('hold-btn',hold);ok.classList.remove('holding');let done=false,timer=null;const finish=v=>{if(done)return;done=true;clearTimeout(timer);ok.onclick=ok.onpointerdown=ok.onpointerup=ok.onpointerleave=ok.onpointercancel=ok.onkeydown=ok.onkeyup=null;ok.classList.remove('hold-btn','holding');$('confirm-cancel').onclick=null;dlg.onclose=null;if(dlg.open)dlg.close();resolve(v)};const stop=()=>{clearTimeout(timer);ok.classList.remove('holding')},go=()=>{if(timer)clearTimeout(timer);ok.classList.add('holding');timer=setTimeout(()=>finish(true),1200)};if(hold){ok.onpointerdown=e=>{e.preventDefault();go()};ok.onpointerup=ok.onpointerleave=ok.onpointercancel=stop;ok.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.repeat){e.preventDefault();go()}};ok.onkeyup=stop;ok.onclick=e=>e.preventDefault()}else ok.onclick=()=>finish(true);$('confirm-cancel').onclick=()=>finish(false);dlg.onclose=()=>finish(false);dlg.showModal()})}
-async function startNewStronghold(){if(!await askConfirm('Start a New Stronghold?','Your current stronghold on this device'+(window.cloudSignedIn&&cloudSignedIn()?' and your cloud save':'')+' will be replaced. This cannot be undone. Use Export save first if you want to keep it.','Hold to start new','Keep playing',true))return;state=fresh();for(const id of ['battle-dialog','roomdialog','builddialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();resetDayClock();selected=null;blueprint=null;relocating=false;buildTarget=null;try{localStorage.removeItem('medieval-world-castles-v1')}catch{}$('mapframe').removeAttribute('src');save();render();scheduleThroneCenter();askName()}
+async function startNewStronghold(){if(!await askConfirm('Start a New Stronghold?','Your current stronghold on this device'+(window.cloudSignedIn&&cloudSignedIn()?' and your cloud save':'')+' will be replaced. This cannot be undone. Use Export save first if you want to keep it.','Hold to start new','Keep playing',true))return;const ident=await openSetup({canCancel:true});if(!ident){if(awaitingResume)showResumePrompt();return}state=fresh();applyIdentity(ident);for(const id of ['battle-dialog','roomdialog','builddialog','rosterdialog','servantdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();resetDayClock();selected=null;blueprint=null;relocating=false;buildTarget=null;save();render();scheduleThroneCenter();resumeGame()}
 
 
 /* ---------- Phase 2 interface ---------- */
@@ -251,8 +251,8 @@ showTab('keep');renderAlarm();
 function openWorldMap(){const dlg=$('mapdialog'),fr=$('mapframe');if($('roomdialog')?.open)$('roomdialog').close();fr.src='worldmap/index.html?embed=1&v='+Date.now();if(!dlg.open)dlg.showModal()}
 window.addEventListener('message',e=>{if(e.data&&e.data.type==='closeWorldMap'&&$('mapdialog').open)$('mapdialog').close()});
 
-function askName(){const dlg=$('namedialog'),input=$('nameinput');if(dlg.open)return;input.value=state.strongholdName&&state.strongholdName!=='Your Stronghold'?state.strongholdName:'';dlg.showModal();input.focus()}
-$('nameform').addEventListener('submit',()=>{const v=$('nameinput').value.trim().slice(0,30);state.strongholdName=v||'Your Stronghold';save();$('mapframe').removeAttribute('src')});
-$('namedialog').addEventListener('cancel',()=>{if(!state.strongholdName){state.strongholdName='Your Stronghold';save()}});
-$('rename').onclick=()=>{$('settingsdialog').close();askName()};
-setInterval(()=>{if(!state.strongholdName&&!state.over&&!awaitingResume&&!document.querySelector('dialog[open]'))askName()},1000);
+
+function applyIdentity(id){state.strongholdName=id.name;state.motto=id.motto;state.banner=id.banner;try{localStorage.removeItem('medieval-world-castles-v1')}catch{}$('mapframe').removeAttribute('src')}
+function renderIdentity(){const f=$('holdflag');if(!f||!window.Banner)return;const u=Banner.url(state.banner,68,84);if(f.getAttribute('src')!==u)f.src=u;$('keepname').textContent=state.strongholdName||'Your Stronghold';$('keepname').title=state.motto||''}
+async function firstSetup(){const ident=await openSetup({canCancel:false});state=fresh();applyIdentity(ident);resetDayClock();selected=null;blueprint=null;relocating=false;buildTarget=null;save();render();scheduleThroneCenter();resumeGame()}
+if(needsSetup)firstSetup();
