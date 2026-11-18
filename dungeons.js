@@ -2,15 +2,15 @@
 const DUNGEON_GRID_SIZE=10;
 const DUNGEON_LAYOUT_VERSION=3;
 const DUNGEON_TIERS = [
- {id:'dungeon-low', name:'Forgotten Cellar', tier:'Low', occupancy:.3, recommended:1, boss:'The Fallen Captain',
+ {id:'dungeon-low', name:'Forgotten Cellar', tier:'Low', chestCount:3, occupancy:.3, recommended:1, boss:'The Fallen Captain',
   warning:'Light resistance. The Captain alternates shield and counterattack turns.',
   rooms:[2,3,16,18], guard:'Restless Sentry', variant:1, guardLevel:1, health:.8, skill:.4,
   reward:{gold:65,stone:30,food:20,rp:8}},
- {id:'dungeon-medium', name:'Buried Keep', tier:'Medium', occupancy:.6, recommended:5, boss:'The Candlewick Witch',
+ {id:'dungeon-medium', name:'Buried Keep', tier:'Medium', chestCount:5, occupancy:.6, recommended:5, boss:'The Candlewick Witch',
   warning:'Carry healing supplies. Find the vault key and extinguish the Witch’s three ward candles.',
   rooms:[3,5,6,8,19], guard:'Candlewick Shadow', variant:2, guardLevel:3, health:1.05, skill:.65,
   reward:{gold:145,stone:75,food:35,rp:25}},
- {id:'dungeon-high', name:'Hollow Citadel', tier:'High', occupancy:.9, recommended:10, boss:'The Ironbound Demon',
+ {id:'dungeon-high', name:'Hollow Citadel', tier:'High', chestCount:8, occupancy:.9, recommended:10, boss:'The Ironbound Demon',
   warning:'Elite defenders. The Demon breaks its chains at half health. Use block when it charges.',
   rooms:[3,4,7,9,11,18,19], guard:'Ironbound Sentinel', variant:3, guardLevel:7, health:1.3, skill:.85,
   reward:{gold:300,stone:150,food:65,rp:60}}
@@ -104,7 +104,36 @@ function generateDungeon(tier){
  for(const room of rooms)delete room.depth;
  defenders[bossKey]={name:tier.boss,level:tier.recommended,variant:tier.variant,
   health:tier.health,skill:tier.skill,damage:[.72,.9,1][index],boss:tier.id};
- return {version:DUNGEON_LAYOUT_VERSION,rulingName:tier.name,tiles,defenders,caches,bossKey,keyRoom,progress:null};
+ const layout={version:DUNGEON_LAYOUT_VERSION,rulingName:tier.name,tiles,defenders,caches,bossKey,keyRoom,progress:null};
+ placeDungeonChests(layout,tier);
+ return layout;
+}
+
+function placeDungeonChests(layout,tier){
+ if(layout.chests)return false;
+ const candidates=layout.tiles.filter(room=>room.type!==17&&![12,13,14,15].includes(room.type)&&roomKey(room)!==layout.bossKey);
+ layout.chests={};
+ for(let i=0;i<=tier.chestCount&&candidates.length;i++){
+  const [room]=candidates.splice(Math.floor(Math.random()*candidates.length),1);
+  const locked=i===0;
+  layout.chests[roomKey(room)]={locked,gold:locked?ITEMS[LOCKPICK_ID].price*3:8+Math.floor(Math.random()*8)};
+ }
+ return true;
+}
+
+function openDungeonChest(key){
+ const exp=state.expedition;
+ if(exp?.mode!=='dungeon'||exp.status!=='exploring'||exp.current!==key)return;
+ const layout=expCastle(),chest=layout?.chests?.[key];
+ if(!chest||exp.openedChests?.includes(key)||(layout.defenders[key]&&!exp.cleared.includes(key)))return;
+ if(chest.locked&&!takeItem(LOCKPICK_ID)){
+  toast('A Lockpick Set is required. The merchant sells one for '+ITEMS[LOCKPICK_ID].price+' gold.');
+  return;
+ }
+ (exp.openedChests??=[]).push(key);
+ exp.loot.gold+=chest.gold;
+ exp.log.push((chest.locked?'Unlocked the treasure chest and found ':'Opened the treasure chest and found ')+chest.gold+' gold.');
+ save();renderExpedition();
 }
 
 function dungeonLoot(exp,layout,key){
@@ -138,8 +167,8 @@ function finishDungeon(exp,result){
   landmark.readyAt=dungeonClock(state)+3*DAY_MS;
   landmark.layout=null;
  }else{
-  const {current,discovered,cleared,looted,vaultKey}=exp;
-  landmark.layout.progress={current,discovered,cleared,looted,vaultKey};
+  const {current,discovered,cleared,looted,vaultKey,openedChests=[]}=exp;
+  landmark.layout.progress={current,discovered,cleared,looted,vaultKey,openedChests};
  }
  const supplies=Object.entries(exp.loot).filter(([,v])=>v>0).map(([k,v])=>{
   state[k]=roundResource(state[k]+v);
@@ -194,6 +223,7 @@ function startDungeonVisit(id){
   landmark.layout=generateDungeon(tier);
  }
  const layout=landmark.layout;
+ placeDungeonChests(layout,tier);
  const entrance=roomKey(layout.tiles.find(t=>t.type===17));
  const progress=layout.progress?structuredClone(layout.progress):
   {current:entrance,discovered:[entrance],cleared:[],looted:[],vaultKey:false};

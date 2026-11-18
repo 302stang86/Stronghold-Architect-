@@ -1,6 +1,7 @@
 /* Backpack and merchant items. Item numbers follow README_Invaders_and_Merchants.md. Numbers 5, 8, 9, 18, 19 and 29 are reserved. */
 const PACK_LEVELS=[null,{spots:6},{spots:9,gold:600,stone:150},{spots:15,gold:2000,stone:500}];
 /* kind: 'store' goes straight to the stores and never takes a backpack spot. 'pack' takes one spot. */
+const LOCKPICK_ID=31;
 const ITEMS={
  1:{id:1,name:'Food Bundle',icon:'🍞',kind:'store',price:40,give:{food:25},text:'Adds 25 food to your stores.'},
  2:{id:2,name:'Timber Bundle',icon:'🪵',kind:'pack',price:35,use:'none',text:'Wood for future building. Nothing uses it yet.'},
@@ -19,7 +20,8 @@ const ITEMS={
  20:{id:20,name:'Strength Elixir',icon:'💪',kind:'pack',price:80,use:'strength',amount:1.25,text:'Prince battle: 25% more attack damage until the battle ends.'},
  21:{id:21,name:'Ironhide Elixir',icon:'🛡️',kind:'pack',price:80,use:'ironhide',amount:6,text:'Prince battle: gain 6 block now and at the start of each of your turns until the battle ends.'},
  22:{id:22,name:'Regeneration Draught',icon:'💚',kind:'pack',price:70,use:'regen',amount:.05,turns:5,text:'Prince battle: heals 5% of maximum health at the start of each of your next 5 turns.'},
- 30:{id:30,name:"Prince's Training Manual",icon:'📖',kind:'pack',price:150,use:'manual',text:'Gives the prince experience worth half of his current level-up need.'}
+ 30:{id:30,name:"Prince's Training Manual",icon:'📖',kind:'pack',price:150,use:'manual',text:'Gives the prince experience worth half of his current level-up need.'},
+ [LOCKPICK_ID]:{id:LOCKPICK_ID,name:'Lockpick Set',icon:'🗝️',kind:'pack',price:30,use:'none',text:'Opens one locked dungeon treasure chest. Consumed when used.'}
 };
 const MERCHANT_STOCK_SIZE=6;
 function packSpots(){return PACK_LEVELS[state.pack.level].spots}
@@ -81,7 +83,7 @@ function renderPackDialog(){const p=state.pack,spots=packSpots(),art=PACK_ART[p.
  const g=$('pack-up');if(g){g.onclick=()=>{upgradePack();packSel=null;renderPackDialog()};g.disabled=state.gold<up.gold||state.stone<up.stone}}
 /* Merchant trade window. Stock is picked when the merchant arrives. */
 let merchantStock=[];
-function pickMerchantStock(){const ids=Object.keys(ITEMS).map(Number);for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]]}merchantStock=ids.slice(0,MERCHANT_STOCK_SIZE).sort((a,b)=>a-b)}
+function pickMerchantStock(){const ids=Object.keys(ITEMS).map(Number).filter(id=>id!==LOCKPICK_ID);for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]]}merchantStock=[...ids.slice(0,MERCHANT_STOCK_SIZE-1).sort((a,b)=>a-b),LOCKPICK_ID]}
 const RESOURCE_SALE_RATES={gold:1,stone:.8,food:.8,rp:1};
 let merchantTab='buy',saleItems=new Map(),saleResources=new Map();
 function resetMerchantTrade(){
