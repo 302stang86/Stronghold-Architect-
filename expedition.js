@@ -181,11 +181,27 @@ function renderExpedition(){
  const tiles=exp.discovered.map(expTile).filter(Boolean),minX=Math.min(...tiles.map(t=>t.x)),maxX=Math.max(...tiles.map(t=>t.x)),minY=Math.min(...tiles.map(t=>t.y)),maxY=Math.max(...tiles.map(t=>t.y));
  const grid=$('exp-grid');grid.replaceChildren();grid.style.gridTemplateColumns=`repeat(${maxX-minX+1},var(--ecell))`;grid.style.gridTemplateRows=`repeat(${maxY-minY+1},var(--ecell))`;
  const busy=exp.status!=='exploring';
+ const chestButton=$('exp-chest'),chest=exp.mode==='dungeon'?c.chests?.[exp.current]:null;
+ chestButton.hidden=busy||!chest||exp.openedChests?.includes(exp.current)||
+  !!(c.defenders[exp.current]&&!exp.cleared.includes(exp.current));
+ if(!chestButton.hidden){
+  const key=exp.current;
+  chestButton.textContent=chest.locked?'Unlock chest · 1 Lockpick Set':'Open treasure chest';
+  chestButton.onclick=()=>openDungeonChest(key);
+ }
+
  for(const t of tiles){
   const key=roomKey(t),cell=document.createElement('div');cell.className='exp-cell'+(key===exp.current?' here':'')+(exp.looted.includes(key)?' looted':'');cell.style.gridColumn=t.x-minX+1;cell.style.gridRow=t.y-minY+1;
   const im=document.createElement('img');im.src=art(t.type);im.alt=TYPES[t.type][0];im.style.transform=`rotate(${t.rot*90}deg)`;cell.append(im);
   const lab=document.createElement('span');lab.className='exp-label';lab.textContent=key===c.bossKey?'Boss Vault':TYPES[t.type][0];cell.append(lab);
   if(exp.cleared.includes(key)&&t.type!==0){const k=document.createElement('span');k.className='exp-flag';k.textContent='✔ cleared';cell.append(k)}
+  const chestHere=exp.mode==='dungeon'?c.chests?.[key]:null;
+  if(chestHere){
+   const marker=document.createElement('span'),opened=exp.openedChests?.includes(key);
+   marker.className='exp-chest-marker';
+   marker.textContent=opened?'Chest opened':chestHere.locked?'Locked chest':'Treasure chest';
+   cell.append(marker);
+  }
   if(key===exp.current){const who=document.createElement('div');who.className='exp-party-token';for(const m of exp.party.slice(0,3)){const f=document.createElement('span');const kind=m.kind==='prince'?'mc':'servant';f.style.backgroundImage=`url("${COMBAT_ART[kind][m.kind==='prince'?0:(m.look||0)]}")`;who.append(f)}cell.append(who)}
   if(!busy&&key!==exp.current){cell.classList.add('go');cell.onclick=()=>moveTo(key)}
   for(const n of expNeighbors(t,c.tiles)){const nk=roomKey(n.room);if(exp.discovered.includes(nk))continue;if(n.room.type===0&&exp.mode!=='attack')continue;const a=document.createElement('button');a.className='exp-arrow d'+n.d;a.textContent=EXP_ARROW[n.d];a.setAttribute('aria-label','Explore an unseen room '+['north','east','south','west'][n.d]);a.disabled=busy;a.onclick=e=>{e.stopPropagation();arrowClick(key,nk)};cell.append(a)}
@@ -195,6 +211,9 @@ function renderExpedition(){
  const l=$('exp-log');l.textContent=exp.log.slice(-4).join('\n')}
 function showExpedition(){
  const exp=state.expedition;if(!exp||awaitingResume)return;
+ const dungeon=exp.mode==='dungeon'?expCastle():null;
+ if(dungeon&&placeDungeonChests(dungeon,dungeonTier(exp.castleId)))save();
+
  if(exp.status==='battle'&&!state.invasion.combat){exp.status='exploring';const k=exp.current,c=expCastle();if(c&&expTile(k)&&((expTile(k).type===0)||(c.defenders[k]&&!exp.cleared.includes(k)))){beginExpBattle(expInfo(k,expTile(k).type===0),k);return}}
  renderExpedition()}
 $('exp-leave').onclick=leaveExpedition;$('exp-steal').onclick=stealResources;$('exp-take').onclick=takeOver;$('expdialog').addEventListener('cancel',e=>e.preventDefault());
