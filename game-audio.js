@@ -1,7 +1,11 @@
-/* Original synthesized ambient score and UI/combat sounds. */
+/* Frostbound background music and synthesized UI/combat sounds. */
 window.StrongholdAudio=(()=>{
  const defaults={music:30,effects:55,mute:false};
- let ctx,music,effects,loop,noise,atmosphere,values=defaults;
+ const track=new Audio('assets/frostbound.mp3');
+ track.loop=true;
+ track.preload='auto';
+ let ctx,music,effects,noise,atmosphere,values=defaults;
+ let unlocked=false;
  let scene='menu',lastActionCue=-Infinity;
  // Tone layers: delay, duration, volume, start/end pitch, waveform.
  const tone=(delay,duration,volume,pitch,end=pitch,wave='sine')=>({delay,duration,volume,pitch,end,wave});
@@ -49,44 +53,27 @@ window.StrongholdAudio=(()=>{
   music.gain.setTargetAtTime(values.mute?0:values.music/100,now,.05);
   effects.gain.setTargetAtTime(values.mute?0:values.effects/100,now,.025);
  }
- function score(){
-  const rate=ctx.sampleRate,bar=4,length=32,buffer=ctx.createBuffer(1,rate*length,rate);
-  const signal=buffer.getChannelData(0);
-  const chords=[[45,52,57],[41,48,57],[48,55,60],[43,50,55],[45,52,60],[41,48,57],[50,57,62],[43,50,59]];
-  const tone=(midi,start,duration,amount,pad)=>{
-   const hz=440*2**((midi-69)/12),steps=Math.floor(duration*rate);
-   for(let i=0;i<steps;i++){
-    const t=i/rate,phase=2*Math.PI*hz*t;
-    const envelope=pad?Math.sin(Math.PI*i/steps)**1.3:Math.min(1,t/.045)*Math.exp(-2.8*t);
-    const wave=Math.sin(phase)+.22*Math.sin(2*phase)+.08*Math.sin(3*phase);
-    signal[(Math.floor(start*rate)+i)%signal.length]+=amount*envelope*wave;
-   }
-  };
-  chords.forEach((chord,i)=>{
-   chord.forEach(n=>tone(n,i*bar,5.5,.053,true));
-   [0,2,1,2].forEach((n,j)=>tone(chord[n]+12,i*bar+.35+j*.92,2,.039,false));
-  });
-  loop=ctx.createBufferSource();
-  loop.buffer=buffer;
-  loop.loop=true;
-  loop.connect(music);
-  loop.start();
+ function syncTrack(){
+  if(!unlocked||document.hidden){track.pause();return}
+  if(track.paused)track.play().catch(()=>{});
  }
  function unlock(event){
   if(!event.isTrusted||document.hidden)return;
-  const Audio=window.AudioContext||window.webkitAudioContext;
-  if(!Audio)return;
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)return;
   if(!ctx){
-   try{ctx=new Audio()}catch{return}
+   try{ctx=new AudioContextClass()}catch{return}
    music=ctx.createGain();
    effects=ctx.createGain();
+   ctx.createMediaElementSource(track).connect(music);
    music.connect(ctx.destination);
    effects.connect(ctx.destination);
    set(values);
    applyScene();
   }
   if(ctx.state!=='running')ctx.resume().then(()=>{if(document.hidden)ctx.suspend()}).catch(()=>{});
-  if(!loop)score();
+  unlocked=true;
+  syncTrack();
  }
  function noiseBuffer(){
   if(noise)return noise;
@@ -155,11 +142,15 @@ window.StrongholdAudio=(()=>{
   if(ctx&&ctx.currentTime-lastActionCue>.08&&e.target.closest('button:not(:disabled):not(.hand-card):not(#save-game)'))play('click');
  });
  function setVisibility(){
+  syncTrack();
   if(!ctx)return;
   (document.hidden?ctx.suspend():ctx.resume()).catch(()=>{});
  }
  document.addEventListener('visibilitychange',setVisibility);
- window.addEventListener('pagehide',()=>ctx?.suspend().catch(()=>{}));
+ window.addEventListener('pagehide',()=>{
+  track.pause();
+  ctx?.suspend().catch(()=>{});
+ });
  window.addEventListener('pageshow',setVisibility);
  return {set,normalize,play,setScene};
 })();
