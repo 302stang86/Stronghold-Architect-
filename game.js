@@ -287,7 +287,7 @@ function setMainMenu(visible){
  $('main-menu').hidden=!visible;
  document.body.classList.toggle('at-main-menu',visible);
  for(const panel of document.querySelectorAll('.game-topbar, body > main'))panel.inert=visible;
- if(visible){StrongholdAudio.setScene('menu');updateMainMenu();CitadelMenuScene.draw()}
+ if(visible){StrongholdAudio.setScene('menu');updateMainMenu()}
 }
 function showMainMenu(){
  pauseForBackground();
