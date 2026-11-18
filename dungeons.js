@@ -1,14 +1,16 @@
 /* Dungeon landmarks live in the campaign save, outside rival stronghold simulation. */
+const DUNGEON_GRID_SIZE=10;
+const DUNGEON_LAYOUT_VERSION=2;
 const DUNGEON_TIERS = [
- {id:'dungeon-low', name:'Forgotten Cellar', tier:'Low', recommended:1, boss:'The Fallen Captain',
+ {id:'dungeon-low', name:'Forgotten Cellar', tier:'Low', occupancy:.3, recommended:1, boss:'The Fallen Captain',
   warning:'Light resistance. The Captain alternates shield and counterattack turns.',
   rooms:[2,3,16,18], guard:'Restless Sentry', variant:1, guardLevel:1, health:.8, skill:.4,
   reward:{gold:65,stone:30,food:20,rp:8}},
- {id:'dungeon-medium', name:'Buried Keep', tier:'Medium', recommended:5, boss:'The Candlewick Witch',
+ {id:'dungeon-medium', name:'Buried Keep', tier:'Medium', occupancy:.6, recommended:5, boss:'The Candlewick Witch',
   warning:'Carry healing supplies. Find the vault key and extinguish the Witch’s three ward candles.',
   rooms:[3,5,6,8,19], guard:'Candlewick Shadow', variant:2, guardLevel:3, health:1.05, skill:.65,
   reward:{gold:145,stone:75,food:35,rp:25}},
- {id:'dungeon-high', name:'Hollow Citadel', tier:'High', recommended:10, boss:'The Ironbound Demon',
+ {id:'dungeon-high', name:'Hollow Citadel', tier:'High', occupancy:.9, recommended:10, boss:'The Ironbound Demon',
   warning:'Elite defenders. The Demon breaks its chains at half health. Use block when it charges.',
   rooms:[3,4,7,9,11,18,19], guard:'Ironbound Sentinel', variant:3, guardLevel:7, health:1.3, skill:.85,
   reward:{gold:300,stone:150,food:65,rp:60}}
@@ -58,47 +60,51 @@ function dungeonMapInfo(){
 function generateDungeon(tier){
  const index=DUNGEON_TIERS.indexOf(tier),roll=n=>Math.floor(Math.random()*n);
  const pick=list=>list[roll(list.length)];
- const mainCount=[3,5,7][index]+roll(2);
- const firstBranch=1+roll(mainCount-3+(index===0?1:0));
- const branches=index===0?[firstBranch]:index===1?[1,2+roll(mainCount-3)]:[1,2,4,5+roll(mainCount-5)];
- const tiles=[],defenders={},caches={};
- const add=(x,y,type,ports,rot=0)=>{
-  const t={x,y,type,rot,ports:ports.map(d=>(d-rot+4)%4),level:1};
-  tiles.push(t);
-  return roomKey(t);
+ const side=DUNGEON_GRID_SIZE,total=Math.round(side*side*tier.occupancy);
+ const entrance={x:2+roll(side-4),y:side-1,type:17,rot:0,level:1,ports:[0]};
+ const first={x:entrance.x,y:entrance.y-1,rot:0,level:1,ports:[2],depth:1};
+ const rooms=[first],tiles=[entrance,first],occupied=new Set(tiles.map(roomKey)),frontier=[];
+ const addFrontier=parent=>{
+  DIRS.forEach(([dx,dy],direction)=>{
+   const x=parent.x+dx,y=parent.y+dy;
+   if(x>=0&&x<side&&y>=0&&y<side&&!occupied.has(roomKey({x,y})))frontier.push({parent,x,y,direction});
+  });
  };
- const room=(x,y,ports,guarded)=>{
-  const key=add(x,y,pick(tier.rooms),ports);
-  caches[key]={[pick(['gold','food','stone','rp'])]:4+index*5+roll(7)};
-  if(guarded)defenders[key]={name:tier.guard,level:tier.guardLevel+roll(index+1),
-   variant:tier.variant,health:.45+index*.15,skill:tier.skill,damage:.65+index*.12};
-  return key;
- };
- const mirror=roll(2)?1:-1,x=6,startY=20;
- const branchTips=[];
- add(x,startY,17,[0]);
- for(let i=0;i<mainCount;i++){
-  const y=startY-2-i*2,branch=branches.includes(i),end=i===mainCount-1;
-  add(x,y+1,12,[0,2]);
-  if(end)continue;
-  const sideSign=branch&&(i===1||i===2)?mirror:(roll(2)?1:-1);
-  const direction=sideSign>0?1:3,returnDir=(direction+2)%4;
-  room(x,y,branch?[0,2,direction]:[0,2],i>0&&i%2===index%2);
-  if(branch){
-   const length=index===0?1:index===1?1+(i===1?roll(2):0):1+roll(2);
-   const connects=index>0&&(i===1||i===2);
-   add(x+sideSign,y,12,[direction,returnDir],1);
-   const tip=room(x+2*sideSign,y,
-    [returnDir,...(length===2?[direction]:[]),...(connects?[i===1?0:2]:[])],true);
-   branchTips.push(length===1?tip:room(x+3*sideSign,y,[returnDir],false));
-  }
+ addFrontier(first);
+ while(tiles.length<total){
+  const index=roll(frontier.length),edge=frontier[index];
+  frontier[index]=frontier[frontier.length-1];frontier.pop();
+  if(occupied.has(roomKey(edge)))continue;
+  const {x,y,parent,direction}=edge;
+  const room={x,y,rot:0,level:1,ports:[(direction+2)%4],depth:parent.depth+1};
+  parent.ports.push(direction);
+  tiles.push(room);rooms.push(room);occupied.add(roomKey(room));
+  addFrontier(room);
  }
- if(index>0)add(x+2*mirror,startY-5,12,[0,2]);
- const bossKey=add(x,startY-mainCount*2,10,[2]);
- const keyRoom=index>0?pick(branchTips):null;
+ // A leaf keeps the vault from blocking access to any other room.
+ const deepest=Math.max(...rooms.map(room=>room.depth));
+ const vault=pick(rooms.filter(room=>room.depth===deepest));
+ const bossKey=roomKey(vault);
+ vault.type=10;
+ const sideRooms=rooms.filter(room=>room!==vault);
+ const keyRoom=index>0?roomKey(pick(sideRooms.filter(room=>room.depth>=2))):null;
+ const defenders={},caches={};
+ const encounterPool=sideRooms.filter(room=>room!==first);
+ for(let count=[3,5,8][index];count>0;count--){
+  const [room]=encounterPool.splice(roll(encounterPool.length),1);
+  defenders[roomKey(room)]={name:tier.guard,level:tier.guardLevel+roll(index+1),
+   variant:tier.variant,health:.45+index*.15,skill:tier.skill,damage:.65+index*.12};
+ }
+ const cachePool=[...sideRooms];
+ for(let count=[7,12,18][index];count>0;count--){
+  const [room]=cachePool.splice(roll(cachePool.length),1);
+  caches[roomKey(room)]={[pick(['gold','food','stone','rp'])]:4+index*5+roll(7)};
+ }
+ for(const room of sideRooms)room.type=pick(tier.rooms);
+ for(const room of rooms)delete room.depth;
  defenders[bossKey]={name:tier.boss,level:tier.recommended,variant:tier.variant,
   health:tier.health,skill:tier.skill,damage:[.72,.9,1][index],boss:tier.id};
- return {rulingName:tier.name,tiles,defenders,caches,bossKey,keyRoom,progress:null};
+ return {version:DUNGEON_LAYOUT_VERSION,rulingName:tier.name,tiles,defenders,caches,bossKey,keyRoom,progress:null};
 }
 
 function dungeonLoot(exp,layout,key){
@@ -184,7 +190,10 @@ function snuffDungeonCandle(){
 
 function startDungeonVisit(id){
  const landmark=dungeonLandmark(id),tier=dungeonTier(id);
- const layout=landmark.layout??=generateDungeon(tier);
+ if(!landmark.layout?.progress&&landmark.layout?.version!==DUNGEON_LAYOUT_VERSION){
+  landmark.layout=generateDungeon(tier);
+ }
+ const layout=landmark.layout;
  const entrance=roomKey(layout.tiles.find(t=>t.type===17));
  const progress=layout.progress?structuredClone(layout.progress):
   {current:entrance,discovered:[entrance],cleared:[],looted:[],vaultKey:false};
