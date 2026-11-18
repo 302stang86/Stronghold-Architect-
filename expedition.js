@@ -1,19 +1,37 @@
 /* Raids and attacks on rival strongholds: guards, barracks, fog-of-war exploration, room battles and loot. */
-const GUARD_MAX=2,RAID_RATE=.1,DEFENDED_RATE=.2,EXP_RES=['gold','stone','food','rp'];
+const RAID_RATE=.1,DEFENDED_RATE=.2,EXP_RES=['gold','stone','food','rp'];
 function guardLevel(){return Math.min(state.prince.level,MAX_LEVEL)}
-function guardCost(){return 30+10*(state.prince.level-1)}
-function hasBarracks(){return state.tiles.some(t=>t.type===1)}
-function hireGuard(){
- if(state.over||state.expedition||!hasBarracks()||state.guards.length>=GUARD_MAX||state.gold<guardCost())return false;
- const id='g'+(state.nextGuardId=(state.nextGuardId||0)+1),used=new Set(state.guards.map(g=>g.name)),pool=SERVANT_NAME_POOL.filter(n=>!used.has(n));
- state.gold=roundResource(state.gold-guardCost());const bt=state.tiles.find(t=>t.type===1)||state.tiles.find(t=>t.type===0);state.guards.push({id,guard:true,name:'Guard '+(pool.length?pool[Math.floor(Math.random()*pool.length)]:id),look:Math.floor(Math.random()*5),home:null,x:bt.x+.5,y:bt.y+.5,path:[],mode:'wander',waitMs:600});
- note(`${state.guards[state.guards.length-1].name} joined the barracks.`);save();render();renderRoomViewer();return true}
-function renderBarracks(target){
- const box=document.createElement('section'),h=document.createElement('h3'),p=document.createElement('p'),b=document.createElement('button');
- h.textContent='Guards';p.className='muted';p.textContent=state.guards.length?state.guards.map(g=>`${g.name} · Level ${guardLevel()}`).join(' · '):'No guards yet.';
- b.textContent=`Hire a guard · ${guardCost()} gold (${state.guards.length} of ${GUARD_MAX})`;b.disabled=state.over||!!state.expedition||state.guards.length>=GUARD_MAX||state.gold<guardCost();b.onclick=hireGuard;
- const n=document.createElement('p');n.className='muted';n.textContent='Guards match your prince’s level. Post a guard in any room from that room’s window, or let them roam. A guard who falls in a raid or attack is lost for good and must be bought again. Only one Barracks can be built.';
- box.append(h,p,b,n);target.append(box)}
+function guardRecruitment(room){
+ const paladin=room.type===6;
+ const guards=state.guards.filter(g=>paladin?g.paladin&&g.chapel===roomKey(room):!g.paladin);
+ const cap=paladin?1:room.level||1;
+ const base=30+10*(guardLevel()-1),cost=paladin?Math.ceil(base*1.5):base+15*guards.length;
+ const allowed=!state.over&&!state.expedition&&!state.invasion.active&&state.tiles.includes(room)&&guards.length<cap&&state.gold>=cost;
+ return {paladin,guards,cap,cost,allowed};
+}
+function hireGuard(room){
+ const {paladin,cost,allowed}=guardRecruitment(room);
+ if(!allowed)return false;
+ let id;
+ do{id='g'+(state.nextGuardId=(state.nextGuardId||0)+1)}while(state.guards.some(g=>g.id===id));
+ const title=paladin?'Paladin':'Guard',used=new Set(state.guards.map(g=>g.name));
+ const pool=SERVANT_NAME_POOL.filter(n=>!used.has(title+' '+n));
+ const name=title+' '+(pool.length?pool[Math.floor(Math.random()*pool.length)]:id);
+ const guard={id,guard:true,name,look:Math.floor(Math.random()*5),home:null,x:room.x+.5,y:room.y+.5,path:[],mode:'wander',waitMs:600};
+ if(paladin){guard.paladin=true;guard.chapel=roomKey(room)}
+ state.gold=roundResource(state.gold-cost);state.guards.push(guard);
+ note(name+' joined the keep.');save();render();return true;
+}
+function renderBarracks(target,room){
+ const {paladin,guards,cap,cost,allowed}=guardRecruitment(room);
+ const box=document.createElement('section'),h=document.createElement('h3'),p=document.createElement('p'),b=document.createElement('button'),n=document.createElement('p');
+ h.textContent=paladin?'Paladin':'Guards';p.className='muted';
+ p.textContent=guards.length?guards.map(g=>g.name+' · Level '+guardLevel()).join(' · '):'No recruits yet.';
+ b.textContent='Hire '+(paladin?'a Paladin':'a guard')+' · '+cost+' gold ('+guards.length+' of '+cap+')';
+ b.disabled=!allowed;b.onclick=()=>hireGuard(room);
+ n.className='muted';n.textContent=paladin?'Long bastard sword. +5% health, attack damage, and defense card block. Counts as a guard.':'Upgrade the Barracks to unlock one more guard slot per level.';
+ box.append(h,p,b,n);target.append(box);
+}
 
 function canHostGuard(room){return ![12,13,14,15].includes(room.type)}
 function guardAt(room){return state.guards.find(g=>g.home===roomKey(room))||null}
@@ -27,7 +45,7 @@ function renderRoomGuard(room,target){
  else{const p=document.createElement('p');p.className='muted';p.textContent=state.guards.length?'Post a guard here, or leave guards roaming. A roaming guard fights any invader who enters the room it is standing in.':'No guards yet. Hire guards at the Barracks.';box.append(p);for(const g of state.guards){const b=document.createElement('button');b.className='roster-row';const where=g.home?roomFromKey(g.home):null;b.textContent=`Post ${g.name}`+(where?` (now in the ${TYPES[where.type][0]})`:' (roaming)');b.disabled=state.over||!!state.expedition;b.onclick=()=>assignGuard(g.id,room);box.append(b)}}
  target.append(box)}
 function unitLevel(m){return m.level||guardLevel()}
-function availableUnits(){return [...state.guards.map(g=>({id:g.id,kind:'guard',name:g.name,look:g.look,level:guardLevel()})),...state.collectors.map(n=>({id:n.id,kind:'servant',name:n.name,look:n.look,level:n.level||1}))]}
+function availableUnits(){return [...state.guards.map(g=>({id:g.id,kind:'guard',name:g.name,look:g.look,level:guardLevel(),paladin:g.paladin===true})),...state.collectors.map(n=>({id:n.id,kind:'servant',name:n.name,look:n.look,level:n.level||1}))]}
 function partyIssue(mode,ids){
  const units=availableUnits().filter(u=>ids.includes(u.id)),guards=units.filter(u=>u.kind==='guard').length,servants=units.length-guards;
  if(mode!=='raid'){if(guards!==1)return'Choose exactly one guard to join the prince.';if(servants>1)return'You can bring only one servant.';return''}
@@ -41,7 +59,7 @@ function choosePartyDialog(mode,castleId){
  const refresh=()=>{const issue=partyIssue(mode,[...pick]);msg.textContent=issue;start.disabled=!!issue;for(const b of list.querySelectorAll('button.party-unit'))b.classList.toggle('on',pick.has(b.dataset.id)||pick.has(Number(b.dataset.id)))};
  list.replaceChildren();
  if(mode!=='raid'){const p=document.createElement('div');p.className='party-unit locked on';p.textContent='Young Prince · Level '+state.prince.level+' (always joins)';list.append(p)}
- for(const u of units){const b=document.createElement('button');b.className='party-unit';b.dataset.id=u.id;const art=document.createElement('span');art.className='portrait';portraitStyle(art,u.look||0);const t=document.createElement('span');t.innerHTML='';const nm=document.createElement('strong');nm.textContent=u.name;const sm=document.createElement('small');sm.textContent=(u.kind==='guard'?'Guard':'Servant')+' · Level '+u.level;t.append(nm,sm);b.append(art,t);b.onclick=()=>{if(pick.has(u.id))pick.delete(u.id);else pick.add(u.id);refresh()};list.append(b)}
+ for(const u of units){const b=document.createElement('button');b.className='party-unit';b.dataset.id=u.id;const art=document.createElement('span');art.className='portrait';portraitStyle(art,u.look||0);const t=document.createElement('span');t.innerHTML='';const nm=document.createElement('strong');nm.textContent=u.name;const sm=document.createElement('small');sm.textContent=(u.paladin?'Paladin':u.kind==='guard'?'Guard':'Servant')+' · Level '+u.level;t.append(nm,sm);b.append(art,t);b.onclick=()=>{if(pick.has(u.id))pick.delete(u.id);else pick.add(u.id);refresh()};list.append(b)}
  start.onclick=()=>{const ids=[...pick];if(partyIssue(mode,ids))return;dlg.close();startExpedition(mode,castleId,ids)};
  $('party-cancel').onclick=()=>dlg.close();refresh();if(!dlg.open)dlg.showModal();return true}
 function castleById(id){return state.world?.castles.find(c=>c.id===id)||null}
@@ -68,7 +86,7 @@ function startExpedition(mode,castleId,ids){
  if(!Array.isArray(ids))return choosePartyDialog(mode,castleId);if(partyIssue(mode,ids)){toast(partyIssue(mode,ids));return false}
  const party=availableUnits().filter(u=>ids.includes(u.id)).map(u=>({id:u.id,kind:u.kind,name:u.name,look:u.look,level:u.level,hp:0,maxHp:0}));
  if(mode!=='raid')party.push({id:'mc',kind:'prince',name:'Young Prince',look:0,level:state.prince.level,hp:0,maxHp:0});
- for(const m of party){m.maxHp=m.kind==='prince'?Math.round(hpForLevel(m.level)*(state.hungryDays>=5?.8:1)):hpForLevel(m.level);m.hp=m.maxHp}
+ for(const m of party){m.maxHp=m.kind==='prince'?Math.round(hpForLevel(m.level)*(state.hungryDays>=5?.8:1)):Math.round(hpForLevel(m.level)*(m.paladin?1.05:1));m.hp=m.maxHp}
  if(mode==='dungeon')return startDungeonVisit(castleId,party);
  const c=castleById(castleId),entrance=c.tiles.find(t=>t.type===17);if(!entrance)return false;
  const producers={};for(const t of c.tiles)if(t.type!==0)for(const k of Object.keys(roomRates(t)))producers[k]=(producers[k]||0)+1;
@@ -110,7 +128,7 @@ function beginExpBattle(info,key,enemyHp,followup){
  const allies=[lead,...live.filter(member=>member!==lead)].map(member=>{
   const level=member.level||guardLevel(),player=member.kind==='prince';
   const penalty=player?state.hungryDays>=2?MC_HUNGER_PENALTY:0:state.hungryDays?SERVANT_HUNGER_PENALTY:0;
-  const actor=combatant(member.name,level,member.maxHp,1-penalty,.65);
+  const actor=applyGuardBuffs(combatant(member.name,level,member.maxHp,1-penalty,.65),player||member.kind==='guard',member.paladin);
   return Object.assign(actor,{id:member.id,player,look:member.look||0,hp:Math.min(member.maxHp,member.hp)});
  });
  const enemy=combatant(info.name,info.level,Math.round(hpForLevel(info.level)*(info.health||1)),info.damage||1,info.skill);

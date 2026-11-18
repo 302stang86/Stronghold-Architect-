@@ -8,7 +8,7 @@ function battleBuild(c){
  const party=[];
  if(c.allies){
   for(const [index,fighter] of c.allies.entries())party.push({
-   id:fighter.id,kind:fighter.player?'mc':'servant',idx:fighter.look||0,role:index===0?'lead':'help',
+   id:fighter.id,paladin:fighter.paladin,kind:fighter.player?'mc':'servant',idx:fighter.look||0,role:index===0?'lead':'help',
   });
  }else{
   const id=c.exp?c.leadId:c.defenderId;
@@ -17,7 +17,7 @@ function battleBuild(c){
  }
  const slots=[[28,78,1],[14,75,.82],[40,74,.8],[7,81,.86]];
  const order=party.map((p,i)=>({p,s:slots[i]})).sort((a,b)=>a.s[1]-b.s[1]);
- const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div></div>';stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.id=p.id;f.base={x,y};BATTLE_FX.figs.push(f);return f};
+ const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div></div>';if(p.paladin){el.querySelector('.bf-move').insertAdjacentHTML('beforeend','<svg aria-hidden="true" viewBox="0 0 20 68" style="position:absolute;width:18%;height:55%;left:68%;bottom:12%;transform:rotate(30deg);pointer-events:none"><path d="M10 2 13 50H7Z" fill="#e2e8f0" stroke="#374151"/><path d="M4 50h12M10 51v13" stroke="#d8aa51" stroke-width="3" stroke-linecap="round"/></svg>')}stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.id=p.id;f.base={x,y};BATTLE_FX.figs.push(f);return f};
  for(const o of order){const f=mk(o.p,o.s[0],o.s[1],o.s[2],false);if(o.p.role==='lead')BATTLE_FX.lead=f}
  BATTLE_FX.enemy=mk({kind:'invader',idx:inv.variant,name:inv.name,role:'lead'},74,77,1.05,true);BATTLE_FX.enemy.atlas=COMBAT_ART.invader[inv.variant]||COMBAT_ART.invader[0];
  for(const f of BATTLE_FX.figs)f.art.style.backgroundImage='url("'+f.atlas+'")';

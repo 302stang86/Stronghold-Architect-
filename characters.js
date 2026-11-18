@@ -74,12 +74,20 @@ function finishInvasion(result,message){const r=state.invasion,inv=r.active;if(!
  else if(result==='loss'){const taken={};for(const [k,rate]of Object.entries(LOSS_RATES)){const amount=Math.floor(state[k]*rate);if(amount>0){taken[k]=amount;state[k]=roundResource(state[k]-amount)}}const parts=Object.entries(taken).map(([k,v])=>v+' '+(k==='rp'?'research points':RESOURCE_INFO[k].name.toLowerCase()));text+=parts.length?` The invader stole ${listText(parts)}.`:' The invader found nothing to steal.';toast('The prince was defeated. Resources were stolen.')}
  note(text+' Everyone recovers.');r.active=null;r.combat=null;r.alarmMs=null;r.nextAt=invasionClock()+DAY_MS*(.5+2.5*Math.random());for(const n of allUnits())if(n.home===null&&!n.guard||n.guard&&!n.home){n.path=[];n.mode='wander';n.waitMs=800+Math.random()*2500}const modal=$('battle-dialog');if(modal?.open)modal.close();if(window.cloudPushSoon)cloudPushSoon();save();render()}
 function combatant(name,level,maxHp,dmgMod,skill){return {name,level,maxHp,hp:maxHp,energy:10,block:0,dmgMod,skill,hand:[]}}
+function applyGuardBuffs(actor,eligible,paladin){
+ if(!eligible)return actor;
+ actor.dmgMod*=(1+roomCombatBonus(4))*(paladin?1.05:1);
+ actor.block=Math.round(actor.maxHp*roomCombatBonus(3));
+ actor.openingBlock=actor.block>0;
+ if(paladin)actor.paladin=true;
+ return actor;
+}
 function roomCombatant(n){
  const prince=n==null,level=prince?state.prince.level:n.guard?guardLevel():n.level||1;
- const hp=Math.round(hpForLevel(level)*(prince&&state.hungryDays>=5?.8:1));
+ const hp=Math.round(hpForLevel(level)*(prince&&state.hungryDays>=5?.8:1)*(n?.paladin?1.05:1));
  const hunger=prince?state.hungryDays>=2?MC_HUNGER_PENALTY:0:state.hungryDays?SERVANT_HUNGER_PENALTY:0;
  const actor=combatant(prince?'Young Prince':n.name,level,hp,1-hunger,prince||n.guard ? .65 : servantRole(n).skill);
- return Object.assign(actor,{id:prince?'mc':n.id,look:n?.look||0,player:prince});
+ return Object.assign(applyGuardBuffs(actor,prince||n.guard,n?.paladin),{id:prince?'mc':n.id,look:n?.look||0,player:prince});
 }
 function selectCombatAlly(combat,index){
  combat.allyIndex=index;
@@ -102,7 +110,7 @@ function startRoomCombat(inv){
  beginCombatTurn('ally');save();renderBattle();
  return true;
 }
-function beginCombatTurn(side){const c=state.invasion.combat;if(!c)return;c.turn=side;c.noMoves=false;c.waitMs=side==='ally'&&!c.auto?0:900;const actor=c[side];actor.energy=10;actor.block=0;if(side==='ally'){if(actor.ironhide)actor.block=actor.ironhide;if(actor.regen&&actor.regen.turns>0){actor.regen.turns--;const h=Math.round(actor.maxHp*actor.regen.pct);actor.hp=Math.min(actor.maxHp,actor.hp+h);c.lastAction=`${actor.name} regenerates ${h} health.`}}actor.hand=drawHand(5);if(c.enemyInfo?.boss)dungeonBossTurn(c)}
+function beginCombatTurn(side){const c=state.invasion.combat;if(!c)return;c.turn=side;c.noMoves=false;c.waitMs=side==='ally'&&!c.auto?0:900;const actor=c[side];actor.energy=10;if(!actor.openingBlock)actor.block=0;delete actor.openingBlock;if(side==='ally'){if(actor.ironhide)actor.block+=actor.ironhide;if(actor.regen&&actor.regen.turns>0){actor.regen.turns--;const h=Math.round(actor.maxHp*actor.regen.pct);actor.hp=Math.min(actor.maxHp,actor.hp+h);c.lastAction=`${actor.name} regenerates ${h} health.`}}actor.hand=drawHand(5);if(c.enemyInfo?.boss)dungeonBossTurn(c)}
 function combatLog(message){const c=state.invasion.combat;c.lastAction=message;c.log.push(message);c.log=c.log.slice(-5)}
 function endCombatTurn(){
  const c=state.invasion.combat;
@@ -121,7 +129,7 @@ function endCombatTurn(){
 }
 function playCard(index){const c=state.invasion.combat;if(!c||c.winner)return false;const side=c.turn,actor=c[side],target=c[side==='ally'?'enemy':'ally'],id=actor.hand[index],card=CARD_BY_ID[id];if(!card||card.cost>actor.energy)return false;actor.hand.splice(index,1);actor.energy-=card.cost;c.lastCard=id;c.lastBy=side;c.lastAllyId=c.ally.id;c.lastCount++;c.lastMs=1500;c.flashActor=side;c.flashAction=card.type==='healing'?'heal':card.type==='attack'?'basic':card.type==='defense'?'defend':'energy';c.flashType=card.type;c.flashMs=650;c.flashAt=Date.now();const amt=cardAmount(card,actor.level);
  if(card.type==='attack'){const raw=Math.max(1,Math.round(amt*actor.dmgMod)),absorbed=Math.min(target.block,raw);target.block-=absorbed;target.hp=Math.max(0,target.hp-(raw-absorbed));combatLog(`${actor.name} plays ${card.name}: ${raw} damage${absorbed?` (${absorbed} blocked)`:''}.`)}
- else if(card.type==='defense'){actor.block+=amt;combatLog(`${actor.name} plays ${card.name}: ${amt} block.`)}
+ else if(card.type==='defense'){const block=Math.round(amt*(actor.paladin?1.05:1));actor.block+=block;combatLog(`${actor.name} plays ${card.name}: ${block} block.`)}
  else if(card.type==='healing'){const before=actor.hp;actor.hp=Math.min(actor.maxHp,actor.hp+amt);combatLog(`${actor.name} plays ${card.name}: restores ${actor.hp-before} health.`)}
  else{const before=actor.energy;actor.energy=Math.min(10,actor.energy+amt);combatLog(`${actor.name} plays ${card.name}: energy ${before} → ${actor.energy}.`)}
  if(!c.exp&&state.invasion.active)state.invasion.active.hp=c.enemy.hp;if(c.enemy.hp<=0)c.winner='ally';else if(c.ally.hp<=0&&(!c.allies||!c.allies.some(a=>a.hp>0)||c.exp&&c.ally.player))c.winner='enemy';
@@ -173,7 +181,7 @@ function spriteStyle(el,atlas,direction,frame=0,walking=false){el.style.backgrou
 function renderInvader(){if($('invasion-status'))$('invasion-status').textContent=raidForecast();const r=state.invasion,inv=r?.active,grid=$('grid');let layer=$('invader-layer');if(!layer){layer=document.createElement('div');layer.id='invader-layer';grid.append(layer)}if(!inv){layer.replaceChildren();return}let actor=$('invader-sprite');if(!actor){actor=document.createElement('div');actor.id='invader-sprite';actor.setAttribute('aria-label','Invading enemy');actor.innerHTML='<span class="inv-hp"><i></i></span>';layer.append(actor)}const bar=actor.querySelector('.inv-hp i');if(bar)bar.style.width=Math.max(0,inv.hp/inv.maxHp*100)+'%';const from=roomFromKey(inv.room),to=roomFromKey(inv.target),p=to?inv.travelMs/3200:0;if(!from)return;actor.style.left=`calc(${from.x+.5+(to?(to.x-from.x)*p:0)}*var(--size))`;actor.style.top=`calc(${from.y+.65+(to?(to.y-from.y)*p:0)}*var(--size))`;const direction=to?mcFacing(to.x-from.x,to.y-from.y):1,frame=Math.floor(Date.now()/250)%8;spriteStyle(actor,INVADER_ATLASES[inv.variant],direction,frame,!!to);}
 function raidForecast(){const r=state.invasion;return r.active?`Invader inside · ${r.active.name} · HP ${r.active.hp}/${r.active.maxHp}`:`Next invasion: day ${Math.floor(r.nextAt/DAY_MS)+1}`}
 function validateInvasion(s){const r=s.invasion,finite=(v,min,max)=>Number.isFinite(v)&&v>=min&&v<=max,keys=new Set(s.tiles.map(roomKey));if(!r||!Number.isFinite(r.nextAt)||r.nextAt<DAY_MS||r.alarmMs!=null&&!finite(r.alarmMs,0,ALARM_MS))throw Error('Invalid invasion schedule');const inv=r.active;if(inv){if(!Number.isInteger(inv.level)||inv.level<1||inv.level>MAX_LEVEL||!Number.isInteger(inv.variant)||!INVADER_TYPES[inv.variant]||!finite(inv.hp,0,10000)||!finite(inv.maxHp,1,10000)||inv.hp>inv.maxHp||!finite(inv.atk,1,1000)||!finite(inv.skill,0,1)||typeof inv.name!=='string'||!keys.has(inv.room)||!keys.has(inv.from)||inv.target!==null&&!keys.has(inv.target)||!finite(inv.travelMs,0,3200)||!finite(inv.waitMs,0,10000)||![inv.route,inv.knocked].every(Array.isArray)||inv.route.length>FIELD_SIZE*FIELD_SIZE||inv.route.some(k=>!keys.has(k))||inv.knocked.some(id=>!s.collectors.some(n=>n.id===id)&&!(s.guards||[]).some(g=>g.id===id)))throw Error('Invalid invader');if(inv.target&&!raidAdjacentInSave(inv.room,inv.target,s.tiles))throw Error('Invalid invasion route')}
- const c=r.combat;if(c){if(!c.exp&&(!inv||!['mc','servant'].includes(c.kind)||!['ally','enemy'].includes(c.turn)||!Number.isInteger(c.turnNumber)||c.turnNumber<1||!finite(c.waitMs,-1000,10000)||!Array.isArray(c.log)||c.log.length>5||c.log.some(x=>typeof x!=='string')||![null,'ally','enemy'].includes(c.winner)||c.kind==='servant'&&!s.collectors.some(n=>n.id===c.defenderId)&&!(s.guards||[]).some(g=>g.id===c.defenderId)))throw Error('Invalid combat');for(const a of [...(c.allies||[c.ally]),c.enemy])if(!a||typeof a.name!=='string'||!Number.isInteger(a.level)||a.level<1||a.level>MAX_LEVEL||!finite(a.maxHp,1,10000)||!finite(a.hp,0,a.maxHp)||!Number.isInteger(a.energy)||a.energy<0||a.energy>10||!finite(a.block,0,100000)||!finite(a.dmgMod,0,10)||!finite(a.skill,0,1)||!Array.isArray(a.hand)||a.hand.length>5||a.hand.some(id=>!CARD_BY_ID[id]))throw Error('Invalid combat actor')}
+ const c=r.combat;if(c){if(!c.exp&&(!inv||!['mc','servant'].includes(c.kind)||!['ally','enemy'].includes(c.turn)||!Number.isInteger(c.turnNumber)||c.turnNumber<1||!finite(c.waitMs,-1000,10000)||!Array.isArray(c.log)||c.log.length>5||c.log.some(x=>typeof x!=='string')||![null,'ally','enemy'].includes(c.winner)||c.kind==='servant'&&!s.collectors.some(n=>n.id===c.defenderId)&&!(s.guards||[]).some(g=>g.id===c.defenderId)))throw Error('Invalid combat');for(const a of [...(c.allies||[c.ally]),c.enemy])if(!a||typeof a.name!=='string'||!Number.isInteger(a.level)||a.level<1||a.level>MAX_LEVEL||!finite(a.maxHp,1,10000)||!finite(a.hp,0,a.maxHp)||!Number.isInteger(a.energy)||a.energy<0||a.energy>10||!finite(a.block,0,100000)||!finite(a.dmgMod,0,100)||!finite(a.skill,0,1)||!Array.isArray(a.hand)||a.hand.length>5||a.hand.some(id=>!CARD_BY_ID[id]))throw Error('Invalid combat actor')}
 }
 function raidAdjacentInSave(a,b,tiles){const ra=roomFromKey(a,tiles),rb=roomFromKey(b,tiles);return DIRS.some(([dx,dy],d)=>ra.x+dx===rb.x&&ra.y+dy===rb.y&&compatible(ra,rb,d))}
 

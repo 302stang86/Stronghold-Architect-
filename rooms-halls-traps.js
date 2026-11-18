@@ -1,12 +1,12 @@
 const TILE_ART=["assets/225d8567b5dac4c82362.png", "assets/5616cde8557072084971.png", "assets/824d68f062dab294a1b2.png", "assets/bd6ea3249aee9f851c93.png", "assets/a61f3bd65a9110e33736.png", "assets/8f5639b7c40db69bacbf.png", "assets/744c109ce954d087bb4a.png", "assets/12dc8ebcd0938a49c9df.png", "assets/a0b59ddb9d0bc72869bd.png", "assets/d50a99bbbe69090b5dcb.png", "assets/090dc4a86cad34b10194.png", "assets/f40a2fc5937d24eb4dd3.png", "assets/9c0d8f456ec95bd50a5f.png", "assets/3f8a2452bce8957b1cfb.png", "assets/2603f66f08ab337323e2.png", "assets/ad1b0d9f04c3ef563003.png", "assets/ccb42ff288667d7b1979.png", "assets/b6f73a3ffd724e2a1337.png", "assets/c78c976783b3c352a479.png", "assets/c9cc8504e9aa089f19bb.png"];
 const TYPES=[
 ['Throne Room',0,0,0,[],'The heart of your keep. Produces 20 gold and 12 stone daily.'],
-['Barracks',50,25,0,[],'Quarters for soldiers. No effect yet; its role is being redesigned.'],
+['Barracks',50,25,0,[],'Recruit guards. Each Barracks level unlocks one slot, up to five.'],
 ['Kitchen',40,20,0,[],'Produces 0.5 food every 60 real seconds. Allows more servants: Level 1 adds 1, Level 3 adds 2 in total, Level 5 adds 4 in total.'],
-['Armory',65,35,0,[1],'Produces 10 stone daily.'],
-['War Room',75,35,0,[1],'Tactical planning room. No effect yet; its role is being redesigned.'],
-['Library',60,30,0,[],'Produces 5 research points daily.'],
-['Chapel',65,35,0,[2],'A place of healing. No effect yet; its role is being redesigned.'],
+['Armory',65,35,0,[1],'Produces 10 stone daily and adds opening block equal to 3% of max HP per room level for the prince and guards.'],
+['War Room',75,35,0,[1,3],'Adds 3% attack damage per room level for the prince and guards.'],
+['Library',60,30,0,[],'Produces 5 research points daily. Research Monster Lair, Puzzle Room, and Arcane Lab here.'],
+['Chapel',65,35,0,[2],'Recruit one Paladin per Chapel, armed with a long bastard sword.'],
 ['Monster Lair',85,40,0,[11],'Home of monstrous guardians. No effect yet; its role is being redesigned.'],
 ['Puzzle Room',80,45,0,[5,11],'Arcane puzzles. No effect yet; its role is being redesigned.'],
 ['Arcane Lab',100,50,0,[5,6],'Magical wards. No effect yet; its role is being redesigned.'],
@@ -65,9 +65,11 @@ function prereqsMet(type,tiles=state.tiles){return TYPES[type][4].every(r=>tiles
 function prereqNames(type){return TYPES[type][4].map(r=>TYPES[r][0]).join(' and ')}
 function trapStrength(room){return room.trap?TRAPS[room.trap].strength*levelMultiplier(room.trapLevel):0}
 function resourceUpgradeCost(room){const level=room.level||1;return {gold:Math.ceil((TYPES[room.type][1]||100)*.5*level),stone:Math.ceil((TYPES[room.type][2]||50)*.5*level)}}
-function upgradeResourceRoom(room){if(state.over||!state.tiles.includes(room)||!Object.keys(roomRates(room)).length||(room.level||1)>=5)return false;const cost=resourceUpgradeCost(room);if(state.gold<cost.gold||state.stone<cost.stone)return false;state.gold-=cost.gold;state.stone-=cost.stone;room.level=(room.level||1)+1;window.StrongholdAudio?.play('upgrade');note(`${TYPES[room.type][0]} upgraded to Level ${room.level}.`);save();render();return true}
+function canUpgradeRoom(room){return [1,4].includes(room.type)||Object.keys(roomRates(room)).length>0}
+function roomCombatBonus(type){return state.tiles.reduce((total,room)=>total+(room.type===type?(room.level||1)*.03:0),0)}
+function upgradeResourceRoom(room){if(state.over||!state.tiles.includes(room)||!canUpgradeRoom(room)||(room.level||1)>=5)return false;const cost=resourceUpgradeCost(room);if(state.gold<cost.gold||state.stone<cost.stone)return false;state.gold-=cost.gold;state.stone-=cost.stone;room.level=(room.level||1)+1;window.StrongholdAudio?.play('upgrade');note(`${TYPES[room.type][0]} upgraded to Level ${room.level}.`);save();render();return true}
 function trapUpgradeCost(room){return Math.ceil(TRAPS[room.trap].price*.5*(room.trapLevel||1))}
 function upgradeTrap(room){if(state.over||!state.tiles.includes(room)||room.type!==16||!room.trap||(room.trapLevel||1)>=5)return false;const cost=trapUpgradeCost(room);if(state.gold<cost)return false;state.gold-=cost;room.trapLevel=(room.trapLevel||1)+1;window.StrongholdAudio?.play('upgrade');note(`${TRAPS[room.trap].name} upgraded to Level ${room.trapLevel}.`);save();render();return true}
-function renderResourceUpgrade(room,target){if(!Object.keys(roomRates(room)).length)return;const section=document.createElement('section'),p=document.createElement('p'),b=document.createElement('button');p.textContent=`Resource room · Level ${room.level||1} / 5`+(room.type===2?` · Allows ${kitchenBonus(room.level)} servant${kitchenBonus(room.level)===1?'':'s'} · 0.5 food per 60 real seconds`:` · +${((room.level||1)-1)*25}% production`);section.append(p);const cost=resourceUpgradeCost(room);b.textContent=(room.level||1)>=5?'Maximum level reached':`Upgrade to Level ${(room.level||1)+1} · ${cost.gold} gold + ${cost.stone} stone`;b.disabled=state.over||(room.level||1)>=5||state.gold<cost.gold||state.stone<cost.stone;b.onclick=()=>upgradeResourceRoom(room);section.append(b);target.append(section)}
+function renderResourceUpgrade(room,target){if(!canUpgradeRoom(room))return;const section=document.createElement('section'),p=document.createElement('p'),b=document.createElement('button');p.textContent=`Room · Level ${room.level||1} / 5`+(room.type===2?` · Allows ${kitchenBonus(room.level)} servant${kitchenBonus(room.level)===1?'':'s'} · 0.5 food per 60 real seconds`:room.type===1?` · ${room.level||1} guard slots`:room.type===4?` · +${(room.level||1)*3}% attack damage`:` · +${((room.level||1)-1)*25}% production`);section.append(p);const cost=resourceUpgradeCost(room);b.textContent=(room.level||1)>=5?'Maximum level reached':`Upgrade to Level ${(room.level||1)+1} · ${cost.gold} gold + ${cost.stone} stone`;b.disabled=state.over||(room.level||1)>=5||state.gold<cost.gold||state.stone<cost.stone;b.onclick=()=>upgradeResourceRoom(room);section.append(b);target.append(section)}
 
 function batchFor(room,day=state.day){return Object.fromEntries(Object.entries(roomRates(room)).map(([k,v])=>[k,v*BATCH_MS/DAY_MS*(k==='gold'&&day<=3?2:1)]))}
