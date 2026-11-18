@@ -168,7 +168,7 @@ function startRoomCombat(inv){
  beginCombatTurn('ally');save();renderBattle();
  return true;
 }
-function beginCombatTurn(side){const c=state.invasion.combat;if(!c)return;c.turn=side;c.noMoves=false;c.waitMs=side==='ally'&&!c.auto?0:900;const actor=c[side];const pet=side==='ally'?COMPANIONS[actor.companion]:null;actor.energy=10-(pet?.energy||(!actor.companionTurn&&pet?.firstEnergy)||0);if(pet)actor.companionTurn=true;if(!actor.openingBlock)actor.block=0;delete actor.openingBlock;if(side==='ally'){if(actor.ironhide)actor.block+=actor.ironhide;if(actor.regen&&actor.regen.turns>0){actor.regen.turns--;const h=Math.round(actor.maxHp*actor.regen.pct);actor.hp=Math.min(actor.maxHp,actor.hp+h);c.lastAction=`${actor.name} regenerates ${h} health.`}}actor.hand=drawHand(5);if(c.enemyInfo?.boss)dungeonBossTurn(c)}
+function beginCombatTurn(side){const c=state.invasion.combat;if(!c)return;c.turn=side;c.noMoves=false;c.waitMs=side==='ally'&&!c.auto?0:900;const actor=c[side];const pet=side==='ally'?COMPANIONS[actor.companion]:null;actor.energy=10-(pet?.energy||(!actor.companionTurn&&pet?.firstEnergy)||0);if(pet)actor.companionTurn=true;if(!actor.openingBlock)actor.block=0;delete actor.openingBlock;if(side==='ally'){if(actor.ironhide)actor.block+=actor.ironhide;if(actor.regen&&actor.regen.turns>0){actor.regen.turns--;const h=Math.round(actor.maxHp*actor.regen.pct);actor.hp=Math.min(actor.maxHp,actor.hp+h);c.lastAction=`${actor.name} regenerates ${h} health.`}}actor.hand=side==='enemy'?drawNpcHand(actor.name):drawHand(5);if(c.enemyInfo?.boss)dungeonBossTurn(c)}
 function combatLog(message){const c=state.invasion.combat;c.lastAction=message;c.log.push(message);c.log=c.log.slice(-5)}
 function endCombatTurn(){
  const c=state.invasion.combat;
