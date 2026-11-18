@@ -132,6 +132,7 @@ const RESOURCE_SALE_RATES={gold:1,stone:.8,food:.8,rp:1};
 let merchantTab='buy',saleItems=new Map(),saleResources=new Map();
 function resetMerchantTrade(){
  merchantTab='buy';
+ merchantSelection=null;
  saleItems.clear();
  saleResources.clear();
 }
@@ -213,23 +214,38 @@ function renderMerchantSale(target){
  const total=totalSale(),confirm=tradeButton('Confirm Sale · '+fmt(total)+' gold',completeMerchantSale);
  confirm.disabled=total<=0;confirm.className='primary';target.append(confirm);
 }
+let merchantSelection=null;
 function renderMerchantShop(){
  const target=$('merchant-text');target.replaceChildren();
+ const gold=document.createElement('p');gold.className='merchant-gold';gold.textContent='🪙 '+fmt(state.gold)+' gold';target.append(gold);
+ const body=document.createElement('div');body.className='merchant-case-body';target.append(body);
+ if(merchantTab==='sell')renderMerchantSale(body);
+ else {
+  const grid=document.createElement('div');grid.className='merchant-grid';grid.setAttribute('aria-label','Merchant inventory');
+  for(let index=0;index<24;index++){
+   const id=merchantStock[index],it=ITEMS[id];
+   if(!it){const slot=document.createElement('span');slot.className='merchant-slot';slot.setAttribute('aria-hidden','true');grid.append(slot);continue}
+   const slot=tradeButton(it.icon,()=>{merchantSelection=id;renderMerchantShop();$('merchant-buy')?.focus()});
+   slot.className='merchant-slot';slot.setAttribute('aria-label',it.name+' · '+it.price+' gold');slot.title=it.name;
+   slot.setAttribute('aria-pressed',String(merchantSelection===id));grid.append(slot);
+  }
+  body.append(grid);
+  const detail=document.createElement('div');detail.className='merchant-item-detail';
+  const id=merchantStock.includes(merchantSelection)?merchantSelection:merchantStock[0],it=ITEMS[id];
+  if(it){
+   const desc=document.createElement('div'),name=document.createElement('strong'),info=document.createElement('div');
+   name.textContent=it.name;info.textContent=it.text;desc.append(name,info);
+   const buy=tradeButton('Buy · '+it.price+' gold',()=>{const error=buyItem(id);if(error)toast(error);renderMerchantShop();$('merchant-buy')?.focus()});
+   buy.id='merchant-buy';buy.disabled=state.gold<it.price||it.kind==='pack'&&packFree()<1;
+   detail.append(desc,buy);
+  }
+  body.append(detail);
+ }
  const tabs=document.createElement('div');tabs.className='merchant-tabs';tabs.setAttribute('aria-label','Trade mode');
  for(const tab of ['buy','sell']){
-  const button=tradeButton(tab==='buy'?'Buy':'Sell',()=>{merchantTab=tab;renderMerchantShop()});
+  const button=tradeButton(tab==='buy'?'Merchant':'Sell',()=>{merchantTab=tab;renderMerchantShop();$('merchant-tab-'+tab)?.focus()});
+  button.id='merchant-tab-'+tab;
   button.setAttribute('aria-pressed',String(merchantTab===tab));tabs.append(button);
  }
- target.append(tabs);
- const gold=document.createElement('p');gold.textContent=`Your gold: ${fmt(state.gold)} · Backpack spots free: ${packFree()}`;target.append(gold);
- if(merchantTab==='sell'){renderMerchantSale(target);return}
- const list=document.createElement('div');list.className='shop-list';
- for(const id of merchantStock){
-  const it=ITEMS[id],row=document.createElement('div'),info=document.createElement('span');
-  row.className='shop-row';info.innerHTML=`<b>${it.icon} ${it.name}</b><br><small>${it.text}</small>`;
-  const button=tradeButton(it.price+'g',()=>{const error=buyItem(id);if(error)toast(error);renderMerchantShop()});
-  button.disabled=state.gold<it.price||it.kind==='pack'&&packFree()<1;
-  row.append(info,button);list.append(row);
- }
- target.append(list);
+ tabs.append(tradeButton('Leave',()=>$('merchantdialog').close()));target.append(tabs);
 }

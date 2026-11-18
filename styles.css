@@ -577,3 +577,27 @@ main{grid-template-columns:minmax(0,1fr)!important}
 #roomdialog.room-summary-only{width:min(480px,calc(100% - 24px))}
 #roomdialog.room-summary-only .room-art{display:none}
 #roomdialog.room-summary-only .room-view-layout{display:block}
+
+/* The illustrated trade case replaces the dialog frame during trading. */
+#merchantdialog.merchant-case{box-sizing:border-box;width:min(900px,calc(100vw - 16px));max-width:none;max-height:calc(100dvh - 12px);margin:auto;border:0;box-shadow:none;padding:0;overflow:auto;background:none;color:#322017}
+#merchantdialog.merchant-case>.popup-heading{position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden}
+#merchantdialog.merchant-case>.dialog-buttons{display:none}
+.merchant-case #merchant-text{position:relative;box-sizing:border-box;min-height:580px;padding:6.5% 17% 10%;background:url("assets/merchant-trade-case.webp") center/100% 100% no-repeat;display:flex;flex-direction:column}
+.merchant-gold{align-self:center;margin:0 0 9%;padding:5px 18px;background:#3e271a;color:#ffe3a0;border-radius:4px;font-weight:700;white-space:nowrap}
+.merchant-case-body{min-height:0;max-height:min(50dvh,415px);overflow:auto;padding:4px;scrollbar-color:#8a6249 #e1c69a}
+.merchant-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(3px,.6vw,8px)}
+.merchant-case .merchant-slot{display:grid;place-items:center;min-width:0;aspect-ratio:1.13;padding:0;font-size:clamp(13px,3vw,35px);border:2px solid #765032;border-radius:5px;background:radial-gradient(ellipse,#513c2b,#2b1b13);box-shadow:inset 0 0 0 2px #291b12}
+.merchant-case button.merchant-slot:hover,.merchant-case button.merchant-slot[aria-pressed=true]{border-color:#e3ab54;background:#634831}
+.merchant-case .merchant-item-detail{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;margin-top:8px;font-size:12px}
+.merchant-case .merchant-item-detail>div{flex:1 1 135px}
+.merchant-case .merchant-tabs{margin:10px 4px 0;gap:5px}
+.merchant-case button:not(.merchant-slot){background:#d9bd89;color:#362317;border:1px solid #8a5b3a;min-height:32px;padding:5px 9px;font-weight:650;text-shadow:none}
+.merchant-case .merchant-tabs button[aria-pressed=true]{background:#603426;color:#fff0c4}
+.merchant-case .merchant-tabs button:last-child{margin-left:auto}
+.merchant-case .shop-list{max-height:none}
+.merchant-case .shop-row{background:#f0d6a4;color:#362317}
+@media(max-width:600px){
+ .merchant-case #merchant-text{min-height:0;padding:8% 11% 13%;background-size:124% 100%}
+ .merchant-case-body{max-height:56dvh}
+ .merchant-case .merchant-slot{border-width:1px}
+}
