@@ -6,7 +6,7 @@ let dlg,pending=null,cfg;
 function opt(list,val){return list.map(([v,l])=>`<option value="${v}"${v===val?' selected':''}>${l}</option>`).join('')}
 function build(){
  dlg=document.createElement('dialog');dlg.id='setupdialog';dlg.setAttribute('aria-labelledby','setup-title');
- dlg.innerHTML=`<div class="setup-wrap">
+ dlg.innerHTML=`<div class="setup-scroll" tabindex="0" role="region" aria-label="Stronghold and banner options"><div class="setup-wrap">
  <div class="setup-head"><small>A NEW STRONGHOLD</small><h2 id="setup-title">Found your stronghold</h2><p class="muted">Choose a name and design your banner. It flies over your castle on the world map.</p></div>
  <div class="setup-main">
   <section class="setup-preview"><canvas id="setup-canvas" width="800" height="1000" aria-label="Banner preview"></canvas><h3 id="setup-showname">Your Stronghold</h3><p id="setup-showmotto" class="muted"></p></section>
@@ -20,9 +20,9 @@ function build(){
     <label for="s-scale">Emblem size <span id="s-scaleval"></span></label><input type="range" id="s-scale" min="0.5" max="1.4" step="0.05"></div>
    <div class="sgroup"><label>Border</label><div class="tiles" id="s-border"></div>
     <label class="check"><input type="checkbox" id="s-cloth"> Woven cloth shading</label></div>
-   <div class="setup-actions"><button type="button" id="s-random">Randomize banner</button><button type="button" id="s-cancel" hidden>Back to my stronghold</button><button type="button" id="s-begin" class="primary">Begin stronghold</button></div>
   </section>
- </div></div>`;
+ </div></div></div>
+ <div class="setup-actions"><button type="button" id="s-random">Randomize banner</button><button type="button" id="s-cancel" hidden>Back to my stronghold</button><button type="button" id="s-begin" class="primary">Begin stronghold</button></div>`;
  document.body.append(dlg);
  const $=id=>dlg.querySelector('#'+id);
  let target='colorPrimary',raf=0;const use3d=!!(window.Banner3D&&Banner3D.ok());let live=null;if(use3d){const cv=$('setup-canvas');cv.width=560;cv.height=700;live=Banner3D.live(cv)}
@@ -53,7 +53,9 @@ window.openSetup=function({canCancel=false}={}){
  if(!dlg)build();
  for(const d of document.querySelectorAll('dialog[open]'))if(d!==dlg)d.close();
  dlg._q('s-name').value='';dlg._q('s-motto').value='';dlg._q('s-cancel').hidden=!canCancel;dlg._sync();
- dlg.showModal();dlg._q('s-name').focus();
+ dlg.showModal();
+ dlg.querySelector('.setup-scroll').scrollTop=0;
+ dlg._q('s-name').focus({preventScroll:true});
  return new Promise(res=>{pending=res});
 };
 })();
