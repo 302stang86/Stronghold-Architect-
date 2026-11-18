@@ -601,3 +601,10 @@ main{grid-template-columns:minmax(0,1fr)!important}
  .merchant-case-body{max-height:56dvh}
  .merchant-case .merchant-slot{border-width:1px}
 }
+
+#battle-dialog[data-outcome=defeat] #battle-result,#battle-dialog[data-outcome=victory] #battle-result{display:inline-block;padding:.15em .6em;font-size:clamp(21px,4vw,48px);letter-spacing:.04em;background:#130d1ce8;border-radius:6px}
+#battle-dialog[data-outcome=victory] #battle-result{color:#ffdc92;text-shadow:0 0 15px #c78837}
+#battle-dialog[data-outcome=defeat] #battle-result{color:#ffb3a0;text-shadow:0 0 14px #a02327}
+#battle-dialog[data-outcome] #battle-result{animation:battle-result-reveal .32s ease-out both}
+@keyframes battle-result-reveal{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#battle-dialog[data-outcome] #battle-result{animation:none}}

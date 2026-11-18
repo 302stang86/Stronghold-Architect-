@@ -24,6 +24,7 @@ window.StrongholdAudio=(()=>{
   healing:[tone(0,.26,.07,390),tone(.08,.31,.06,520),tone(.15,.35,.065,659)],
   energy:[tone(0,.25,.08,247,370,'triangle'),tone(.14,.26,.07,370,494)],
   victory:[tone(0,.31,.097,392,392,'triangle'),tone(.12,.32,.087,494),tone(.23,.55,.075,587)],
+  fall:[texture(0,.18,.16,350),tone(0,.24,.17,112,46,'triangle')],
   defeat:[tone(0,.32,.1,260,221,'triangle'),tone(.21,.54,.105,196,112,'triangle')],
   door:[texture(0,.22,.06,490),tone(.05,.14,.055,135,77,'triangle')],
   chest:[texture(0,.24,.095,625),tone(.11,.15,.07,155,81,'triangle'),...coin(.23)],

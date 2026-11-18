@@ -285,7 +285,7 @@ function resetDayClock(){lastClockTick=Date.now();lastClockSave=lastClockTick;cl
 function applyElapsedTime(elapsed,speed=1){
  if(awaitingResume||state.over||!Number.isFinite(elapsed)||elapsed<=0)return;
  const goldFactor=goldProductionFactor(speed);
- while(elapsed>0&&!state.over){const step=Math.min(elapsed,250,DAY_MS-state.dayElapsedMs);if(state.invasion.combat){tickCombat(step);elapsed-=step;continue}if(state.expedition){elapsed-=step;continue}simulateEconomy(step,step/speed,step*goldFactor);state.dayElapsedMs+=step;tickInvasion(step);elapsed-=step;if(state.dayElapsedMs>=DAY_MS){state.dayElapsedMs=0;completeDay()}}
+ while(elapsed>0&&!state.over){const step=Math.min(elapsed,250,DAY_MS-state.dayElapsedMs);if(state.invasion.combat){tickCombat(state.invasion.combat.winner?step/speed:step);elapsed-=step;continue}if(state.expedition){elapsed-=step;continue}simulateEconomy(step,step/speed,step*goldFactor);state.dayElapsedMs+=step;tickInvasion(step);elapsed-=step;if(state.dayElapsedMs>=DAY_MS){state.dayElapsedMs=0;completeDay()}}
  if(state.over)state.dayElapsedMs=0;
 }
 

@@ -177,7 +177,7 @@ function playCard(index){const c=state.invasion.combat;if(!c||c.winner)return fa
  else{const before=actor.energy;actor.energy=Math.min(10,actor.energy+amt);combatLog(`${actor.name} plays ${card.name}: energy ${before} → ${actor.energy}.`)}
  if(!c.exp&&state.invasion.active)state.invasion.active.hp=c.enemy.hp;if(c.enemy.hp<=0)c.winner='ally';else if(c.ally.hp<=0&&(!c.allies||!c.allies.some(a=>a.hp>0)||c.exp&&c.ally.player))c.winner='enemy';
  else if(side==='enemy'&&c.ally.hp<=0){c.noMoves=true;c.waitMs=450;save();return true}
- if(c.winner){c.waitMs=1100;save();return true}
+ if(c.winner){c.waitMs=motionOK()?2400:1550;save();return true}
  c.noMoves=!actor.hand.some(h=>CARD_BY_ID[h].cost<=actor.energy);if(c.noMoves)c.waitMs=900;save();return true}
 function aiChoose(actor,target){const opts=actor.hand.map((id,i)=>({i,card:CARD_BY_ID[id]})).filter(o=>o.card.cost<=actor.energy);if(!opts.length)return -1;if(Math.random()>actor.skill)return opts[Math.floor(Math.random()*opts.length)].i;const amt=o=>cardAmount(o.card,actor.level),atk=opts.filter(o=>o.card.type==='attack');
  const kill=atk.filter(o=>target.activeRune!==32&&Math.round(amt(o)*actor.dmgMod*companionAttack(actor))>=target.hp+target.block).sort((a,b)=>a.card.cost-b.card.cost);if(kill.length)return kill[0].i;
@@ -196,7 +196,7 @@ function tickCombat(ms){const c=state.invasion.combat;if(!c)return;for(const k o
 function skipBattle(){const c=state.invasion.combat;if(!c||!c.auto||c.winner)return;let guard=0;while(!c.winner&&guard++<800){const actor=c[c.turn];if(c.noMoves){endCombatTurn();continue}const i=aiChoose(actor,c[c.turn==='ally'?'enemy':'ally']);if(i<0){endCombatTurn();continue}playCard(i)}if(!c.winner)c.winner=c.ally.hp/c.ally.maxHp>=c.enemy.hp/c.enemy.maxHp?'ally':'enemy';c.waitMs=0;resolveCombat()}
 function resolveCombat(){
  const c=state.invasion.combat,inv=state.invasion.active;
- if(c?.winner)window.StrongholdAudio?.play(c.winner==='ally'?'victory':'defeat');
+ if(c?.winner&&!BATTLE_FX.over)window.StrongholdAudio?.play(c.winner==='ally'?'victory':'defeat');
  if(c?.exp)return resolveExpeditionCombat(c);
  if(!c||!inv)return;
  const allies=c.allies||[Object.assign(c.ally,{id:c.defenderId,player:c.kind==='mc'})];

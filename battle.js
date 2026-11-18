@@ -40,7 +40,7 @@ function battleEffect(c){
   const actor=by==='ally'?lead:en,target=by==='ally'?en:lead,sideAfter=by==='ally'?E:A,sideBefore=by==='ally'?P.enemy:P.ally;
   battleLunge(actor,target,1,0);
   const dmg=Math.round(sideBefore.hp-sideAfter.hp),blk=Math.round(sideBefore.block-sideAfter.block);
-  setTimeout(()=>{window.StrongholdAudio?.play(dmg>0?'hit':'block');battleHit(target,0);battleShake();battleBurst(target,26,'#ffd36b');battleFloat(target,dmg>0?'-'+dmg:'Blocked',dmg>0?'#ff7b7b':'#9cc8ff');if(blk>0&&dmg>0)setTimeout(()=>battleFloat(target,blk+' blocked','#9cc8ff'),250)},300)}
+  setTimeout(()=>{if(state.invasion.combat!==c||!target.el.isConnected)return;window.StrongholdAudio?.play(dmg>0?'hit':'block');battleHit(target,0);battleShake();battleBurst(target,26,'#ffd36b');battleFloat(target,dmg>0?'-'+dmg:'Blocked',dmg>0?'#ff7b7b':'#9cc8ff');if(blk>0&&dmg>0)setTimeout(()=>battleFloat(target,blk+' blocked','#9cc8ff'),250)},300)}
  else if(card.type==='defense'){const g=(by==='ally'?[lead]:[en]);g.forEach(f=>{f.el.classList.add('bf-shield');setTimeout(()=>f.el.classList.remove('bf-shield'),1100);battleBurst(f,10,'#9cc8ff')});battleFloat(by==='ally'?lead:en,'+'+Math.round((by==='ally'?A:E).block-(by==='ally'?P.ally:P.enemy).block)+' block','#9cc8ff')}
  else if(card.type==='healing'){const g=(by==='ally'?[lead]:[en]);g.forEach(f=>{f.healUntil=performance.now()+900;battleBurst(f,12,'#7be6a1',true)});const h=Math.round((by==='ally'?A:E).hp-(by==='ally'?P.ally:P.enemy).hp);battleFloat(by==='ally'?lead:en,'+'+h,'#7be6a1')}
  else{const f=by==='ally'?lead:en;if(motionOK())f.mover.animate([{transform:'translateY(0)'},{transform:'translateY(-22px)'},{transform:'translateY(-22px)'},{transform:'translateY(0)'}],{duration:900,easing:'ease-in-out'});battleBurst(f,24,'#ffcc55');battleFloat(f,'+'+Math.round((by==='ally'?A:E).energy-(by==='ally'?P.ally:P.enemy).energy)+' energy','#ffcc55')}
@@ -83,12 +83,33 @@ function renderCombatMeters(combat){
  }
 }
 
+function battleFall(f,combat){
+ if(f.falling)return;
+ f.falling=true;
+ if(!motionOK()){f.el.classList.add('bf-down');return}
+ setTimeout(()=>{
+  if(state.invasion.combat!==combat||!f.el.isConnected)return;
+  const facing=f.enemy?'scaleX(-1) ':'',push=f.enemy?18:-18;
+  f.art.style.backgroundPosition='0% 66.6667%';
+  const fall=f.art.animate([
+   {transform:facing+'translate(0,0) rotate(0deg)'},
+   {transform:facing+'translate('+push+'px,-8px) rotate(-18deg)',offset:.22},
+   {transform:facing+'translate('+push+'px,14%) rotate(-86deg)',offset:.76},
+   {transform:facing+'rotate(-78deg) translateY(20%)'}
+  ],{duration:690,easing:'ease-in',fill:'forwards'});
+  fall.onfinish=()=>{
+   if(state.invasion.combat!==combat||!f.el.isConnected)return;
+   f.el.classList.add('bf-down');fall.cancel();
+   window.StrongholdAudio?.play('fall');battleBurst(f,16,'#d1b99d',true);
+  };
+ },370);
+}
 function renderBattle(){
  if(awaitingResume)return;const c=state.invasion?.combat,modal=$('battle-dialog');if(!modal)return;
- if(!c){if(modal.open)modal.close();BATTLE_FX.key='';return}
+ if(!c){if(modal.open)modal.close();BATTLE_FX.key='';BATTLE_FX.combat=null;delete modal.dataset.outcome;return}
  const inv=c.exp?c.enemyInfo:state.invasion.active,key=[c.allies?.map(fighter=>fighter.id).join(',')||c.kind,c.allies?'':c.defenderId,c.allies?'':c.leadId,inv?.variant,inv?.name,inv?.level,c.exp?inv.key:''].join('|');
  if(!modal.open)modal.showModal();
- if(BATTLE_FX.key!==key){BATTLE_FX.key=key;battleBuild(c);BATTLE_FX.seen=c.lastCount;BATTLE_FX.prev=null;BATTLE_FX.over=false;$('battle-hand').dataset.sig='';$('battle-played').dataset.sig=''}
+ if(BATTLE_FX.combat!==c||BATTLE_FX.key!==key){BATTLE_FX.combat=c;BATTLE_FX.key=key;delete modal.dataset.outcome;battleBuild(c);BATTLE_FX.seen=c.lastCount;BATTLE_FX.prev=null;BATTLE_FX.over=false;$('battle-hand').dataset.sig='';$('battle-played').dataset.sig=''}
  const actor=c[c.turn];
  $('battle-title').textContent=c.exp?(c.enemyInfo.boss?c.enemy.name:c.enemyInfo.dungeon?'Dungeon Defender':c.enemyInfo.throne?'Prince of the Stronghold':'Defenders of the Stronghold'):(c.kind==='mc'?'Defend the Throne':'Servant Skirmish');
  const boss=c.enemyInfo?.boss, candle=$('battle-candle');
@@ -105,15 +126,16 @@ function renderBattle(){
  for(const f of BATTLE_FX.figs){
   const fighter=f.enemy?c.enemy:c.allies?.find(a=>a.id===f.id)||c.ally;
   f.el.classList.toggle('bf-guarded',fighter.block>0);
-  if(c.allies)f.el.classList.toggle('bf-down',fighter.hp<=0);
+  if(fighter.hp<=0)battleFall(f,c);
  }
  if(c.lastCount!==BATTLE_FX.seen){BATTLE_FX.seen=c.lastCount;battleEffect(c)}
  BATTLE_FX.prev={allyId:c.ally.id,ally:{hp:c.ally.hp,block:c.ally.block,energy:c.ally.energy},enemy:{hp:c.enemy.hp,block:c.enemy.block,energy:c.enemy.energy}};
- if(c.winner&&!BATTLE_FX.over){BATTLE_FX.over=true;const loser=c.winner==='ally'?[BATTLE_FX.enemy]:BATTLE_FX.figs.filter(f=>!f.enemy);setTimeout(()=>loser.forEach(f=>f.el.classList.add('bf-down')),500)}
+ const reveal=c.winner&&c.waitMs<=(motionOK()?1150:1050);
+ if(reveal&&!BATTLE_FX.over){BATTLE_FX.over=true;modal.dataset.outcome=c.winner==='ally'?'victory':'defeat';window.StrongholdAudio?.play(modal.dataset.outcome)}
  const canAct=c.kind==='mc'&&c.turn==='ally'&&!c.winner&&!c.noMoves&&!((c.lockMs||0)>0),played=$('battle-played'),psig=c.lastCard&&c.lastMs>0?c.lastCard+':'+c.lastCount:'';
  if(played.dataset.sig!==psig){played.dataset.sig=psig;played.innerHTML=psig?cardHTML(CARD_BY_ID[c.lastCard],(c.lastBy==='ally'?c.allies?.find(a=>a.id===c.lastAllyId):c.enemy)?.level??c[c.lastBy].level)+`<p>${c.lastAction}</p>`:''}
- $('battle-result').textContent=c.winner?(c.winner==='ally'?'Victory!':'Defeated!'):'';
- $('battle-action-status').textContent=c.winner?'Battle finished':c.noMoves?`${actor.name} has no playable cards · turn ends`:c.auto?`Watching ${actor.name}’s turn`:c.turn!=='ally'?`Enemy turn · ${actor.name} is playing`:(c.lockMs||0)>0?'Card played…':'Your turn · tap a card to play it';
+ $('battle-result').textContent=reveal?(c.winner==='ally'?'Victory!':'Defeated!'):'';
+ $('battle-action-status').textContent=c.winner?(reveal?'Battle finished':'Finishing blow…'):c.noMoves?`${actor.name} has no playable cards · turn ends`:c.auto?`Watching ${actor.name}’s turn`:c.turn!=='ally'?`Enemy turn · ${actor.name} is playing`:(c.lockMs||0)>0?'Card played…':'Your turn · tap a card to play it';
  renderPackBar($('battle-pack'),'battle');
  const hand=$('battle-hand'),sig=[c.turn,actor.hand.join(','),actor.energy,actor.level,canAct].join('|');
  if(hand.dataset.sig!==sig){hand.dataset.sig=sig;hand.replaceChildren();actor.hand.forEach((id,i)=>{const card=CARD_BY_ID[id],b=document.createElement('button');b.className='hand-card'+(card.cost>actor.energy?' unplayable':'');b.style.setProperty('--i',i-(actor.hand.length-1)/2);b.disabled=!canAct||card.cost>actor.energy;b.innerHTML=cardHTML(card,actor.level);b.setAttribute('aria-label',`Play ${card.name}, ${card.cost} energy`);b.onclick=()=>choosePlayerCard(i);hand.append(b)});if(!actor.hand.length){const p=document.createElement('p');p.className='muted';p.textContent='No cards left this turn.';hand.append(p)}}
@@ -121,7 +143,7 @@ function renderBattle(){
 }
 function animateCombatVisuals(now){
  const c=state?.invasion?.combat;
- if(c&&BATTLE_FX.figs.length){const t=performance.now();for(const f of BATTLE_FX.figs){let row=0,frame=Math.floor(now/200)%8;
+ if(c&&BATTLE_FX.figs.length){const t=performance.now();for(const f of BATTLE_FX.figs){if(f.falling)continue;let row=0,frame=Math.floor(now/200)%8;
   if(f.until>t&&t>=(f.start||0)){row=f.healUntil>t?3:1;frame=Math.min(7,Math.floor((t-f.start)/650*8))}
   else if(f.healUntil>t||f.el.classList.contains('bf-shield')){row=3;frame=Math.floor(now/110)%8}
   else if(f.hitUntil>t){row=2;frame=Math.min(7,Math.floor((1-(f.hitUntil-t)/420)*8))}
