@@ -9,7 +9,7 @@ const TYPES=[
 ['Chapel',65,35,0,[2],'Recruit one Paladin per Chapel, armed with a long bastard sword.'],
 ['Monster Lair',85,40,0,[5,11],'Research and recruit monster companions. Up to three Lairs.'],
 ['Puzzle Room',80,45,0,[5,11],'Open optional treasure doors in rival keeps and dungeons. One per keep.'],
-['Arcane Lab',100,50,0,[5,6],'Magical wards. No effect yet; its role is being redesigned.'],
+['Arcane Lab',100,50,0,[5],'Craft single-use runes. Upgrade the Lab to unlock more recipes.'],
 ['Vault',90,45,0,[3,4],'Produces 35 gold daily.'],
 ['Trap Room',45,25,0,[],'Deadly defenses. No effect yet; its role is being redesigned.'],
 ['Straight Hall',10,5,0,[],'Connects north and south.'],

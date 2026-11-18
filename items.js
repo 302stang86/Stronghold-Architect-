@@ -21,9 +21,47 @@ const ITEMS={
  21:{id:21,name:'Ironhide Elixir',icon:'🛡️',kind:'pack',price:80,use:'ironhide',amount:6,text:'Prince battle: gain 6 block now and at the start of each of your turns until the battle ends.'},
  22:{id:22,name:'Regeneration Draught',icon:'💚',kind:'pack',price:70,use:'regen',amount:.05,turns:5,text:'Prince battle: heals 5% of maximum health at the start of each of your next 5 turns.'},
  30:{id:30,name:"Prince's Training Manual",icon:'📖',kind:'pack',price:150,use:'manual',text:'Gives the prince experience worth half of his current level-up need.'},
+ 32:{id:32,name:'Ward Rune',icon:'🔷',kind:'pack',price:20,use:'rune',level:1,rp:10,stone:8,text:'Absorbs the next enemy attack against the prince in this battle.'},
+ 33:{id:33,name:'Storm Rune',icon:'⚡',kind:'pack',price:40,use:'rune',level:2,rp:20,gold:20,text:'The prince’s next attack deals 35% more damage.'},
+ 34:{id:34,name:'Clarity Rune',icon:'✦',kind:'pack',price:50,use:'rune',level:3,rp:30,stone:12,text:'Replace up to two cards at the end of your current hand with new draws.'},
  [LOCKPICK_ID]:{id:LOCKPICK_ID,name:'Lockpick Set',icon:'🗝️',kind:'pack',price:30,use:'none',text:'Opens one locked dungeon treasure chest. Consumed when used.'}
 };
 const MERCHANT_STOCK_SIZE=6;
+const ARCANE_RUNES=[32,33,34];
+function arcaneLabAvailable(room){
+ return room.type===9&&state.tiles.includes(room)&&!state.over&&!state.invasion.active&&!state.invasion.combat&&!state.expedition;
+}
+function arcaneLabAction(room,id){
+ if(!arcaneLabAvailable(room))return false;
+ const level=room.level||1,recipe=id===null?null:ITEMS[id];
+ if(id===null?level>=3:!ARCANE_RUNES.includes(id)||level<recipe.level||packFree()<1)return false;
+ const gold=recipe?.gold||0,stone=recipe?.stone||0,rp=recipe?.rp||0,cost=recipe?{gold,stone,rp}:{...resourceUpgradeCost(room),rp:0};
+ if(state.gold<cost.gold||state.stone<cost.stone||state.rp<cost.rp)return false;
+ if(recipe){if(!addItem(id))return false}else room.level=level+1;
+ state.gold-=cost.gold;state.stone-=cost.stone;state.rp-=cost.rp;
+ note(recipe?'Crafted '+recipe.name+'.':'Arcane Lab upgraded to level '+room.level+'.');
+ save();render();return true;
+}
+function renderArcaneLab(room,target){
+ const level=room.level||1,available=arcaneLabAvailable(room),section=document.createElement('section'),title=document.createElement('h3'),info=document.createElement('p');
+ title.textContent='Runecrafting · Level '+level+' / 3';
+ info.textContent='Runes take one backpack slot each. Use one rune per battle on the prince’s turn.';
+ section.append(title,info);
+ if(level<3){
+  const cost=resourceUpgradeCost(room);
+  const button=document.createElement('button');button.type='button';button.textContent='Upgrade to Level '+(level+1)+' · '+cost.gold+' gold + '+cost.stone+' stone';
+  button.disabled=!available||state.gold<cost.gold||state.stone<cost.stone;button.onclick=()=>arcaneLabAction(room,null);section.append(button);
+ }
+ for(const id of ARCANE_RUNES){
+  const it=ITEMS[id],row=document.createElement('div'),button=document.createElement('button'),detail=document.createElement('p');
+  detail.textContent=it.name+' · '+it.text;
+  button.type='button';button.textContent=level<it.level?'Requires Lab Level '+it.level:'Craft '+it.name+' · '+it.rp+' RP + '+(it.gold?it.gold+' gold':it.stone+' stone');
+  button.disabled=!available||level<it.level||packFree()<1||state.rp<it.rp||state.gold<(it.gold||0)||state.stone<(it.stone||0);
+  button.onclick=()=>arcaneLabAction(room,id);row.append(detail,button);section.append(row);
+ }
+ if(packFree()<1){const full=document.createElement('p');full.textContent='Backpack full.';section.append(full)}
+ target.append(section);
+}
 function packSpots(){return PACK_LEVELS[state.pack.level].spots}
 function packFree(){return packSpots()-state.pack.items.length}
 function initPack(s){const p=s.pack&&typeof s.pack==='object'?s.pack:{};const level=Number.isInteger(p.level)&&p.level>=1&&p.level<=3?p.level:1;let items=Array.isArray(p.items)?p.items.filter(id=>Number.isInteger(id)&&ITEMS[id]&&ITEMS[id].kind==='pack'):[];items=items.slice(0,PACK_LEVELS[level].spots);s.pack={level,items,open:p.open===true}}
@@ -41,14 +79,20 @@ function useItem(id){const it=ITEMS[id];if(!it||!state.pack.items.includes(id))r
  if(it.use==='bandage'){if(ctx!=='march')return 'Bandages work between room battles on a raid or attack.';return healWeakest(id,it.amount)}
  if(it.use==='heal'){if(ctx==='march')return healWeakest(id,it.amount);if(ctx!=='battle')return 'Use health potions in a prince battle or on a march.';const a=c.ally;if(a.hp>=a.maxHp)return 'The prince is at full health.';a.hp=Math.min(a.maxHp,Math.round(a.hp+a.maxHp*it.amount));takeItem(id);combatLog(`${a.name} drinks a ${it.name}.`);save();renderBattle();render();return ''}
  if(ctx!=='battle')return 'Use this in a prince battle, on your turn.';const a=c.ally;
- if(it.use==='energy'){if(a.energy>=10)return 'Energy is already full.';a.energy=Math.min(10,a.energy+it.amount)}
+ if(it.use==='rune'){
+  if(c.runeUsed)return 'You already used a rune in this battle.';
+  if(id===34&&!a.hand.length)return 'There are no cards left to redraw.';
+  c.runeUsed=true;
+  if(id===34){const count=Math.min(2,a.hand.length);a.hand.splice(-count,count,...drawHand(count))}else a.activeRune=id;
+ }
+ else if(it.use==='energy'){if(a.energy>=10)return 'Energy is already full.';a.energy=Math.min(10,a.energy+it.amount)}
  else if(it.use==='strength'){if(c.strength)return 'Already in effect.';c.strength=true;a.dmgMod=Math.round(a.dmgMod*it.amount*100)/100}
  else if(it.use==='ironhide'){if(a.ironhide)return 'Already in effect.';a.ironhide=it.amount;a.block+=it.amount}
  else if(it.use==='regen'){if(a.regen&&a.regen.turns>0)return 'Already in effect.';a.regen={turns:it.turns,pct:it.amount}}
  takeItem(id);combatLog(`${a.name} uses ${it.name}.`);save();renderBattle();render();return ''}
 function healWeakest(id,pct){const exp=state.expedition;if(!exp||state.invasion.combat)return 'Use this between room battles.';const live=exp.party.filter(m=>m.hp>0&&m.hp<m.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];if(!live)return 'Everyone in the party is at full health.';live.hp=Math.min(live.maxHp,Math.round(live.hp+live.maxHp*pct));takeItem(id);exp.log.push(`${live.name} is treated with ${ITEMS[id].name}.`);save();render();if(window.renderExpedition)renderExpedition();return ''}
 /* Shows use buttons for the items that work right now. mode is 'battle' or 'march'. */
-function renderPackBar(el,mode){if(!el)return;const ctx=itemContext(),usable=[...new Set(state.pack.items)].filter(id=>{const u=ITEMS[id].use;if(mode==='battle')return ['heal','energy','strength','ironhide','regen'].includes(u);return ['heal','bandage','manual'].includes(u)});const sig=mode+'|'+ctx+'|'+usable.map(id=>id+'x'+state.pack.items.filter(x=>x===id).length).join(',');if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.replaceChildren();if(!usable.length){el.hidden=true;return}el.hidden=false;const h=document.createElement('span');h.textContent='Backpack:';el.append(h);for(const id of usable){const it=ITEMS[id],n=state.pack.items.filter(x=>x===id).length,b=document.createElement('button');b.type='button';b.textContent=`${it.icon} ${it.name}${n>1?' ×'+n:''}`;b.title=it.text;b.disabled=mode==='battle'&&ctx!=='battle';b.onclick=()=>{const r=useItem(id);if(r)toast(r);el.dataset.sig=''};el.append(b)}}
+function renderPackBar(el,mode){if(!el)return;const ctx=itemContext(),usable=[...new Set(state.pack.items)].filter(id=>{const u=ITEMS[id].use;if(mode==='battle')return ['heal','energy','strength','ironhide','regen','rune'].includes(u);return ['heal','bandage','manual'].includes(u)});const runeUsed=!!state.invasion?.combat?.runeUsed;const sig=mode+'|'+ctx+'|'+runeUsed+'|'+usable.map(id=>id+'x'+state.pack.items.filter(x=>x===id).length).join(',');if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.replaceChildren();if(!usable.length){el.hidden=true;return}el.hidden=false;const h=document.createElement('span');h.textContent='Backpack:';el.append(h);for(const id of usable){const it=ITEMS[id],n=state.pack.items.filter(x=>x===id).length,b=document.createElement('button');b.type='button';b.textContent=`${it.icon} ${it.name}${n>1?' ×'+n:''}`;b.title=it.text;b.disabled=mode==='battle'&&(ctx!=='battle'||it.use==='rune'&&runeUsed);b.onclick=()=>{const r=useItem(id);if(r)toast(r);el.dataset.sig=''};el.append(b)}}
 let packSel=null,packForSale=false;
 /* Open-backpack pictures. box is [left, top, width, height] of the picture in the source sheet; slots are [centreX, centreY, width, height] of each drawn pocket, in reading order. */
 const PACK_ART={
@@ -83,7 +127,7 @@ function renderPackDialog(){const p=state.pack,spots=packSpots(),art=PACK_ART[p.
  const g=$('pack-up');if(g){g.onclick=()=>{upgradePack();packSel=null;renderPackDialog()};g.disabled=state.gold<up.gold||state.stone<up.stone}}
 /* Merchant trade window. Stock is picked when the merchant arrives. */
 let merchantStock=[];
-function pickMerchantStock(){const ids=Object.keys(ITEMS).map(Number).filter(id=>id!==LOCKPICK_ID);for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]]}merchantStock=[...ids.slice(0,MERCHANT_STOCK_SIZE-1).sort((a,b)=>a-b),LOCKPICK_ID]}
+function pickMerchantStock(){const ids=Object.keys(ITEMS).map(Number).filter(id=>id!==LOCKPICK_ID&&!ARCANE_RUNES.includes(id));for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]]}merchantStock=[...ids.slice(0,MERCHANT_STOCK_SIZE-1).sort((a,b)=>a-b),LOCKPICK_ID]}
 const RESOURCE_SALE_RATES={gold:1,stone:.8,food:.8,rp:1};
 let merchantTab='buy',saleItems=new Map(),saleResources=new Map();
 function resetMerchantTrade(){
