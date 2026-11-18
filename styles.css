@@ -430,7 +430,7 @@ dialog#expdialog[open]{display:block}
 /* Side bar removed: single-column layout, banner chips, popups, fading log */
 main{grid-template-columns:minmax(0,1fr)!important}
 #legacy-panel{display:none!important}
-.game-topbar .day-chip{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:118px;padding:6px 10px 7px;font-variant-numeric:tabular-nums}
+.game-footer .day-chip{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:118px;padding:6px 10px 7px;font-variant-numeric:tabular-nums}
 .day-chip i{display:block;width:100%;height:4px;background:#0d0813;border-radius:3px;overflow:hidden}.day-chip b{display:block;height:100%;background:linear-gradient(90deg,#b8863f,#f0cf8a)}
 #keepdialog,#princedialog{width:min(460px,calc(100vw - 28px));padding:24px}
 #keepdialog #forecast{font-size:13px;line-height:1.7;color:#e6dcc8}
@@ -443,8 +443,8 @@ main{grid-template-columns:minmax(0,1fr)!important}
 #roomdialog .room-info{max-height:70dvh;overflow:auto}
 
 .game-topbar{gap:10px}.game-topbar .brand{min-width:0;flex:0 1 auto}.game-topbar .brand h1{white-space:nowrap}.keep-name{white-space:nowrap}
-@media(max-width:1250px){.game-topbar .brand h1{font-size:19px}.game-topbar .day-chip{min-width:96px}}
-@media(max-width:1400px){.game-topbar .brand h1{font-size:17px}.game-topbar .brand{min-width:0;padding-left:34px}.game-topbar #resources{gap:6px}.game-topbar #resources>div{padding:3px 8px}.game-topbar .tools{gap:3px}.game-topbar .tools button{padding:6px 7px;font-size:11.5px}.game-topbar .day-chip{min-width:92px}#holdflag{width:26px;height:32px}}
+@media(max-width:1250px){.game-topbar .brand h1{font-size:19px}.game-footer .day-chip{min-width:96px}}
+@media(max-width:1400px){.game-topbar .brand h1{font-size:17px}.game-topbar .brand{min-width:0;padding-left:34px}.game-topbar #resources{gap:6px}.game-topbar #resources>div{padding:3px 8px}.game-topbar .tools{gap:3px}.game-topbar .tools button{padding:6px 7px;font-size:11.5px}.game-footer .day-chip{min-width:92px}#holdflag{width:26px;height:32px}}
 
 .room-tools{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding:12px 0 4px;background:linear-gradient(0deg,#2a1636 70%,transparent);border-top:1px solid #a4804c55}.room-tools button{margin:0}
 .room-tools{background:#2b1737;z-index:3}.room-tools button{display:inline-block!important;width:auto!important;font-size:12px;padding:7px 10px}
@@ -523,11 +523,11 @@ main{grid-template-columns:minmax(0,1fr)!important}
 
 @media(min-width:901px) and (max-width:1250px){.game-topbar .tools{flex-wrap:wrap}}
 
-.game-topbar #game-speed{display:inline-flex;align-items:center;gap:2px;flex:none;padding:2px;
+.game-footer #game-speed{display:inline-flex;align-items:center;gap:2px;flex:none;padding:2px;
  border:1px solid #886848;border-radius:8px;background:#180f21}
-.game-topbar #game-speed button{min-width:30px;padding:4px 5px;border-color:transparent;background:transparent;box-shadow:none}
-.game-topbar #game-speed button[aria-pressed="true"]{border-color:#d0a164;background:#653862;color:#fff2cc}
-.game-topbar #game-speed button:focus-visible{outline:2px solid #ffe1ac;outline-offset:-2px}
+.game-footer #game-speed button{min-width:30px;padding:4px 5px;border-color:transparent;background:transparent;box-shadow:none}
+.game-footer #game-speed button[aria-pressed="true"]{border-color:#d0a164;background:#653862;color:#fff2cc}
+.game-footer #game-speed button:focus-visible{outline:2px solid #ffe1ac;outline-offset:-2px}
 
 #world-map-toggle{position:absolute;right:calc(62px + env(safe-area-inset-right));bottom:48px;z-index:8;
  width:58px;height:58px;padding:0;font-size:35px;display:grid;place-items:center;
@@ -557,3 +557,14 @@ main{grid-template-columns:minmax(0,1fr)!important}
  padding:2px 4px;border-radius:4px;background:#211626e8;color:#ffe0a4;font-size:10px;pointer-events:none}
 
 .gc-art img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 2px 2px #000c) drop-shadow(0 0 4px color-mix(in srgb,var(--accent) 45%,transparent));pointer-events:none}
+
+.game-footer{flex-wrap:wrap;justify-content:flex-start;gap:8px 14px}
+.play-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-width:0}
+.play-tools>button,.game-footer #game-speed button{min-height:34px}
+.game-footer #hint{flex:1 1 16rem}
+.game-footer #deselect{margin-left:auto}
+@media(max-width:760px){
+ .game-footer{gap:6px 8px}
+ .game-footer #hint{flex-basis:calc(100% - 90px)}
+ .world #world-map-toggle{bottom:112px}
+}
