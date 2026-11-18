@@ -115,10 +115,35 @@ function reinforcedRoom(exp,key){
  const rooms=Object.keys(layout.defenders).filter(room=>room!==layout.bossKey).sort();
  return rooms.filter((room,index)=>index%Math.max(1,Math.floor(rooms.length/limit))===0).slice(0,limit).includes(key);
 }
+function dungeonRoomBattle(info,key){
+ const exp=state.expedition,layout=expCastle();
+ const tierIndex=DUNGEON_TIERS.findIndex(tier=>tier.id===exp.castleId);
+ const [minHp,maxHp]=[[100,200],[200,400],[400,500]][tierIndex];
+ const rollHp=()=>minHp+Math.floor(Math.random()*(maxHp-minHp+1));
+ const encounters=layout.encounters??={};
+ if(!encounters[key]){
+  const primary={...info,maxHp:info.boss?maxHp:rollHp()};
+  const reserves=[
+   {name:'Dungeon Skirmisher',variant:info.variant%3+1,skill:.4,damage:info.damage*.85},
+   {name:'Dungeon Enforcer',variant:(info.variant+1)%3+1,skill:.75,damage:info.damage*1.1}
+  ];
+  const count=info.boss?1+Number(reinforcedRoom(exp,key)):
+   1+Math.max(...Array.from({length:tierIndex+1},()=>Math.floor(Math.random()*3)));
+  let first=primary;
+  for(const reserve of reserves.slice(0,count-1).reverse()){
+   first={...reserve,level:Math.max(1,info.level-1),maxHp:rollHp(),nextDefender:first};
+  }
+  encounters[key]=first;
+ }
+ const first=encounters[key];
+ if(first.nextDefender)exp.log.push('Multiple defenders block the way.');
+ return beginExpBattle(first,key,undefined,first.nextDefender);
+}
 function enterExpBattle(info,key){
  const exp=state.expedition;
+ if(exp.mode==='dungeon')return dungeonRoomBattle(info,key);
  if(!reinforcedRoom(exp,key))return beginExpBattle(info,key);
- const name=exp.mode==='dungeon'?'Vault sentry':'Reserve guard';
+ const name='Reserve guard';
  const level=Math.max(1,info.level-1);
  exp.log.push(name+' blocks the way. A second defender waits behind.');
  return beginExpBattle({name,level,variant:info.variant,skill:.55,health:.8},key,undefined,info);
@@ -134,7 +159,7 @@ function beginExpBattle(info,key,enemyHp,followup){
   return Object.assign(actor,{id:member.id,player,look:member.look||0,guard:member.kind==='guard',hp:Math.min(member.maxHp,member.hp)});
  });
  attachCompanion(allies,exp.companion);
- const enemy=combatant(info.name,info.level,Math.round(hpForLevel(info.level)*(info.health||1)),info.damage||1,info.skill);
+ const enemy=combatant(info.name,info.level,info.maxHp??Math.round(hpForLevel(info.level)*(info.health||1)),info.damage||1,info.skill);
  if(enemyHp!==undefined)enemy.hp=Math.min(enemy.maxHp,enemyHp);
  const combat={allies,exp:true,auto:!allies.some(a=>a.player),enemy,turn:'ally',turnNumber:1,waitMs:700,noMoves:false,winner:null,
   log:['Each fighter takes a turn with five cards and 10 energy.'],lastAction:'',lastCard:null,lastBy:null,lastCount:0,lastMs:0,lockMs:0,
@@ -162,7 +187,7 @@ function resolveExpeditionCombat(c){
  }
  if(c.winner==='ally'){
   if(member&&!c.allies)member.hp=Math.max(1,Math.ceil(c.ally.hp));
-  if(followup){exp.log.push(info.name+' is defeated. '+followup.name+' steps forward.');return beginExpBattle(followup,key)}
+  if(followup){exp.log.push(info.name+' is defeated. '+followup.name+' steps forward.');return beginExpBattle(followup,key,undefined,followup.nextDefender)}
   gainXp('mc',8+c.enemy.level*2);exp.cleared.push(key);exp.encounter=null;
   if(info.boss)return expeditionEnd('dungeonVictory');
   if(info.throne){exp.status='victoryChoice';exp.log.push(`${info.name} is beaten. The stronghold is yours to decide.`)}
@@ -251,7 +276,7 @@ function renderExpedition(){
     chest.onclick=event=>{
      event.stopPropagation();
      if(state.expedition!==exp||exp.status!=='exploring')return;
-     if(c.defenders[key]&&!exp.cleared.includes(key)){toast('Defeat the room defender before opening this chest.');return}
+     if(c.defenders[key]&&!exp.cleared.includes(key)){toast('Defeat all room defenders before opening this chest.');return}
      if(exp.current!==key&&!moveTo(key))return;
      if(sideTreasure(exp,key))collectSideTreasure(exp,key);
      else openDungeonChest(key);
