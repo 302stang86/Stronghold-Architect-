@@ -35,8 +35,8 @@ function renderBarracks(target,room){
 
 function canHostGuard(room){return ![12,13,14,15].includes(room.type)}
 function guardAt(room){return state.guards.find(g=>g.home===roomKey(room))||null}
-function assignGuard(id,room){const g=state.guards.find(x=>x.id===id);if(state.over||!g||!room||!canHostGuard(room))return false;const cur=guardAt(room);if(cur&&cur!==g){toast('That room already has a guard.');return false}g.home=roomKey(room);g.path=[];sendServantHome(g);note(`${g.name} was posted to the ${TYPES[room.type][0]}.`);save();render();renderRoomViewer();return true}
-function unassignGuard(id){const g=state.guards.find(x=>x.id===id);if(!g||!g.home)return false;g.home=null;g.path=[];g.mode='wander';g.waitMs=600;note(`${g.name} now roams the keep.`);save();render();renderRoomViewer();return true}
+function assignGuard(id,room){const g=state.guards.find(x=>x.id===id);if(state.over||!g||unitAway(g)||isKnockedOut(g)||state.invasion.active||!state.tiles.includes(room)||!canHostGuard(room))return false;const cur=guardAt(room);if(cur&&cur!==g){toast('That room already has a guard.');return false}g.home=roomKey(room);g.path=[];sendServantHome(g);note(`${g.name} was posted to the ${TYPES[room.type][0]}.`);save();render();renderRoomViewer();return true}
+function unassignGuard(id){const g=state.guards.find(x=>x.id===id);if(state.over||!g||!g.home||unitAway(g)||isKnockedOut(g)||state.invasion.active)return false;g.home=null;g.path=[];g.mode='wander';g.waitMs=600;note(`${g.name} now roams the keep.`);save();render();renderRoomViewer();return true}
 function renderRoomGuard(room,target){
  if(!canHostGuard(room)||!state.guards.length&&room.type!==1)return;
  const box=document.createElement('section');box.className='room-guard';const h=document.createElement('h3');h.textContent='Guard';box.append(h);
@@ -194,6 +194,7 @@ function enterRoom(key){
  }
  window.StrongholdAudio?.play('door');
  exp.current=key;if(!exp.discovered.includes(key))exp.discovered.push(key);revealSideDoors(exp);
+ if(exp.mode==='dungeon')triggerDungeonTrap(exp,t);
  if(t.type===0)enterExpBattle(expInfo(key,true),key);
  else if(c.defenders[key]&&!exp.cleared.includes(key))enterExpBattle(expInfo(key,false),key);
  else{lootRoom(key,false);save();renderExpedition()}
@@ -241,7 +242,8 @@ function renderExpedition(){
   const key=roomKey(t),cell=document.createElement('div');cell.className='exp-cell'+(key===exp.current?' here':'')+(exp.looted.includes(key)?' looted':'');cell.style.gridColumn=t.x-minX+1;cell.style.gridRow=t.y-minY+1;
   const im=document.createElement('img');im.src=art(t.type);im.alt=TYPES[t.type][0];im.style.transform=`rotate(${t.rot*90}deg)`;cell.append(im);
   const lab=document.createElement('span');lab.className='exp-label';lab.textContent=key===c.bossKey?'Boss Vault':TYPES[t.type][0];cell.append(lab);
-  if(exp.cleared.includes(key)&&t.type!==0){const k=document.createElement('span');k.className='exp-flag';k.textContent='✔ cleared';cell.append(k)}
+  if(exp.mode==='dungeon'&&t.dungeonTrap){const marker=document.createElement('span');marker.className='exp-flag';marker.textContent=exp.spentTraps?.includes(key)?'Trap spent':'Trap';cell.append(marker)}
+  else if(exp.cleared.includes(key)&&t.type!==0){const k=document.createElement('span');k.className='exp-flag';k.textContent='✔ cleared';cell.append(k)}
   const chestHere=exp.sideDoors?.find(d=>d.to===key&&d.gold)||(exp.mode==='dungeon'?c.chests?.[key]:null);
   if(chestHere){
    const marker=document.createElement('span'),opened=exp.openedChests?.includes(key)||c.claimedSideTreasure?.includes(key);

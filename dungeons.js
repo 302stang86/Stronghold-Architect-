@@ -1,6 +1,6 @@
 /* Dungeon landmarks live in the campaign save, outside rival stronghold simulation. */
 const DUNGEON_GRID_SIZE=10;
-const DUNGEON_LAYOUT_VERSION=3;
+const DUNGEON_LAYOUT_VERSION=4;
 const DUNGEON_TIERS = [
  {id:'dungeon-low', name:'Forgotten Cellar', tier:'Low', chestCount:3, occupancy:.3, recommended:1, boss:'The Fallen Captain',
   warning:'Light resistance. The Captain alternates shield and counterattack turns.',
@@ -12,7 +12,7 @@ const DUNGEON_TIERS = [
   reward:{gold:145,stone:75,food:35,rp:25}},
  {id:'dungeon-high', name:'Hollow Citadel', tier:'High', chestCount:8, occupancy:.9, recommended:10, boss:'The Ironbound Demon',
   warning:'Elite defenders. The Demon breaks its chains at half health. Use block when it charges.',
-  rooms:[3,4,7,9,11,18,19], guard:'Ironbound Sentinel', variant:3, guardLevel:7, health:1.3, skill:.85,
+  rooms:[3,4,7,9,18,19], guard:'Ironbound Sentinel', variant:3, guardLevel:7, health:1.3, skill:.85,
   reward:{gold:300,stone:150,food:65,rp:60}}
 ];
 
@@ -101,6 +101,24 @@ function generateDungeon(tier){
   caches[roomKey(room)]={[pick(['gold','food','stone','rp'])]:4+index*5+roll(7)};
  }
  for(const room of sideRooms)room.type=pick(tier.rooms);
+ const specialPool=sideRooms.filter(room=>room!==first&&roomKey(room)!==keyRoom);
+ const junctions=specialPool.filter(room=>room.ports.length>=2);
+ const halls=[];
+ while(halls.length<Math.ceil(total*.2)){
+  const [room]=junctions.splice(roll(junctions.length),1);
+  halls.push(room);
+  const ports=room.ports;
+  room.type=ports.length===4?15:ports.length===3?14:ports.includes((ports[0]+2)%4)?12:13;
+  if(room.type===12)room.rot=ports[0]%2;
+  if(room.type===13)room.rot=ports.find(port=>ports.includes((port+1)%4));
+  if(room.type===14)room.rot=(DIRS.findIndex((_,i)=>!ports.includes(i))+2)%4;
+ }
+ const trapPool=specialPool.filter(room=>![12,13,14,15].includes(room.type)), dungeonTraps=['spikes','gas','flame','acid'];
+ for(let count=Math.ceil(total*.1);count>0;count--){
+  const [room]=trapPool.splice(roll(trapPool.length),1);
+  room.type=11;
+  room.dungeonTrap=dungeonTraps[roll(index<2?index+2:4)];
+ }
  for(const room of rooms)delete room.depth;
  defenders[bossKey]={name:tier.boss,level:tier.recommended,variant:tier.variant,
   health:tier.health,skill:tier.skill,damage:[.72,.9,1][index],boss:tier.id};
@@ -138,6 +156,18 @@ function openDungeonChest(key){
  save();renderExpedition();
 }
 
+function triggerDungeonTrap(exp,room){
+ const key=roomKey(room),trap=TRAPS[room.dungeonTrap];
+ if(!trap||exp.spentTraps?.includes(key))return;
+ const target=exp.party.find(unit=>unit.kind==='prince'&&unit.hp>0)||exp.party.find(unit=>unit.hp>0);
+ if(!target)return;
+ (exp.spentTraps??=[]).push(key);
+ const damage=Math.max(0,Math.min(target.hp-1,Math.round(target.maxHp*trap.strength/100)));
+ target.hp-=damage;
+ window.StrongholdAudio?.play(room.dungeonTrap);
+ const message=trap.name+' triggered · '+target.name+' lost '+damage+' HP.';
+ exp.log.push(message);toast(message);
+}
 function dungeonLoot(exp,layout,key){
  if(exp.looted.includes(key))return;
  const cache=layout.caches[key];
@@ -169,8 +199,8 @@ function finishDungeon(exp,result){
   landmark.readyAt=dungeonClock(state)+3*DAY_MS;
   landmark.layout=null;
  }else{
-  const {current,discovered,cleared,looted,vaultKey,openedChests=[],sideDoors,unlockedDoors,revealedDoors}=exp;
-  landmark.layout.progress={current,discovered,cleared,looted,vaultKey,openedChests,sideDoors,unlockedDoors,revealedDoors};
+  const {current,discovered,cleared,looted,vaultKey,openedChests=[],sideDoors,unlockedDoors,revealedDoors,spentTraps}=exp;
+  landmark.layout.progress={current,discovered,cleared,looted,vaultKey,openedChests,sideDoors,unlockedDoors,revealedDoors,spentTraps};
  }
  const supplies=Object.entries(exp.loot).filter(([,v])=>v>0).map(([k,v])=>{
   state[k]=roundResource(state[k]+v);
