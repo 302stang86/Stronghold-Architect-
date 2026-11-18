@@ -229,15 +229,6 @@ function renderExpedition(){
  const tiles=exp.discovered.map(expTile).filter(Boolean),minX=Math.min(...tiles.map(t=>t.x)),maxX=Math.max(...tiles.map(t=>t.x)),minY=Math.min(...tiles.map(t=>t.y)),maxY=Math.max(...tiles.map(t=>t.y));
  const grid=$('exp-grid');grid.replaceChildren();grid.style.gridTemplateColumns=`repeat(${maxX-minX+1},var(--ecell))`;grid.style.gridTemplateRows=`repeat(${maxY-minY+1},var(--ecell))`;
  const busy=exp.status!=='exploring';
- const chestButton=$('exp-chest'),bonusChest=sideTreasure(exp,exp.current),chest=bonusChest||(exp.mode==='dungeon'?c.chests?.[exp.current]:null);
- chestButton.hidden=busy||!chest||exp.openedChests?.includes(exp.current)||
-  !!(c.defenders[exp.current]&&!exp.cleared.includes(exp.current));
- if(!chestButton.hidden){
-  const key=exp.current;
-  chestButton.textContent=chest.locked?'Unlock chest · 1 Lockpick Set':'Open treasure chest';
-  chestButton.onclick=()=>bonusChest?collectSideTreasure(exp,key):openDungeonChest(key);
- }
-
  for(const t of tiles){
   const key=roomKey(t),cell=document.createElement('div');cell.className='exp-cell'+(key===exp.current?' here':'')+(exp.looted.includes(key)?' looted':'');cell.style.gridColumn=t.x-minX+1;cell.style.gridRow=t.y-minY+1;
   const im=document.createElement('img');im.src=art(t.type);im.alt=TYPES[t.type][0];im.style.transform=`rotate(${t.rot*90}deg)`;cell.append(im);
@@ -246,10 +237,27 @@ function renderExpedition(){
   else if(exp.cleared.includes(key)&&t.type!==0){const k=document.createElement('span');k.className='exp-flag';k.textContent='✔ cleared';cell.append(k)}
   const chestHere=exp.sideDoors?.find(d=>d.to===key&&d.gold)||(exp.mode==='dungeon'?c.chests?.[key]:null);
   if(chestHere){
-   const marker=document.createElement('span'),opened=exp.openedChests?.includes(key)||c.claimedSideTreasure?.includes(key);
-   marker.className='exp-chest-marker';
-   marker.textContent=opened?'Chest opened':chestHere.locked?'Locked chest':'Treasure chest';
-   cell.append(marker);
+   const opened=exp.openedChests?.includes(key)||c.claimedSideTreasure?.includes(key);
+   const label=opened?'Treasure chest opened':chestHere.locked?'Unlock treasure chest · requires 1 Lockpick Set':'Open treasure chest';
+   const chest=document.createElement(opened?'span':'button');
+   chest.className='exp-room-chest'+(opened?' is-open':motionOK()?' is-floating':'');
+   chest.title=label;
+   const icon=document.createElement('img');
+   icon.src='assets/chest-'+(chestHere.locked?'gold':'iron')+'-'+(opened?'open':'closed')+'.webp';
+   icon.alt=opened?label:'';
+   chest.append(icon);
+   if(!opened){
+    chest.type='button';chest.disabled=busy;chest.setAttribute('aria-label',label);
+    chest.onclick=event=>{
+     event.stopPropagation();
+     if(state.expedition!==exp||exp.status!=='exploring')return;
+     if(c.defenders[key]&&!exp.cleared.includes(key)){toast('Defeat the room defender before opening this chest.');return}
+     if(exp.current!==key&&!moveTo(key))return;
+     if(sideTreasure(exp,key))collectSideTreasure(exp,key);
+     else openDungeonChest(key);
+    };
+   }
+   cell.append(chest);
   }
   if(key===exp.current){const who=document.createElement('div');who.className='exp-party-token';for(const m of exp.party.slice(0,3)){const f=document.createElement('span');f.style.backgroundImage=`url("${combatSprite(m)}")`;f.style.backgroundSize='200% 400%';who.append(f)}cell.append(who)}
   if(!busy&&key!==exp.current){cell.classList.add('go');cell.onclick=()=>moveTo(key)}
