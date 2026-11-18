@@ -57,6 +57,7 @@ function tryBuild(c,cap){
    return}}
 }
 function invade(w,c,ctx){
+ if(c.guards<1)return; // an NPC prince needs 1-2 guards available before any attack or raid
  const targets=w.castles.filter(t=>t!==c&&t.ownerId!==c.ownerId&&!(t.shield>0));if(!targets.length)return;
  const wts=targets.map(t=>1/(1+Math.hypot(t.x-c.x,t.y-c.y)));let r=Math.random()*wts.reduce((a,b)=>a+b,0),t=targets[0];for(let i=0;i<targets.length;i++){r-=wts[i];if(r<=0){t=targets[i];break}}
  const mode=c.guards>=1&&Math.random()<.6?'raid':'attack',L=Math.min(c.prince.level,ctx.cap);
