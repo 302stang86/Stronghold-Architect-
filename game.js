@@ -55,7 +55,7 @@ function placement(t,tiles=state.tiles){if(entranceBlocked(t.x,t.y,tiles))return
 function connected(tiles){const root=tiles.find(t=>t.type===0);if(!root)return false;const seen=new Set([root]),q=[root];while(q.length){const a=q.shift();DIRS.forEach(([dx,dy],d)=>{const b=at(a.x+dx,a.y+dy,tiles);if(b&&!seen.has(b)&&compatible(a,b,d)){seen.add(b);q.push(b)}})}return seen.size===tiles.length}
 function unlocked(i){return START_UNLOCKED.includes(i)||state.researched.includes(i)}
 function research(i){if(state.over||unlocked(i)||!RESEARCH_COST[i])return;if(!state.tiles.some(t=>t.type===19))return toast('Build a research room first.');if(state.rp<RESEARCH_COST[i])return toast('Not enough research points. Research Rooms add points as time passes.');state.rp-=RESEARCH_COST[i];state.researched.push(i);note(TYPES[i][0]+' blueprint researched.');gainXp('mc',15);save();render();toast(TYPES[i][0]+' unlocked!')}
-function income(){const total={gold:0,stone:0,rp:0,food:0};for(const room of state.tiles)for(const [k,v]of Object.entries(roomRates(room)))total[k]+=v;return total}
+function income(){const total={gold:0,stone:0,rp:0,food:0};for(const room of state.tiles)for(const [k,v]of Object.entries(roomRates(room)))total[k]+=v*(k==='gold'&&state.day<=3?2:k==='food'?1/gameSpeed:1);return total}
 function toast(t){$('toast').textContent=t;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3500)}
 function note(t){state.log.unshift(`Day ${state.day} · ${t}`);state.log=state.log.slice(0,12);floatLog(`Day ${state.day} · ${t}`)}
 function floatLog(text){const box=document.getElementById('logfloat');if(!box)return;const p=document.createElement('p');p.textContent=text;box.append(p);while(box.children.length>5)box.firstChild.remove();setTimeout(()=>p.classList.add('fade'),2600);setTimeout(()=>p.remove(),3200)}
@@ -178,7 +178,7 @@ function renderRoomViewer(){
  renderMC();if(room.type===17)startCrowd();else stopCrowd();
  if(room.type===0){const sv=document.createElement('button');const assigned=state.collectors.filter(n=>n.home!==null).length;sv.textContent=`Manage servants · ${state.collectors.length} of ${servantCap()} · ${assigned} assigned`;sv.onclick=openRoster;tools.append(sv)}
  if(room.type===19){const sec=document.createElement('section');sec.className='room-research';const h=document.createElement('h3');h.textContent='Research blueprints';const p=document.createElement('p');p.className='muted';p.textContent=`${fmt(state.rp)} research points · +${fmt(income().rp)} per day. Unlocks are permanent.`;const list=document.createElement('div');renderResearchList(list);sec.append(h,p,list);actions.append(sec)}
- if(room.type===1&&window.renderBarracks)renderBarracks(actions);if(room.type===17){const wm=document.createElement('button');wm.textContent='View world map';wm.onclick=openWorldMap;tools.append(wm)}
+ if(room.type===1&&window.renderBarracks)renderBarracks(actions);
  const rotate=document.createElement('button');rotate.textContent='Rotate room · 10 gold ↻';rotate.disabled=state.over||room.type===17||state.gold<ROTATION_COST||!!state.invasion.active;if(state.invasion.active){rotate.textContent='Rotate locked during invasion';rotate.title='Finish the invasion first'}rotate.onclick=()=>{selected=room;rotateSelected()};tools.append(rotate);
  if(![0,17].includes(room.type)){const del=document.createElement('button');del.textContent=room.trap?'Remove trap before demolishing room':`Demolish room · ${DEMOLISH_COST} gold`;del.disabled=state.over||!!room.trap||state.gold<DEMOLISH_COST||!!state.invasion.active;if(state.invasion.active){del.textContent='Demolish locked during invasion';del.title='Finish the invasion first'}del.onclick=()=>{selected=room;demolish()};tools.append(del)}actions.append(tools);
 }
@@ -242,14 +242,14 @@ function renderClock(){
  $('dayclockfill').style.width=(state.dayElapsedMs/DAY_MS*100)+'%';$('chip-text').textContent=state.over?'The keep has fallen':`Day ${state.day} · ${String(minutes).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;$('chip-fill').style.width=(state.dayElapsedMs/DAY_MS*100)+'%';
 }
 function resetDayClock(){lastClockTick=Date.now();lastClockSave=lastClockTick;clockSuspended=awaitingResume;}
-function applyElapsedTime(elapsed){
+function applyElapsedTime(elapsed,speed=1){
  if(awaitingResume||state.over||!Number.isFinite(elapsed)||elapsed<=0)return;
- while(elapsed>0&&!state.over){const step=Math.min(elapsed,250,DAY_MS-state.dayElapsedMs);if(state.invasion.combat){tickCombat(step);elapsed-=step;continue}if(state.expedition){elapsed-=step;continue}simulateEconomy(step);state.dayElapsedMs+=step;tickInvasion(step);elapsed-=step;if(state.dayElapsedMs>=DAY_MS){state.dayElapsedMs=0;completeDay()}}
+ while(elapsed>0&&!state.over){const step=Math.min(elapsed,250,DAY_MS-state.dayElapsedMs);if(state.invasion.combat){tickCombat(step);elapsed-=step;continue}if(state.expedition){elapsed-=step;continue}simulateEconomy(step,step/speed);state.dayElapsedMs+=step;tickInvasion(step);elapsed-=step;if(state.dayElapsedMs>=DAY_MS){state.dayElapsedMs=0;completeDay()}}
  if(state.over)state.dayElapsedMs=0;
 }
 
 function tickDayClock(now=Date.now()){
- if(clockSuspended)return;const elapsed=Math.max(0,now-lastClockTick);lastClockTick=now;applyElapsedTime(elapsed*gameSpeed);renderClock();renderWorldEconomy();renderAlarm();
+ if(clockSuspended)return;const elapsed=Math.max(0,now-lastClockTick);lastClockTick=now;applyElapsedTime(elapsed*gameSpeed,gameSpeed);renderClock();renderWorldEconomy();renderAlarm();
  if(now-lastClockSave>=5000){save();lastClockSave=now}
 }
 setInterval(tickDayClock,250);
@@ -382,6 +382,7 @@ const GLOSSARY={Gold:'Gold pays for building, upgrading, rotating and demolishin
 $('resources').onclick=e=>{const d=e.target.closest('#resources>div');if(!d)return;toast(GLOSSARY[d.querySelector('span').textContent]||'')};
 showTab('keep');renderAlarm();
 
+$('world-map-toggle').onclick=openWorldMap;
 function openWorldMap(){save();const dlg=$('mapdialog'),fr=$('mapframe');if($('roomdialog')?.open)$('roomdialog').close();fr.src='worldmap/index.html?embed=1&v='+Date.now();if(!dlg.open)dlg.showModal()}
 window.addEventListener('message',e=>{if(e.data&&e.data.type==='closeWorldMap'&&$('mapdialog').open)$('mapdialog').close()});
 

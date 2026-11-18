@@ -2,7 +2,7 @@ const TILE_ART=["assets/225d8567b5dac4c82362.png", "assets/5616cde8557072084971.
 const TYPES=[
 ['Throne Room',0,0,0,[],'The heart of your keep. Produces 20 gold and 12 stone daily.'],
 ['Barracks',50,25,0,[],'Quarters for soldiers. No effect yet; its role is being redesigned.'],
-['Kitchen',40,20,0,[],'Produces 12 food daily. Allows more servants: Level 1 adds 1, Level 3 adds 2 in total, Level 5 adds 4 in total.'],
+['Kitchen',40,20,0,[],'Produces 0.5 food every 60 real seconds. Allows more servants: Level 1 adds 1, Level 3 adds 2 in total, Level 5 adds 4 in total.'],
 ['Armory',65,35,0,[1],'Produces 10 stone daily.'],
 ['War Room',75,35,0,[1],'Tactical planning room. No effect yet; its role is being redesigned.'],
 ['Library',60,30,0,[],'Produces 5 research points daily.'],
@@ -29,16 +29,38 @@ const TRAPS={
  acid:{name:'Acid Rain Traps',price:275,strength:55,color:'#d5e874'}
 };
 const TRAP_ART={
- spikes:'<g fill="#bbc6cd" stroke="#30383c" stroke-width="1.4"><path d="M18 33 L23 16 L28 33Z M32 33 L37 16 L42 33Z M58 33 L63 16 L68 33Z M72 33 L77 16 L82 33Z M18 84 L23 67 L28 84Z M32 84 L37 67 L42 84Z M58 84 L63 67 L68 84Z M72 84 L77 67 L82 84Z"/></g>',
- gas:'<g fill="#8bea9b" opacity=".55"><ellipse cx="24" cy="27" rx="15" ry="10"/><ellipse cx="76" cy="27" rx="15" ry="10"/><ellipse cx="24" cy="76" rx="15" ry="10"/><ellipse cx="76" cy="76" rx="15" ry="10"/></g><g fill="#2e5840" stroke="#bbd6a7" stroke-width="1"><circle cx="22" cy="23" r="5"/><circle cx="78" cy="23" r="5"/><circle cx="22" cy="78" r="5"/><circle cx="78" cy="78" r="5"/></g>',
- flame:'<g fill="#a44828" stroke="#edb769" stroke-width="1"><rect x="16" y="20" width="15" height="10"/><rect x="69" y="20" width="15" height="10"/><rect x="16" y="70" width="15" height="10"/><rect x="69" y="70" width="15" height="10"/></g><g fill="#ffb34f"><path d="M17 26 Q10 16 23 10 Q21 17 29 20 Q34 32 17 26Z M70 26 Q63 16 76 10 Q74 17 82 20 Q87 32 70 26Z M17 77 Q10 67 23 60 Q21 68 29 70 Q34 82 17 77Z M70 77 Q63 67 76 60 Q74 68 82 70 Q87 82 70 77Z"/></g>',
- acid:'<g fill="#c6e76b" opacity=".7"><ellipse cx="25" cy="80" rx="15" ry="6"/><ellipse cx="75" cy="80" rx="15" ry="6"/></g><g stroke="#d2f379" stroke-width="2" stroke-linecap="round"><path d="M23 17 L19 29 M35 26 L31 38 M23 47 L19 59 M35 60 L31 72 M73 17 L69 29 M85 26 L81 38 M73 47 L69 59 M85 60 L81 72"/></g><g fill="#788a3a" stroke="#d2f379" stroke-width="1"><rect x="17" y="12" width="23" height="5"/><rect x="67" y="12" width="23" height="5"/></g>'
+ spikes:`<ellipse cx="50" cy="73" rx="31" ry="11" fill="#08060a" opacity=".7"/>
+ <path d="m21 63 23-11 35 8v10L54 82 21 74Z" fill="#2d272d" stroke="#16131b" stroke-width="2"/>
+ <path d="m21 63 23-11 35 8-25 13Z" fill="#66636b" stroke="#98949a" stroke-width="1.3"/>
+ <path d="M28 64 35 39 40 65Zm14-4 7-29 6 31Zm14 6 8-28 5 26Zm-12 4 5-21 8 20Z" fill="#c0c2ca" stroke="#454653" stroke-width="1.4"/>
+ <path d="m35 39 1 22 4 4Zm14-8 1 26 5 5Zm15 7-2 22 7 4Z" fill="#7b8994"/>`,
+ gas:`<ellipse cx="51" cy="75" rx="31" ry="10" fill="#08060a" opacity=".7"/>
+ <path d="m22 67 27-13 31 9v8L54 83l-32-9Z" fill="#443e3d" stroke="#211c20" stroke-width="2"/>
+ <path d="m22 67 27-13 31 9-26 13Z" fill="#686258" stroke="#a69b82" stroke-width="1.3"/>
+ <path d="m32 65 19-8m-10 12 20-9m-10 12 20-9" stroke="#201b1d" stroke-width="3"/>
+ <path d="M40 58c-11-4-7-11 1-11-9-6-4-13 4-15-3-7 5-12 12-8 5 4 3 9 0 13 10-2 16 6 11 11-3 4-10 6-15 7Z" fill="#80ba65" opacity=".6"/>
+ <path d="M50 55c-5-4-2-7 3-10s8-7 5-11" fill="none" stroke="#b9e099" stroke-width="2.5" opacity=".7"/>`,
+ flame:`<ellipse cx="51" cy="76" rx="28" ry="8" fill="#08060a" opacity=".7"/>
+ <path d="M26 66h47l-7 11H32Z" fill="#562e24" stroke="#291917" stroke-width="2"/>
+ <path d="M34 69v7m16-7v9m15-9v7" stroke="#b47243" stroke-width="2"/>
+ <ellipse cx="50" cy="64" rx="25" ry="8" fill="#262027" stroke="#aa7650" stroke-width="2"/>
+ <path d="M39 64c-12-11 6-18 4-31 8 4 11 9 10 15 7-4 9-10 8-15 13 15 14 27 1 32Z" fill="#c64e25"/>
+ <path d="M46 65c-6-7 2-12 5-20 3 5 5 7 4 11 4-3 7-4 8-8 5 10 0 15-4 18Z" fill="#ffac43"/>
+ <path d="M51 65c-2-3 2-7 4-10 4 5 5 7 2 10Z" fill="#ffe0a2"/>`,
+ acid:`<ellipse cx="49" cy="77" rx="31" ry="9" fill="#08060a" opacity=".72"/>
+ <path d="M25 71 61 61l18 10-32 12Z" fill="#719331" opacity=".73"/>
+ <path d="M32 69V41l12-6h20l8 6v19l-9 9Z" fill="#62644a" stroke="#272b1b" stroke-width="2"/>
+ <path d="m32 41 14-7h18l-10 7Z" fill="#a0a471" stroke="#3b3f29" stroke-width="1.5"/>
+ <path d="M39 41v26m7-26v24m7-24v26m8-27v23" stroke="#393f2d" stroke-width="1.4"/>
+ <path d="m31 49 32-1 9-6m-41 15 32-1 9-6" fill="none" stroke="#9a9871" stroke-width="2"/>
+ <path d="M72 52h7v3l-4 2h-3Z" fill="#bcc36c" stroke="#474c29"/>
+ <path d="M78 59c0 4 4 6 2 9-2 2-5 1-5-1 0-2 2-4 3-8Z" fill="#c3eb71"/>`,
 };
 
-function baseRoomRates(room){switch(room.type){case 0:return {gold:20,stone:12};case 2:return {food:12};case 3:return {stone:10};case 5:return {rp:5};case 10:return {gold:35};case 18:return {gold:25};case 19:return {rp:10};default:return {}}}
+function baseRoomRates(room){switch(room.type){case 0:return {gold:20,stone:12};case 2:return {food:5};case 3:return {stone:10};case 5:return {rp:5};case 10:return {gold:35};case 18:return {gold:25};case 19:return {rp:10};default:return {}}}
 
 function levelMultiplier(level){return 1+((level||1)-1)*.25}
-function roomRates(room){return Object.fromEntries(Object.entries(baseRoomRates(room)).map(([k,v])=>[k,v*levelMultiplier(room.level)]))}
+function roomRates(room){return Object.fromEntries(Object.entries(baseRoomRates(room)).map(([k,v])=>[k,v*(room.type===2?1:levelMultiplier(room.level))]))}
 function prereqsMet(type,tiles=state.tiles){return TYPES[type][4].every(r=>tiles.some(t=>t.type===r))}
 function prereqNames(type){return TYPES[type][4].map(r=>TYPES[r][0]).join(' and ')}
 function trapStrength(room){return room.trap?TRAPS[room.trap].strength*levelMultiplier(room.trapLevel):0}
@@ -46,6 +68,6 @@ function resourceUpgradeCost(room){const level=room.level||1;return {gold:Math.c
 function upgradeResourceRoom(room){if(state.over||!state.tiles.includes(room)||!Object.keys(roomRates(room)).length||(room.level||1)>=5)return false;const cost=resourceUpgradeCost(room);if(state.gold<cost.gold||state.stone<cost.stone)return false;state.gold-=cost.gold;state.stone-=cost.stone;room.level=(room.level||1)+1;note(`${TYPES[room.type][0]} upgraded to Level ${room.level}.`);save();render();return true}
 function trapUpgradeCost(room){return Math.ceil(TRAPS[room.trap].price*.5*(room.trapLevel||1))}
 function upgradeTrap(room){if(state.over||!state.tiles.includes(room)||room.type!==16||!room.trap||(room.trapLevel||1)>=5)return false;const cost=trapUpgradeCost(room);if(state.gold<cost)return false;state.gold-=cost;room.trapLevel=(room.trapLevel||1)+1;note(`${TRAPS[room.trap].name} upgraded to Level ${room.trapLevel}.`);save();render();return true}
-function renderResourceUpgrade(room,target){if(!Object.keys(roomRates(room)).length)return;const section=document.createElement('section'),p=document.createElement('p'),b=document.createElement('button');p.textContent=`Resource room · Level ${room.level||1} / 5 · +${((room.level||1)-1)*25}% production`+(room.type===2?` · Allows ${kitchenBonus(room.level)} servant${kitchenBonus(room.level)===1?'':'s'}`:'');section.append(p);const cost=resourceUpgradeCost(room);b.textContent=(room.level||1)>=5?'Maximum level reached':`Upgrade to Level ${(room.level||1)+1} · ${cost.gold} gold + ${cost.stone} stone`;b.disabled=state.over||(room.level||1)>=5||state.gold<cost.gold||state.stone<cost.stone;b.onclick=()=>upgradeResourceRoom(room);section.append(b);target.append(section)}
+function renderResourceUpgrade(room,target){if(!Object.keys(roomRates(room)).length)return;const section=document.createElement('section'),p=document.createElement('p'),b=document.createElement('button');p.textContent=`Resource room · Level ${room.level||1} / 5`+(room.type===2?` · Allows ${kitchenBonus(room.level)} servant${kitchenBonus(room.level)===1?'':'s'} · 0.5 food per 60 real seconds`:` · +${((room.level||1)-1)*25}% production`);section.append(p);const cost=resourceUpgradeCost(room);b.textContent=(room.level||1)>=5?'Maximum level reached':`Upgrade to Level ${(room.level||1)+1} · ${cost.gold} gold + ${cost.stone} stone`;b.disabled=state.over||(room.level||1)>=5||state.gold<cost.gold||state.stone<cost.stone;b.onclick=()=>upgradeResourceRoom(room);section.append(b);target.append(section)}
 
-function batchFor(room){return Object.fromEntries(Object.entries(roomRates(room)).map(([k,v])=>[k,v*BATCH_MS/DAY_MS]))}
+function batchFor(room,day=state.day){return Object.fromEntries(Object.entries(roomRates(room)).map(([k,v])=>[k,v*BATCH_MS/DAY_MS*(k==='gold'&&day<=3?2:1)]))}

@@ -524,3 +524,23 @@ main{grid-template-columns:minmax(0,1fr)!important}
 .game-topbar #game-speed button{min-width:30px;padding:4px 5px;border-color:transparent;background:transparent;box-shadow:none}
 .game-topbar #game-speed button[aria-pressed="true"]{border-color:#d0a164;background:#653862;color:#fff2cc}
 .game-topbar #game-speed button:focus-visible{outline:2px solid #ffe1ac;outline-offset:-2px}
+
+#world-map-toggle{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:48px;z-index:8;
+ width:52px;height:52px;padding:0;font-size:29px;display:grid;place-items:center;border-radius:12px;
+ background:#201628e8;border:1px solid #c49a62;box-shadow:0 4px 10px #000a}
+#world-map-toggle:focus-visible{outline:2px solid #ffe1ac;outline-offset:2px}
+.merchant-tabs{display:flex;gap:6px;margin-bottom:8px}
+.merchant-tabs [aria-pressed="true"]{border-color:#ffd788;background:#68406d}
+#merchant-quantity label,#trade-quantity{display:block;margin:8px 0}
+#trade-quantity{width:100%;color:#fff7e7;background:#211429;border:1px solid #a68559;padding:9px}
+#bs-extra-allies{position:absolute;left:106px;top:clamp(76px,16%,132px);display:flex;align-items:flex-start;gap:9px;z-index:4;pointer-events:none}
+.bs-party-meter{position:relative;inset:auto;height:158px;gap:3px}
+.bs-party-meter .bs-meter{width:24px;border-width:2px}
+.bs-party-meter .bs-meter-label{font-size:10px}
+@media(max-width:700px),(max-height:560px){
+ #bs-extra-allies{left:75px;top:55px;gap:5px}
+ .bs-party-meter{height:clamp(76px,24dvh,140px)}
+ .bs-party-meter .bs-meter{width:18px}
+ .bs-party-meter .bs-meter-label{font-size:9px}
+ .bs-party-meter .bs-meter-en .bs-meter-name{display:none}
+}

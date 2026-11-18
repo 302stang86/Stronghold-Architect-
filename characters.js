@@ -6,39 +6,125 @@ function unitById(id){return servantById(id)||(state.guards||[]).find(g=>g.id===
 function allUnits(){return [...state.collectors,...(state.guards||[])]}
 function unitAway(n){return !!state.expedition&&state.expedition.party.some(m=>m.id===n.id)}
 function guardRoomKey(g){const r=at(Math.floor(g.x),Math.floor(g.y));return r?roomKey(r):null}
-function nextDefender(inv){const here=inv.room;const g=(state.guards||[]).find(g=>!inv.knocked.includes(g.id)&&(g.home===here||(!g.home&&guardRoomKey(g)===here)));return g||state.collectors.find(n=>n.home===here&&!inv.knocked.includes(n.id))||null}
+function roomDefenders(inv){
+ const here=inv.room;
+ return allUnits().filter(n=>!unitAway(n)&&!inv.knocked.includes(n.id)&&guardRoomKey(n)===here&&
+  (n.guard||n.home===here&&n.mode==='working'));
+}
+function invasionClock(s=state){return (s.day-1)*DAY_MS+(s.dayElapsedMs||0)}
+function firstInvasionAt(){return DAY_MS+Math.random()*(2*DAY_MS-ALARM_MS-250)}
 function merchantTick(){const r=state.invasion;if(state.over||state.day<3||!(r.merchantCredit>=1)||r.active||r.combat||state.expedition||r.alarmMs!=null||document.querySelector('dialog[open]'))return;r.merchantCredit-=1;note('A merchant arrived at the castle gate.');save();showMerchantDialog()}
-function showMerchantDialog(){const d=$('merchantdialog');if(!d||d.open)return;$('merchant-title').textContent='A merchant at the gate';$('merchant-text').textContent='A travelling merchant waits outside your castle gate. Merchants never attack. Would you like to trade?';$('merchant-yes').hidden=false;$('merchant-no').textContent='No';$('merchant-yes').onclick=()=>{pickMerchantStock();$('merchant-title').textContent='The merchant\u2019s wares';$('merchant-yes').hidden=true;$('merchant-no').textContent='Leave';renderMerchantShop();note('You are trading with the merchant.')};$('merchant-no').onclick=()=>d.close();d.showModal()}
+function showMerchantDialog(){const d=$('merchantdialog');if(!d||d.open)return;resetMerchantTrade();$('merchant-title').textContent='A merchant at the gate';$('merchant-text').textContent='A travelling merchant waits outside your castle gate. Merchants never attack. Would you like to trade?';$('merchant-yes').hidden=false;$('merchant-no').textContent='No';$('merchant-yes').onclick=()=>{pickMerchantStock();$('merchant-title').textContent='Trade with the merchant';$('merchant-yes').hidden=true;$('merchant-no').textContent='Leave';renderMerchantShop();note('You are trading with the merchant.')};$('merchant-no').onclick=()=>d.close();d.showModal()}
 const ALARM_MS=6000;const LOSS_RATES={gold:.5,stone:.3,food:.3,rp:.1};
 const SERVANT_BONUS=1.05,SERVANT_HUNGER_PENALTY=.3,MC_HUNGER_PENALTY=.25,BASE_SERVANTS=3,TRAP_FLOOR_RATIO=.1;
-function initInvasion(s){if(!s.invasion)s.invasion={nextDay:Math.max(3,s.day),countDay:s.day,count:0,queuedAt:null,active:null,combat:null,alarmMs:null};if(s.invasion.alarmMs===undefined)s.invasion.alarmMs=null;if(!Number.isFinite(s.invasion.merchantCredit)||s.invasion.merchantCredit<0)s.invasion.merchantCredit=0;if(s.invasion.active&&s.invasion.active.level===undefined)s.invasion.active.level=1;if(s.invasion.combat&&!Array.isArray(s.invasion.combat.ally?.hand))s.invasion.combat=null;if(s.invasion.combat)s.invasion.combat.lockMs=0}
+function initInvasion(s){
+ if(!s.invasion)s.invasion={active:null,combat:null,alarmMs:null,nextAt:firstInvasionAt()};
+ const r=s.invasion;
+ if(!Number.isFinite(r.nextAt)||r.nextAt<DAY_MS)r.nextAt=s.day<=3&&!r.active?firstInvasionAt():
+  Math.max(invasionClock(s),((r.nextDay||s.day)-1)*DAY_MS);
+ if(r.alarmMs===undefined)r.alarmMs=null;
+ if(!Number.isFinite(r.merchantCredit)||r.merchantCredit<0)r.merchantCredit=0;
+ if(r.active&&r.active.level===undefined)r.active.level=1;
+ if(r.combat&&!Array.isArray(r.combat.ally?.hand))r.combat=null;
+ if(r.combat){
+  r.combat.lockMs=0;
+  if(r.combat.allies?.[r.combat.allyIndex])r.combat.ally=r.combat.allies[r.combat.allyIndex];
+ }
+}
 function raidNeighbors(room){return DIRS.map(([dx,dy],d)=>{const r=at(room.x+dx,room.y+dy);return r&&compatible(room,r,d)?r:null}).filter(Boolean)}
 function raidPath(from,to,avoidThrone=false){const start=roomFromKey(from),target=roomFromKey(to);if(!start||!target)return null;const q=[start],prev=new Map([[from,null]]);while(q.length){const r=q.shift(),key=roomKey(r);if(key===to){const path=[];let k=key;while(prev.get(k)!==null){path.unshift(k);k=prev.get(k)}return path}for(const n of raidNeighbors(r)){const k=roomKey(n);if(avoidThrone&&n.type===0)continue;if(!prev.has(k)){prev.set(k,key);q.push(n)}}}return null}
-function checkScheduledInvasion(ms=0){const r=state.invasion;if(state.over||state.day<3||r.active)return;if(r.countDay!==state.day){r.countDay=state.day;r.count=0;r.queuedAt=null}if(r.count>=2){r.alarmMs=null;return}const due=r.queuedAt!==null?state.dayElapsedMs>=r.queuedAt:state.day>=r.nextDay;if(!due){r.alarmMs=null;return}if(r.alarmMs==null){r.alarmMs=ALARM_MS;toast('Alarm! Intruders are approaching the castle gate.');shakeScreen();save();return}r.alarmMs-=ms;if(r.alarmMs>0)return;r.alarmMs=null;r.queuedAt=null;spawnInvader()}
+function checkScheduledInvasion(ms){
+ const r=state.invasion;
+ if(state.over||r.active||r.combat||$('merchantdialog').open||invasionClock()<r.nextAt)return;
+ if(r.alarmMs==null){
+  r.alarmMs=ALARM_MS;
+  toast('Alarm! Intruders are approaching the castle gate.');
+  shakeScreen();save();return;
+ }
+ r.alarmMs=Math.max(0,r.alarmMs-ms);
+ if(r.alarmMs===0)spawnInvader();
+}
 function planInvaderRoute(startKey){const throne=state.tiles.find(t=>t.type===0),eligible=state.tiles.filter(t=>![0,12,13,14,15,17].includes(t.type)),maxRooms=Math.max(1,Math.floor(eligible.length*.5)),count=Math.min(eligible.length,1+Math.floor(Math.random()*maxRooms));const shuffled=eligible.slice().sort(()=>Math.random()-.5),served=shuffled.filter(t=>state.collectors.some(n=>n.home===roomKey(t))),rest=shuffled.filter(t=>!served.includes(t));let picks=[...served,...rest].slice(0,count).filter(t=>raidPath(startKey,roomKey(t),true));const route=[];let cur=startKey;while(picks.length){let bi=0,bl=Infinity;picks.forEach((t,i)=>{const p=raidPath(cur,roomKey(t),true);if(p&&p.length<bl){bl=p.length;bi=i}});const t=picks.splice(bi,1)[0];route.push(roomKey(t));cur=roomKey(t)}route.push(roomKey(throne));return route}
-function spawnInvader(){const r=state.invasion;if(state.over||state.day<3||r.active||r.countDay===state.day&&r.count>=2)return false;if(r.countDay!==state.day){r.countDay=state.day;r.count=0}const variant=Math.floor(Math.random()*INVADER_TYPES.length),template=INVADER_TYPES[variant],entrance=state.tiles.find(t=>t.type===17);const level=Math.max(1,Math.min(MAX_LEVEL,state.prince.level+Math.floor(Math.random()*7)-3)),maxHp=hpForLevel(level);r.active={...template,maxHp,hp:maxHp,level,variant,room:roomKey(entrance),from:roomKey(entrance),target:null,travelMs:0,waitMs:1200,knocked:[],route:planInvaderRoute(roomKey(entrance))};r.count++;r.merchantCredit=Math.min(3,(r.merchantCredit||0)+MERCHANT_RATIO);r.queuedAt=null;r.alarmMs=null;shakeScreen();for(const n of state.collectors)if(n.home===null)fleeToThrone(n);note(`${template.name} (level ${level}) entered the castle gate!`);toast(template.name+' has entered your stronghold!');save();render();return true}
+function spawnInvader(){const r=state.invasion;if(state.over||state.day<2||r.active||r.combat)return false;const variant=Math.floor(Math.random()*(state.day<=3?2:INVADER_TYPES.length)),template=INVADER_TYPES[variant],entrance=state.tiles.find(t=>t.type===17);const level=Math.max(1,Math.min(MAX_LEVEL,state.prince.level+Math.floor(Math.random()*7)-3)),maxHp=hpForLevel(level);r.active={...template,maxHp,hp:maxHp,level,variant,room:roomKey(entrance),from:roomKey(entrance),target:null,travelMs:0,waitMs:1200,knocked:[],route:planInvaderRoute(roomKey(entrance))};r.merchantCredit=Math.min(3,(r.merchantCredit||0)+MERCHANT_RATIO);r.alarmMs=null;shakeScreen();for(const n of state.collectors)if(n.home===null)fleeToThrone(n);note(`${template.name} (level ${level}) entered the castle gate!`);toast(template.name+' has entered your stronghold!');save();render();return true}
 function chooseInvaderNext(inv){const throneKey=roomKey(state.tiles.find(t=>t.type===0));while(inv.route.length){const goal=inv.route[0];if(goal===inv.room){inv.route.shift();continue}const path=raidPath(inv.room,goal,goal!==throneKey);if(path&&path.length)return path[0];inv.route.shift()}return null}
 function enterInvaderRoom(){const inv=state.invasion.active,room=roomFromKey(inv.room);if(!room)return finishInvasion('escape','The invader withdrew.');if(inv.route[0]===inv.room)inv.route.shift();
  if(room.trap){const floor=Math.ceil(inv.maxHp*TRAP_FLOOR_RATIO),before=inv.hp,damage=Math.round(trapStrength(room));inv.hp=before>floor?Math.max(floor,before-damage):before;note(`${inv.name} triggered ${TRAPS[room.trap].name} and lost ${fmt(before-inv.hp)} health.`);fxAt(room,'flash','');if(before-inv.hp>0)fxAt(room,'fx-dmg','−'+fmt(before-inv.hp));else fxAt(room,'fx-dmg','Resisted')}
- const defender=nextDefender(inv);if(defender)return startCombat('servant',defender);if(room.type===0)return startCombat('mc',null);save();refreshEconomyUI();}
-function tickInvasion(ms){const r=state.invasion;if(state.over)return;if(r.combat){tickCombat(ms);return}checkScheduledInvasion(ms);merchantTick();const inv=r.active;if(!inv)return;if(inv.waitMs>0){inv.waitMs=Math.max(0,inv.waitMs-ms);return}if(!inv.target){inv.target=chooseInvaderNext(inv);inv.from=inv.room;inv.travelMs=0;if(!inv.target)return finishInvasion('escape','The invader escaped.')}inv.travelMs=Math.min(3200,inv.travelMs+ms);if(inv.travelMs>=3200){inv.room=inv.target;inv.target=null;inv.waitMs=600;enterInvaderRoom()}}
+ if(startRoomCombat(inv))return;
+ save();refreshEconomyUI();
+}
+function tickInvasion(ms){
+ const r=state.invasion;if(state.over)return;
+ if(r.combat){tickCombat(ms);return}
+ checkScheduledInvasion(ms);merchantTick();
+ const inv=r.active;if(!inv)return;
+ if(!inv.target){
+  if(startRoomCombat(inv))return;
+  if(inv.waitMs>0){inv.waitMs=Math.max(0,inv.waitMs-ms);return}
+  inv.target=chooseInvaderNext(inv);inv.from=inv.room;inv.travelMs=0;
+  if(!inv.target)return finishInvasion('escape','The invader escaped.');
+ }
+ inv.travelMs=Math.min(3200,inv.travelMs+ms);
+ if(inv.travelMs>=3200){inv.room=inv.target;inv.target=null;inv.waitMs=600;enterInvaderRoom()}
+}
 function listText(parts){return parts.length<2?parts.join(''):parts.slice(0,-1).join(', ')+' and '+parts[parts.length-1]}
 function rollReward(inv){const scale=inv.atk/12*Math.min(2,1+.04*Math.max(0,state.day-3))*(1+.02*(inv.level-1)),reward={gold:Math.max(1,Math.round((10+Math.random()*15)*scale))};if(Math.random()<.7)reward.stone=Math.max(1,Math.round((5+Math.random()*10)*scale));if(Math.random()<.4)reward.food=Math.max(1,Math.round((3+Math.random()*5)*scale));return reward}
 function finishInvasion(result,message){const r=state.invasion,inv=r.active;if(!inv)return;let text=message;
  if(result==='win'){const reward=rollReward(inv);for(const [k,v]of Object.entries(reward))state[k]=roundResource(state[k]+v);const found=`Found ${listText(Object.entries(reward).map(([k,v])=>v+' '+RESOURCE_INFO[k].name.toLowerCase()))} on the invader’s body.`;text+=' '+found;toast(found)}
- else if(result==='loss'){const taken={};for(const [k,rate]of Object.entries(LOSS_RATES)){const amount=Math.floor(state[k]*rate);if(amount>0){taken[k]=amount;state[k]=roundResource(state[k]-amount)}}const parts=Object.entries(taken).map(([k,v])=>v+' '+(k==='rp'?'research points':RESOURCE_INFO[k].name.toLowerCase()));text+=parts.length?` The invader stole ${listText(parts)}.`:' The invader found nothing to steal.';r.nextDay=Math.max(r.nextDay,state.day+3);toast('The prince was defeated. Resources were stolen.')}
- note(text+' Everyone recovers.');r.active=null;r.combat=null;for(const n of allUnits())if(n.home===null&&!n.guard||n.guard&&!n.home){n.path=[];n.mode='wander';n.waitMs=800+Math.random()*2500}const modal=$('battle-dialog');if(modal?.open)modal.close();if(window.cloudPushSoon)cloudPushSoon();if(result!=='loss'&&state.day===r.countDay&&r.count<2&&state.dayElapsedMs<DAY_MS-2500&&Math.random()<.35)r.queuedAt=state.dayElapsedMs+2000;save();render()}
+ else if(result==='loss'){const taken={};for(const [k,rate]of Object.entries(LOSS_RATES)){const amount=Math.floor(state[k]*rate);if(amount>0){taken[k]=amount;state[k]=roundResource(state[k]-amount)}}const parts=Object.entries(taken).map(([k,v])=>v+' '+(k==='rp'?'research points':RESOURCE_INFO[k].name.toLowerCase()));text+=parts.length?` The invader stole ${listText(parts)}.`:' The invader found nothing to steal.';toast('The prince was defeated. Resources were stolen.')}
+ note(text+' Everyone recovers.');r.active=null;r.combat=null;r.alarmMs=null;r.nextAt=invasionClock()+DAY_MS*(.5+2.5*Math.random());for(const n of allUnits())if(n.home===null&&!n.guard||n.guard&&!n.home){n.path=[];n.mode='wander';n.waitMs=800+Math.random()*2500}const modal=$('battle-dialog');if(modal?.open)modal.close();if(window.cloudPushSoon)cloudPushSoon();save();render()}
 function combatant(name,level,maxHp,dmgMod,skill){return {name,level,maxHp,hp:maxHp,energy:10,block:0,dmgMod,skill,hand:[]}}
-function startCombat(kind,npc){const inv=state.invasion.active;if(!inv||state.invasion.combat)return;for(const id of ['roomdialog','builddialog','helpdialog','servantdialog','rosterdialog','settingsdialog','researchdialog'])if($(id)?.open)$(id).close();let ally;if(kind==='mc'){const level=state.prince.level;ally=combatant('Young Prince',level,Math.round(hpForLevel(level)*(state.hungryDays>=5?.8:1)),state.hungryDays>=2?1-MC_HUNGER_PENALTY:1,.65)}else{const level=npc.guard?guardLevel():(npc.level||1);ally=combatant(npc.name,level,hpForLevel(level),state.hungryDays>=1?1-SERVANT_HUNGER_PENALTY:1,npc.guard?.65:servantRole(npc).skill)}const enemy=combatant(inv.name,inv.level,inv.maxHp,1,inv.skill);enemy.hp=inv.hp;state.invasion.combat={kind,auto:kind!=='mc',defenderId:npc?.id||null,ally,enemy,turn:'ally',turnNumber:1,waitMs:700,noMoves:false,winner:null,log:['Each turn: five random cards and 10 energy. Tap a card to play it.'],lastAction:'',lastCard:null,lastBy:null,lastCount:0,lastMs:0,lockMs:0};beginCombatTurn('ally');save();renderBattle()}
+function roomCombatant(n){
+ const prince=n==null,level=prince?state.prince.level:n.guard?guardLevel():n.level||1;
+ const hp=Math.round(hpForLevel(level)*(prince&&state.hungryDays>=5?.8:1));
+ const hunger=prince?state.hungryDays>=2?MC_HUNGER_PENALTY:0:state.hungryDays?SERVANT_HUNGER_PENALTY:0;
+ const actor=combatant(prince?'Young Prince':n.name,level,hp,1-hunger,prince||n.guard ? .65 : servantRole(n).skill);
+ return Object.assign(actor,{id:prince?'mc':n.id,look:n?.look||0,player:prince});
+}
+function selectCombatAlly(combat,index){
+ combat.allyIndex=index;
+ combat.ally=combat.allies[index];
+ combat.kind=combat.ally.player?'mc':'servant';
+ combat.defenderId=combat.exp?null:combat.ally.player?null:combat.ally.id;
+ combat.leadId=combat.ally.id;
+}
+function startRoomCombat(inv){
+ const allies=roomDefenders(inv).map(roomCombatant);
+ if(roomFromKey(inv.room)?.type===0)allies.unshift(roomCombatant(null));
+ if(!allies.length)return false;
+ for(const id of ['roomdialog','builddialog','helpdialog','servantdialog','rosterdialog','settingsdialog','researchdialog','mapdialog','packdialog'])if($(id)?.open)$(id).close();
+ const enemy=combatant(inv.name,inv.level,inv.maxHp,1,inv.skill);
+ enemy.hp=inv.hp;
+ const combat={allies,enemy,auto:!allies.some(a=>a.player),turn:'ally',turnNumber:1,waitMs:700,noMoves:false,winner:null,
+  log:['Each fighter takes a turn with five cards and 10 energy.'],lastAction:'',lastCard:null,lastBy:null,lastCount:0,lastMs:0,lockMs:0};
+ state.invasion.combat=combat;
+ selectCombatAlly(combat,0);
+ beginCombatTurn('ally');save();renderBattle();
+ return true;
+}
 function beginCombatTurn(side){const c=state.invasion.combat;if(!c)return;c.turn=side;c.noMoves=false;c.waitMs=side==='ally'&&!c.auto?0:900;const actor=c[side];actor.energy=10;actor.block=0;if(side==='ally'){if(actor.ironhide)actor.block=actor.ironhide;if(actor.regen&&actor.regen.turns>0){actor.regen.turns--;const h=Math.round(actor.maxHp*actor.regen.pct);actor.hp=Math.min(actor.maxHp,actor.hp+h);c.lastAction=`${actor.name} regenerates ${h} health.`}}actor.hand=drawHand(5);if(c.enemyInfo?.boss)dungeonBossTurn(c)}
 function combatLog(message){const c=state.invasion.combat;c.lastAction=message;c.log.push(message);c.log=c.log.slice(-5)}
-function endCombatTurn(){const c=state.invasion.combat;if(!c)return;c.turnNumber++;beginCombatTurn(c.turn==='ally'?'enemy':'ally')}
-function playCard(index){const c=state.invasion.combat;if(!c||c.winner)return false;const side=c.turn,actor=c[side],target=c[side==='ally'?'enemy':'ally'],id=actor.hand[index],card=CARD_BY_ID[id];if(!card||card.cost>actor.energy)return false;actor.hand.splice(index,1);actor.energy-=card.cost;c.lastCard=id;c.lastBy=side;c.lastCount++;c.lastMs=1500;c.flashActor=side;c.flashAction=card.type==='healing'?'heal':card.type==='attack'?'basic':card.type==='defense'?'defend':'energy';c.flashType=card.type;c.flashMs=650;c.flashAt=Date.now();const amt=cardAmount(card,actor.level);
+function endCombatTurn(){
+ const c=state.invasion.combat;
+ c.turnNumber++;
+ if(!c.allies){beginCombatTurn(c.turn==='ally'?'enemy':'ally');return}
+ const next=c.allies.findIndex((actor,index)=>actor.hp>0&&(c.turn==='enemy'||index>c.allyIndex));
+ if(next<0){
+  const after=c.enemyTargetIndex??-1;
+  const target=c.allies.findIndex((actor,index)=>actor.hp>0&&index>after);
+  c.enemyTargetIndex=target<0?c.allies.findIndex(actor=>actor.hp>0):target;
+  selectCombatAlly(c,c.enemyTargetIndex);
+  beginCombatTurn('enemy');return;
+ }
+ selectCombatAlly(c,next);
+ beginCombatTurn('ally');
+}
+function playCard(index){const c=state.invasion.combat;if(!c||c.winner)return false;const side=c.turn,actor=c[side],target=c[side==='ally'?'enemy':'ally'],id=actor.hand[index],card=CARD_BY_ID[id];if(!card||card.cost>actor.energy)return false;actor.hand.splice(index,1);actor.energy-=card.cost;c.lastCard=id;c.lastBy=side;c.lastAllyId=c.ally.id;c.lastCount++;c.lastMs=1500;c.flashActor=side;c.flashAction=card.type==='healing'?'heal':card.type==='attack'?'basic':card.type==='defense'?'defend':'energy';c.flashType=card.type;c.flashMs=650;c.flashAt=Date.now();const amt=cardAmount(card,actor.level);
  if(card.type==='attack'){const raw=Math.max(1,Math.round(amt*actor.dmgMod)),absorbed=Math.min(target.block,raw);target.block-=absorbed;target.hp=Math.max(0,target.hp-(raw-absorbed));combatLog(`${actor.name} plays ${card.name}: ${raw} damage${absorbed?` (${absorbed} blocked)`:''}.`)}
  else if(card.type==='defense'){actor.block+=amt;combatLog(`${actor.name} plays ${card.name}: ${amt} block.`)}
  else if(card.type==='healing'){const before=actor.hp;actor.hp=Math.min(actor.maxHp,actor.hp+amt);combatLog(`${actor.name} plays ${card.name}: restores ${actor.hp-before} health.`)}
  else{const before=actor.energy;actor.energy=Math.min(10,actor.energy+amt);combatLog(`${actor.name} plays ${card.name}: energy ${before} → ${actor.energy}.`)}
- if(!c.exp&&state.invasion.active)state.invasion.active.hp=c.enemy.hp;if(c.enemy.hp<=0)c.winner='ally';else if(c.ally.hp<=0)c.winner='enemy';
+ if(!c.exp&&state.invasion.active)state.invasion.active.hp=c.enemy.hp;if(c.enemy.hp<=0)c.winner='ally';else if(c.ally.hp<=0&&(!c.allies||!c.allies.some(a=>a.hp>0)||c.exp&&c.ally.player))c.winner='enemy';
+ else if(side==='enemy'&&c.ally.hp<=0){c.noMoves=true;c.waitMs=450;save();return true}
  if(c.winner){c.waitMs=1100;save();return true}
  c.noMoves=!actor.hand.some(h=>CARD_BY_ID[h].cost<=actor.energy);if(c.noMoves)c.waitMs=900;save();return true}
 function aiChoose(actor,target){const opts=actor.hand.map((id,i)=>({i,card:CARD_BY_ID[id]})).filter(o=>o.card.cost<=actor.energy);if(!opts.length)return -1;if(Math.random()>actor.skill)return opts[Math.floor(Math.random()*opts.length)].i;const amt=o=>cardAmount(o.card,actor.level),atk=opts.filter(o=>o.card.type==='attack');
@@ -56,7 +142,26 @@ function tickCombat(ms){const c=state.invasion.combat;if(!c)return;for(const k o
  if(c.kind==='mc'&&c.turn==='ally'){renderBattle();return}
  c.waitMs-=ms;if(c.waitMs>0){renderBattle();return}c.waitMs=900;const i=aiChoose(actor,c[c.turn==='ally'?'enemy':'ally']);if(i<0){c.noMoves=true;c.waitMs=300}else playCard(i);renderBattle()}
 function skipBattle(){const c=state.invasion.combat;if(!c||!c.auto||c.winner)return;let guard=0;while(!c.winner&&guard++<800){const actor=c[c.turn];if(c.noMoves){endCombatTurn();continue}const i=aiChoose(actor,c[c.turn==='ally'?'enemy':'ally']);if(i<0){endCombatTurn();continue}playCard(i)}if(!c.winner)c.winner=c.ally.hp/c.ally.maxHp>=c.enemy.hp/c.enemy.maxHp?'ally':'enemy';c.waitMs=0;resolveCombat()}
-function resolveCombat(){const c=state.invasion.combat,inv=state.invasion.active;if(c&&c.exp)return resolveExpeditionCombat(c);if(!c||!inv)return;if(c.winner==='ally'){gainXp('mc',30+inv.level*2);if(c.kind==='servant'){const sv=servantById(c.defenderId);if(sv)gainXp(sv,40+inv.level*2)}return finishInvasion('win',`${c.ally.name} defeated ${inv.name}!`)}if(c.kind==='mc')return finishInvasion('loss','The prince was defeated.');inv.hp=c.enemy.hp;inv.knocked.push(c.defenderId);note(`${c.ally.name} was knocked out until this invasion ends.`);state.invasion.combat=null;if($('battle-dialog').open)$('battle-dialog').close();const rm=roomFromKey(inv.room),nd=rm&&nextDefender(inv);if(nd){save();render();return startCombat('servant',nd)}if(rm&&rm.type===0){save();render();return startCombat('mc',null)}inv.waitMs=1200;save();render()}
+function resolveCombat(){
+ const c=state.invasion.combat,inv=state.invasion.active;
+ if(c?.exp)return resolveExpeditionCombat(c);
+ if(!c||!inv)return;
+ const allies=c.allies||[Object.assign(c.ally,{id:c.defenderId,player:c.kind==='mc'})];
+ if(c.winner==='ally'){
+  gainXp('mc',30+inv.level*2);
+  for(const actor of allies){const servant=servantById(actor.id);if(servant)gainXp(servant,40+inv.level*2)}
+  return finishInvasion('win',`The defenders defeated ${inv.name}!`);
+ }
+ if(allies.some(a=>a.player))return finishInvasion('loss','The prince was defeated.');
+ inv.hp=c.enemy.hp;
+ for(const actor of allies){
+  if(!inv.knocked.includes(actor.id))inv.knocked.push(actor.id);
+  note(`${actor.name} was knocked out until this invasion ends.`);
+ }
+ state.invasion.combat=null;
+ if($('battle-dialog').open)$('battle-dialog').close();
+ inv.waitMs=1200;save();render();
+}
 /* ---- levels and experience ---- */
 function gainXp(who,base){if(state.over)return;const e=who==='mc'?state.prince:who;if(!e||e.level>=MAX_LEVEL)return;const rate=who==='mc'?1:(e.xpRate||1);e.xp=Math.round((e.xp+base*rate)*100)/100;let up=0;while(e.level<MAX_LEVEL&&e.xp>=xpNeed(e.level)){e.xp=Math.round((e.xp-xpNeed(e.level))*100)/100;e.level++;up++}if(e.level>=MAX_LEVEL)e.xp=0;if(up){const name=who==='mc'?'The prince':e.name;note(`${name} reached level ${e.level}.`);toast(`${name} reached level ${e.level}!`);if(window.cloudPushSoon)cloudPushSoon()}}
 function awardRoomXp(room,base){gainXp('mc',base);const sv=roomCollector(room);if(sv)gainXp(sv,Math.ceil(base*.75))}
@@ -64,9 +169,9 @@ function renderPrince(){const el=$('prince-card');if(!el)return;const p=state.pr
 
 function spriteStyle(el,atlas,direction,frame=0,walking=false){el.style.backgroundImage='url("'+atlas+'")';el.style.backgroundPosition=`${frame/7*100}% ${(direction*2+(walking?1:0))/15*100}%`}
 function renderInvader(){if($('invasion-status'))$('invasion-status').textContent=raidForecast();const r=state.invasion,inv=r?.active,grid=$('grid');let layer=$('invader-layer');if(!layer){layer=document.createElement('div');layer.id='invader-layer';grid.append(layer)}if(!inv){layer.replaceChildren();return}let actor=$('invader-sprite');if(!actor){actor=document.createElement('div');actor.id='invader-sprite';actor.setAttribute('aria-label','Invading enemy');actor.innerHTML='<span class="inv-hp"><i></i></span>';layer.append(actor)}const bar=actor.querySelector('.inv-hp i');if(bar)bar.style.width=Math.max(0,inv.hp/inv.maxHp*100)+'%';const from=roomFromKey(inv.room),to=roomFromKey(inv.target),p=to?inv.travelMs/3200:0;if(!from)return;actor.style.left=`calc(${from.x+.5+(to?(to.x-from.x)*p:0)}*var(--size))`;actor.style.top=`calc(${from.y+.65+(to?(to.y-from.y)*p:0)}*var(--size))`;const direction=to?mcFacing(to.x-from.x,to.y-from.y):1,frame=Math.floor(Date.now()/250)%8;spriteStyle(actor,INVADER_ATLASES[inv.variant],direction,frame,!!to);}
-function raidForecast(){const r=state.invasion;return r.active?`Invader inside · ${r.active.name} · HP ${r.active.hp}/${r.active.maxHp}`:`Next invasion: day ${r.nextDay}${r.queuedAt!==null?' · Second intruder approaching':''} · ${r.countDay===state.day?r.count:0}/2 today`}
-function validateInvasion(s){const r=s.invasion,finite=(v,min,max)=>Number.isFinite(v)&&v>=min&&v<=max,keys=new Set(s.tiles.map(roomKey));if(!r||!Number.isInteger(r.nextDay)||r.nextDay<3||!Number.isInteger(r.countDay)||r.countDay<1||!Number.isInteger(r.count)||r.count<0||r.count>2||r.queuedAt!==null&&!finite(r.queuedAt,0,DAY_MS)||r.alarmMs!=null&&!finite(r.alarmMs,0,ALARM_MS))throw Error('Invalid invasion schedule');const inv=r.active;if(inv){if(!Number.isInteger(inv.level)||inv.level<1||inv.level>MAX_LEVEL||!Number.isInteger(inv.variant)||!INVADER_TYPES[inv.variant]||!finite(inv.hp,0,10000)||!finite(inv.maxHp,1,10000)||inv.hp>inv.maxHp||!finite(inv.atk,1,1000)||!finite(inv.skill,0,1)||typeof inv.name!=='string'||!keys.has(inv.room)||!keys.has(inv.from)||inv.target!==null&&!keys.has(inv.target)||!finite(inv.travelMs,0,3200)||!finite(inv.waitMs,0,10000)||![inv.route,inv.knocked].every(Array.isArray)||inv.route.length>FIELD_SIZE*FIELD_SIZE||inv.route.some(k=>!keys.has(k))||inv.knocked.some(id=>!s.collectors.some(n=>n.id===id)&&!(s.guards||[]).some(g=>g.id===id)))throw Error('Invalid invader');if(inv.target&&!raidAdjacentInSave(inv.room,inv.target,s.tiles))throw Error('Invalid invasion route')}
- const c=r.combat;if(c){if(!c.exp&&(!inv||!['mc','servant'].includes(c.kind)||!['ally','enemy'].includes(c.turn)||!Number.isInteger(c.turnNumber)||c.turnNumber<1||!finite(c.waitMs,-1000,10000)||!Array.isArray(c.log)||c.log.length>5||c.log.some(x=>typeof x!=='string')||![null,'ally','enemy'].includes(c.winner)||c.kind==='servant'&&!s.collectors.some(n=>n.id===c.defenderId)&&!(s.guards||[]).some(g=>g.id===c.defenderId)))throw Error('Invalid combat');for(const a of [c.ally,c.enemy])if(!a||typeof a.name!=='string'||!Number.isInteger(a.level)||a.level<1||a.level>MAX_LEVEL||!finite(a.maxHp,1,10000)||!finite(a.hp,0,a.maxHp)||!Number.isInteger(a.energy)||a.energy<0||a.energy>10||!finite(a.block,0,100000)||!finite(a.dmgMod,0,1)||!finite(a.skill,0,1)||!Array.isArray(a.hand)||a.hand.length>5||a.hand.some(id=>!CARD_BY_ID[id]))throw Error('Invalid combat actor')}
+function raidForecast(){const r=state.invasion;return r.active?`Invader inside · ${r.active.name} · HP ${r.active.hp}/${r.active.maxHp}`:`Next invasion: day ${Math.floor(r.nextAt/DAY_MS)+1}`}
+function validateInvasion(s){const r=s.invasion,finite=(v,min,max)=>Number.isFinite(v)&&v>=min&&v<=max,keys=new Set(s.tiles.map(roomKey));if(!r||!Number.isFinite(r.nextAt)||r.nextAt<DAY_MS||r.alarmMs!=null&&!finite(r.alarmMs,0,ALARM_MS))throw Error('Invalid invasion schedule');const inv=r.active;if(inv){if(!Number.isInteger(inv.level)||inv.level<1||inv.level>MAX_LEVEL||!Number.isInteger(inv.variant)||!INVADER_TYPES[inv.variant]||!finite(inv.hp,0,10000)||!finite(inv.maxHp,1,10000)||inv.hp>inv.maxHp||!finite(inv.atk,1,1000)||!finite(inv.skill,0,1)||typeof inv.name!=='string'||!keys.has(inv.room)||!keys.has(inv.from)||inv.target!==null&&!keys.has(inv.target)||!finite(inv.travelMs,0,3200)||!finite(inv.waitMs,0,10000)||![inv.route,inv.knocked].every(Array.isArray)||inv.route.length>FIELD_SIZE*FIELD_SIZE||inv.route.some(k=>!keys.has(k))||inv.knocked.some(id=>!s.collectors.some(n=>n.id===id)&&!(s.guards||[]).some(g=>g.id===id)))throw Error('Invalid invader');if(inv.target&&!raidAdjacentInSave(inv.room,inv.target,s.tiles))throw Error('Invalid invasion route')}
+ const c=r.combat;if(c){if(!c.exp&&(!inv||!['mc','servant'].includes(c.kind)||!['ally','enemy'].includes(c.turn)||!Number.isInteger(c.turnNumber)||c.turnNumber<1||!finite(c.waitMs,-1000,10000)||!Array.isArray(c.log)||c.log.length>5||c.log.some(x=>typeof x!=='string')||![null,'ally','enemy'].includes(c.winner)||c.kind==='servant'&&!s.collectors.some(n=>n.id===c.defenderId)&&!(s.guards||[]).some(g=>g.id===c.defenderId)))throw Error('Invalid combat');for(const a of [...(c.allies||[c.ally]),c.enemy])if(!a||typeof a.name!=='string'||!Number.isInteger(a.level)||a.level<1||a.level>MAX_LEVEL||!finite(a.maxHp,1,10000)||!finite(a.hp,0,a.maxHp)||!Number.isInteger(a.energy)||a.energy<0||a.energy>10||!finite(a.block,0,100000)||!finite(a.dmgMod,0,10)||!finite(a.skill,0,1)||!Array.isArray(a.hand)||a.hand.length>5||a.hand.some(id=>!CARD_BY_ID[id]))throw Error('Invalid combat actor')}
 }
 function raidAdjacentInSave(a,b,tiles){const ra=roomFromKey(a,tiles),rb=roomFromKey(b,tiles);return DIRS.some(([dx,dy],d)=>ra.x+dx===rb.x&&ra.y+dy===rb.y&&compatible(ra,rb,d))}
 
@@ -94,31 +199,32 @@ function validateEconomy(s){
  if(s.economyVersion!==2||!Number.isSafeInteger(s.nextCollectorPrice)||s.nextCollectorPrice<75||!Number.isInteger(s.nextCollectorId)||s.nextCollectorId<2||!Array.isArray(s.collectors)||s.collectors.length>324)throw Error('Invalid servants');
  if(!s.prince)s.prince={level:1,xp:0};if(!Number.isInteger(s.prince.level)||s.prince.level<1||s.prince.level>MAX_LEVEL||!Number.isFinite(s.prince.xp)||s.prince.xp<0)throw Error('Invalid prince');for(const n of s.collectors){if(n.level===undefined)n.level=1;if(n.xp===undefined)n.xp=0;if(n.xpRate===undefined)n.xpRate=1;if(!Number.isInteger(n.level)||n.level<1||n.level>MAX_LEVEL||!Number.isFinite(n.xp)||n.xp<0||!Number.isFinite(n.xpRate)||n.xpRate<.5||n.xpRate>1.5)throw Error('Invalid servant level')}
  const ids=new Set,homes=new Set,names=new Set;for(const n of s.collectors){if(!Number.isInteger(n.id)||n.id<1||n.id>=s.nextCollectorId||ids.has(n.id)||typeof n.name!=='string'||!n.name||names.has(n.name)||!Number.isInteger(n.look)||n.look<0||n.look>=SERVANT_ROLES.length||!Number.isFinite(n.x)||!Number.isFinite(n.y)||n.x<.5||n.y<.5||n.x>FIELD_SIZE-.5||n.y>FIELD_SIZE-.5||!['wander','toRoom','working','flee','hiding'].includes(n.mode)||!Array.isArray(n.path)||n.path.length>FIELD_SIZE*FIELD_SIZE||!Number.isFinite(n.waitMs))throw Error('Invalid servant');ids.add(n.id);names.add(n.name);if(n.home!==null){const r=roomFromKey(n.home,s.tiles);if(!r||!canHostServant(r)||homes.has(n.home))throw Error('Invalid assignment');homes.add(n.home)}for(const q of n.path)if(!q||!Number.isInteger(q.x)||!Number.isInteger(q.y)||!s.tiles.some(t=>t.x===q.x&&t.y===q.y))throw Error('Invalid servant path')}
- for(const r of s.tiles){if(r.level===undefined)r.level=1;if(r.trap&&r.trapLevel===undefined)r.trapLevel=1;if(!Number.isInteger(r.level)||r.level<1||r.level>5||r.trap&&(!Number.isInteger(r.trapLevel)||r.trapLevel<1||r.trapLevel>5))throw Error('Invalid upgrade level');if(r.productionMs===undefined)r.productionMs=0;if(r.stock===undefined)r.stock={};if(!Number.isFinite(r.productionMs)||r.productionMs<0||r.productionMs>BATCH_MS||!r.stock||typeof r.stock!=='object'||Array.isArray(r.stock))throw Error('Invalid room production');const batch=batchFor(r);for(const [k,v]of Object.entries(r.stock))if(!Object.hasOwn(batch,k)||!Number.isFinite(v)||v<0||v>batch[k]+.000001)throw Error('Invalid stockpile')}
+ for(const r of s.tiles){if(r.level===undefined)r.level=1;if(r.trap&&r.trapLevel===undefined)r.trapLevel=1;if(!Number.isInteger(r.level)||r.level<1||r.level>5||r.trap&&(!Number.isInteger(r.trapLevel)||r.trapLevel<1||r.trapLevel>5))throw Error('Invalid upgrade level');if(r.productionMs===undefined)r.productionMs=0;if(r.stock===undefined)r.stock={};if(!Number.isFinite(r.productionMs)||r.productionMs<0||r.productionMs>BATCH_MS||!r.stock||typeof r.stock!=='object'||Array.isArray(r.stock))throw Error('Invalid room production');const batch=batchFor(r,1);if(r.type===2)batch.food=1.2*levelMultiplier(r.level);for(const [k,v]of Object.entries(r.stock))if(!Object.hasOwn(batch,k)||!Number.isFinite(v)||v<0||v>batch[k]+.000001)throw Error('Invalid stockpile')}
 }
 function roomCollector(room){return state.collectors.find(n=>n.home===roomKey(room))}
 function isKnockedOut(n){return !!state.invasion.active?.knocked.includes(n.id)}
 function resourceRoute(x,y,dest){const start=at(Math.floor(x),Math.floor(y));if(!start||!dest)return null;const queue=[start],prev=new Map([[roomKey(start),null]]);while(queue.length){const a=queue.shift();if(a===dest){const path=[];let key=roomKey(a);while(key!==null){const room=roomFromKey(key);path.unshift({x:room.x,y:room.y});key=prev.get(key)}return path.slice(1)}for(let d=0;d<4;d++){const b=at(a.x+DIRS[d][0],a.y+DIRS[d][1]);if(b&&compatible(a,b,d)&&!prev.has(roomKey(b))){prev.set(roomKey(b),roomKey(a));queue.push(b)}}}return null}
-function stepServantPath(n,ms){let travel=ms/2400,guard=0;while(travel>0&&n.path.length&&guard++<400){const t=n.path[0],dx=t.x+.5-n.x,dy=t.y+.5-n.y,dist=Math.hypot(dx,dy);if(dist<=travel+.000001){n.x=t.x+.5;n.y=t.y+.5;n.path.shift();travel-=dist}else{n.x+=dx/dist*travel;n.y+=dy/dist*travel;travel=0}}}
+function stepServantPath(n,ms){let travel=ms/(n.guard?3200:2400),guard=0;while(travel>0&&n.path.length&&guard++<400){const t=n.path[0],dx=t.x+.5-n.x,dy=t.y+.5-n.y,dist=Math.hypot(dx,dy);if(dist<=travel+.000001){n.x=t.x+.5;n.y=t.y+.5;n.path.shift();if(n.guard&&n.mode==='wander'){n.waitMs=3000;return}travel-=dist}else{n.x+=dx/dist*travel;n.y+=dy/dist*travel;travel=0}}}
 function fleeToThrone(n){const throne=state.tiles.find(t=>t.type===0),r=resourceRoute(n.x,n.y,throne);if(r&&r.length){n.path=r;n.mode='flee'}else{n.path=[];n.mode='hiding'}}
 function sendServantHome(n){const home=roomFromKey(n.home);if(!home){n.home=null;n.path=[];n.mode='wander';n.waitMs=800;return}const r=resourceRoute(n.x,n.y,home);if(r&&r.length){n.path=r;n.mode='toRoom'}else{if(!r){n.x=home.x+.5;n.y=home.y+.5}n.path=[];n.mode='working'}}
 function repathServants(){const throne=state.tiles.find(t=>t.type===0);for(const n of state.collectors){if(!at(Math.floor(n.x),Math.floor(n.y))){n.x=throne.x+.5;n.y=throne.y+.5}n.path=[];if(n.home)sendServantHome(n);else if(state.invasion.active&&!n.guard)fleeToThrone(n);else{n.mode='wander';n.waitMs=500}}for(const g of state.guards||[]){if(!at(Math.floor(g.x),Math.floor(g.y))){g.x=throne.x+.5;g.y=throne.y+.5}g.path=[];if(g.home)sendServantHome(g);else{g.mode='wander';g.waitMs=500}}}
 function tickServant(n,ms){
  if(isKnockedOut(n)||unitAway(n))return;
- if(n.path.length){stepServantPath(n,ms);if(!n.path.length){if(n.mode==='toRoom')n.mode='working';else if(n.mode==='flee')n.mode='hiding';else n.waitMs=1500+Math.random()*3500}return}
+ if(n.guard&&n.mode==='wander'&&n.waitMs>0){n.waitMs=Math.max(0,n.waitMs-ms);return}
+ if(n.path.length){stepServantPath(n,ms);if(!n.path.length){if(n.mode==='toRoom')n.mode='working';else if(n.mode==='flee')n.mode='hiding';else if(!n.guard)n.waitMs=1500+Math.random()*3500}return}
  if(n.mode!=='wander')return;
  n.waitMs-=ms;if(n.waitMs>0)return;
  const dest=state.tiles[Math.floor(Math.random()*state.tiles.length)],route=resourceRoute(n.x,n.y,dest);
  if(route&&route.length)n.path=route;else n.waitMs=1500;
 }
 function autoCollectRoom(room){const worker=roomCollector(room);if(worker)gainXp(worker,1);for(const [k,v]of Object.entries(room.stock||{}))state[k]=roundResource(state[k]+v*SERVANT_BONUS);room.stock={};room.productionMs=0;refreshEconomyUI()}
-function simulateEconomy(ms){
+function simulateEconomy(ms,realMs=ms){
  if(state.over)return;
  advanceMC(ms);
- for(const room of state.tiles){const rates=roomRates(room);if(!Object.keys(rates).length)continue;room.productionMs=Math.min(BATCH_MS,(room.productionMs||0)+ms);if(room.productionMs===BATCH_MS&&!Object.values(room.stock||{}).some(v=>v>0))room.stock=batchFor(room)}
+ for(const room of state.tiles){const rates=roomRates(room);if(!Object.keys(rates).length)continue;const produced=(room.productionMs||0)+(room.type===2?realMs:ms);room.productionMs=produced>=BATCH_MS-.00001?BATCH_MS:produced;if(room.productionMs===BATCH_MS&&!Object.values(room.stock||{}).some(v=>v>0))room.stock=batchFor(room)}
  const throne=state.tiles.find(r=>r.type===0);if(throne&&throne.productionMs===BATCH_MS&&Object.values(throne.stock||{}).some(v=>v>0)){for(const [key,value]of Object.entries(throne.stock))state[key]=roundResource(state[key]+value);throne.stock={};throne.productionMs=0;refreshEconomyUI()}
  for(const room of state.tiles){if(room.type===0||room.productionMs<BATCH_MS||!Object.values(room.stock||{}).some(v=>v>0))continue;const n=roomCollector(room);if(n&&n.mode==='working'&&!isKnockedOut(n))autoCollectRoom(room)}
- for(const n of allUnits())tickServant(n,ms);
+ for(const n of allUnits())tickServant(n,n.guard?realMs:ms);
 }
 function collectRoomResource(x,y,key){const room=at(x,y);if(state.over||!room||room.productionMs<BATCH_MS||!(room.stock?.[key]>0))return false;const amount=room.stock[key];state[key]=roundResource(state[key]+amount);delete room.stock[key];if(!Object.values(room.stock).some(v=>v>0))room.productionMs=0;note(`${fmt(amount)} ${RESOURCE_INFO[key].name.toLowerCase()} collected.`);fxAt(room,'fx-gain','+'+fmt(amount)+' '+RESOURCE_INFO[key].name.toLowerCase());save();render();return true}
 function hireServant(){if(state.over)return false;if(state.collectors.length>=servantCap()){toast('Servant limit reached. Build or upgrade a Kitchen to allow more.');return false}if(state.gold<state.nextCollectorPrice)return false;const cost=state.nextCollectorPrice,throne=state.tiles.find(t=>t.type===0),n=makeServant(state.collectors,state.nextCollectorId++,throne);state.gold=roundResource(state.gold-cost);state.collectors.push(n);if(state.invasion.active)fleeToThrone(n);state.nextCollectorPrice=Math.min(Number.MAX_SAFE_INTEGER,cost*2);note(`${n.name} (${servantRole(n).role}) hired for ${cost} gold. Next hire: ${state.nextCollectorPrice} gold.`);save();render();return true}
@@ -141,9 +247,9 @@ function ensureEconomyLayers(){renderMC();renderInvader();renderBattle();const g
 function renderWorldEconomy(){
  if(!state?.collectors)return;ensureEconomyLayers();const layer=$('resource-layer'),signature=JSON.stringify(state.tiles.filter(t=>Object.values(t.stock||{}).some(v=>v>0)).map(t=>[t.x,t.y,t.stock]));
  if(signature!==resourceIconSignature){layer.replaceChildren();for(const room of state.tiles){let offset=0;for(const [key,amount]of Object.entries(room.stock||{})){if(!(amount>0))continue;const b=document.createElement('button');b.className='resource-pickup';b.setAttribute('aria-label',`Collect ${RESOURCE_INFO[key].name} at ${room.x+1}, ${room.y+1}`);b.style.left=`calc((${room.x} + .5)*var(--size) - 30px)`;b.style.top=`calc((${room.y} + .18)*var(--size) + ${offset*39}px)`;b.textContent=RESOURCE_INFO[key].icon+' '+fmt(amount);b.disabled=state.over;b.onclick=e=>{e.stopPropagation();collectRoomResource(room.x,room.y,key)};b.ondblclick=e=>e.stopPropagation();layer.append(b);offset++}}resourceIconSignature=signature;if(selected){renderSelection();renderRoomViewer()}}
- const npcLayer=$('npc-layer');for(const old of [...npcLayer.children])if(!allUnits().some(n=>'collector-'+n.id===old.id&&!unitAway(n)))old.remove();for(const n of allUnits()){if(unitAway(n))continue;let actor=$('collector-'+n.id);if(!actor){actor=document.createElement('div');actor.id='collector-'+n.id;actor.className='collector-sprite'+(n.guard?' guard':'');actor.innerHTML='<span class="servant-art"></span>';actor.querySelector('.servant-art').style.backgroundImage='url("'+SERVANT_ATLASES[n.look]+'")';actor.setAttribute('role','button');actor.onclick=e=>{e.stopPropagation();if(Date.now()>=suppressClickUntil&&!awaitingResume){if(n.guard){const hr=n.home&&roomFromKey(n.home);toast(`${n.name} · Level ${guardLevel()} · ${hr?'posted in the '+TYPES[hr.type][0]:'roaming the keep'}`)}else openServantDialog(n.id)}};npcLayer.append(actor)}actor.title=n.guard?n.name+' · Guard':n.name+' · '+servantRole(n).role+' (tap for details)';actor.setAttribute('aria-label',actor.title);actor.style.display='';const destination=n.path[0];if(destination)actor.dataset.facing=String(mcFacing(destination.x+.5-n.x,destination.y+.5-n.y));const parked=!n.path.length&&n.mode!=='working',offset=parked?((n.id%5)-2)*.05:0;actor.style.left=`calc(${n.x+offset}*var(--size))`;actor.style.top=`calc(${n.y+(n.mode==='working'?.22:.1)}*var(--size))`;actor.classList.toggle('knocked-out',isKnockedOut(n));actor.classList.toggle('hungry',state.hungryDays>0&&!n.guard);actor.classList.toggle('walking',n.path.length>0)}
+ const npcLayer=$('npc-layer');for(const old of [...npcLayer.children])if(!allUnits().some(n=>'collector-'+n.id===old.id&&!unitAway(n)))old.remove();for(const n of allUnits()){if(unitAway(n))continue;let actor=$('collector-'+n.id);if(!actor){actor=document.createElement('div');actor.id='collector-'+n.id;actor.className='collector-sprite'+(n.guard?' guard':'');actor.innerHTML='<span class="servant-art"></span>';actor.querySelector('.servant-art').style.backgroundImage='url("'+SERVANT_ATLASES[n.look]+'")';actor.setAttribute('role','button');actor.onclick=e=>{e.stopPropagation();if(Date.now()>=suppressClickUntil&&!awaitingResume){if(n.guard){const hr=n.home&&roomFromKey(n.home);toast(`${n.name} · Level ${guardLevel()} · ${hr?'posted in the '+TYPES[hr.type][0]:'roaming the keep'}`)}else openServantDialog(n.id)}};npcLayer.append(actor)}actor.title=n.guard?n.name+' · Guard':n.name+' · '+servantRole(n).role+' (tap for details)';actor.setAttribute('aria-label',actor.title);actor.style.display='';const walking=n.path.length>0&&!(n.guard&&n.mode==='wander'&&n.waitMs>0);const destination=walking?n.path[0]:null;if(destination)actor.dataset.facing=String(mcFacing(destination.x+.5-n.x,destination.y+.5-n.y));const parked=!n.path.length&&n.mode!=='working',offset=parked?((allUnits().indexOf(n)%5)-2)*.05:0;actor.style.left=`calc(${n.x+offset}*var(--size))`;actor.style.top=`calc(${n.y+(n.mode==='working'?.22:.1)}*var(--size))`;actor.classList.toggle('knocked-out',isKnockedOut(n));actor.classList.toggle('hungry',state.hungryDays>0&&!n.guard);actor.classList.toggle('walking',walking)}
 }
-function animateServants(now){if(!state?.collectors)return;for(const n of allUnits()){const actor=$('collector-'+n.id);if(!actor)continue;const sprite=actor.querySelector('.servant-art');if(!sprite)continue;const walking=n.path.length>0&&!state.over,direction=Number(actor.dataset.facing||1),row=direction*2+(walking?1:0),frame=Math.floor(now/250)%8;sprite.style.backgroundPosition=`${frame/7*100}% ${row/15*100}%`;const working=n.mode==='working'&&!n.path.length&&!state.over&&!isKnockedOut(n)&&!n.guard;actor.classList.toggle('working',working);let tool=actor.querySelector('.servant-tool');if(working&&!tool){tool=document.createElement('span');tool.className='servant-tool';tool.textContent='⚒';actor.append(tool)}else if(!working&&tool)tool.remove()}}
+function animateServants(now){if(!state?.collectors)return;for(const n of allUnits()){const actor=$('collector-'+n.id);if(!actor)continue;const sprite=actor.querySelector('.servant-art');if(!sprite)continue;const walking=actor.classList.contains('walking')&&!state.over,direction=Number(actor.dataset.facing||1),row=direction*2+(walking?1:0),frame=Math.floor(now/250)%8;sprite.style.backgroundPosition=`${frame/7*100}% ${row/15*100}%`;const working=n.mode==='working'&&!n.path.length&&!state.over&&!isKnockedOut(n)&&!n.guard;actor.classList.toggle('working',working);let tool=actor.querySelector('.servant-tool');if(working&&!tool){tool=document.createElement('span');tool.className='servant-tool';tool.textContent='⚒';actor.append(tool)}else if(!working&&tool)tool.remove()}}
 
 function initMC(s){if(s.mc===undefined)s.mc={u:.5,v:.63,targetU:.5,targetV:.63,waitMs:900,direction:1,moving:false};}
 function validateMC(s){const m=s.mc;if(!m||typeof m!=='object'||![m.u,m.v,m.targetU,m.targetV,m.waitMs].every(Number.isFinite)||m.u<.36||m.u>.64||m.v<.5||m.v>.7||m.targetU<.36||m.targetU>.64||m.targetV<.5||m.targetV>.7||m.waitMs<0||m.waitMs>10000||!Number.isInteger(m.direction)||m.direction<0||m.direction>7||typeof m.moving!=='boolean')throw Error('Invalid throne-room MC state')}

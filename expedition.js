@@ -88,16 +88,37 @@ function beginExpBattle(info,key,enemyHp){
  const exp=state.expedition,live=exp.party.filter(m=>m.hp>0);
  let lead=info.throne||exp.mode==='dungeon'?live.find(m=>m.kind==='prince'):null;lead=lead||live.find(m=>m.kind==='guard')||live.find(m=>m.kind==='servant')||live.find(m=>m.kind==='prince');
  if(!lead){expeditionEnd('defeat');return}
- const level=lead.level||guardLevel(),ally=lead.kind==='prince'?combatant('Young Prince',level,lead.maxHp,state.hungryDays>=2?1-MC_HUNGER_PENALTY:1,.65):combatant(lead.name,level,lead.maxHp,state.hungryDays>=1?1-SERVANT_HUNGER_PENALTY:1,.65);
- ally.hp=Math.min(ally.maxHp,lead.hp);
- const enemy=combatant(info.name,info.level,Math.round(hpForLevel(info.level)*(info.health||1)),info.damage||1,info.skill);if(enemyHp!==undefined)enemy.hp=Math.min(enemy.maxHp,enemyHp);
- const auto=lead.kind!=='prince';
- state.invasion.combat={kind:auto?'servant':'mc',exp:true,auto,defenderId:null,leadId:lead.id,ally,enemy,turn:'ally',turnNumber:1,waitMs:700,noMoves:false,winner:null,log:[auto?`${lead.name} fights ${info.name}.`:'Each turn: five random cards and 10 energy. Tap a card to play it.'],lastAction:'',lastCard:null,lastBy:null,lastCount:0,lastMs:0,lockMs:0,enemyInfo:{name:info.name,variant:info.variant,level:info.level,key,roomType:expTile(key).type,throne:info.throne,boss:info.boss,dungeon:exp.mode==='dungeon'}};
+ const allies=[lead,...live.filter(member=>member!==lead)].map(member=>{
+  const level=member.level||guardLevel(),player=member.kind==='prince';
+  const penalty=player?state.hungryDays>=2?MC_HUNGER_PENALTY:0:state.hungryDays?SERVANT_HUNGER_PENALTY:0;
+  const actor=combatant(member.name,level,member.maxHp,1-penalty,.65);
+  return Object.assign(actor,{id:member.id,player,look:member.look||0,hp:Math.min(member.maxHp,member.hp)});
+ });
+ const enemy=combatant(info.name,info.level,Math.round(hpForLevel(info.level)*(info.health||1)),info.damage||1,info.skill);
+ if(enemyHp!==undefined)enemy.hp=Math.min(enemy.maxHp,enemyHp);
+ const combat={allies,exp:true,auto:!allies.some(a=>a.player),enemy,turn:'ally',turnNumber:1,waitMs:700,noMoves:false,winner:null,
+  log:['Each fighter takes a turn with five cards and 10 energy.'],lastAction:'',lastCard:null,lastBy:null,lastCount:0,lastMs:0,lockMs:0,
+  enemyInfo:{name:info.name,variant:info.variant,level:info.level,key,roomType:expTile(key).type,throne:info.throne,boss:info.boss,dungeon:exp.mode==='dungeon'}};
+ state.invasion.combat=combat;
+ selectCombatAlly(combat,0);
  exp.status='battle';exp.encounter={key,info};beginCombatTurn('ally');save();renderBattle();renderExpedition()}
 function resolveExpeditionCombat(c){
  const exp=state.expedition;state.invasion.combat=null;const m=$('battle-dialog');if(m?.open)m.close();
  if(!exp){save();render();return}
  const member=exp.party.find(x=>x.id===c.leadId),key=exp.encounter.key,info=exp.encounter.info;
+ if(c.allies){
+  for(const actor of c.allies){
+   const participant=exp.party.find(unit=>unit.id===actor.id);
+   if(!participant)continue;
+   participant.hp=Math.ceil(actor.hp);
+   if(participant.hp>0||actor.player||exp.mode==='dungeon')continue;
+   if(participant.kind==='guard')state.guards=state.guards.filter(g=>g.id!==participant.id);
+   else state.collectors=state.collectors.filter(n=>n.id!==participant.id);
+   note(`${participant.name} fell and is lost for good.`);
+  }
+  exp.party=exp.party.filter(unit=>unit.hp>0);
+  if(c.winner!=='ally')return expeditionEnd('defeat');
+ }
  if(c.winner==='ally'){
   if(member)member.hp=Math.max(1,Math.ceil(c.ally.hp));gainXp('mc',8+c.enemy.level*2);exp.cleared.push(key);exp.encounter=null;
   if(info.boss)return expeditionEnd('dungeonVictory');
