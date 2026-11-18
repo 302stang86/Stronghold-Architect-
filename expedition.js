@@ -101,6 +101,7 @@ function beginExpBattle(info,key,enemyHp){
   enemyInfo:{name:info.name,variant:info.variant,level:info.level,key,roomType:expTile(key).type,throne:info.throne,boss:info.boss,dungeon:exp.mode==='dungeon'}};
  state.invasion.combat=combat;
  selectCombatAlly(combat,0);
+ if(info.boss)window.StrongholdAudio?.play(info.boss);
  exp.status='battle';exp.encounter={key,info};beginCombatTurn('ally');save();renderBattle();renderExpedition()}
 function resolveExpeditionCombat(c){
  const exp=state.expedition;state.invasion.combat=null;const m=$('battle-dialog');if(m?.open)m.close();
@@ -144,9 +145,11 @@ function enterRoom(key){
  if(t.type===0&&exp.mode!=='attack'){toast('Raiders cannot enter the throne room.');return false}
  const c=expCastle();
  if(exp.mode==='dungeon'&&key===c.bossKey&&c.keyRoom&&!exp.vaultKey){
+  window.StrongholdAudio?.play('locked');
   toast('The Boss Vault is locked. Search the side chambers for its key.');
   return false;
  }
+ window.StrongholdAudio?.play('door');
  exp.current=key;if(!exp.discovered.includes(key))exp.discovered.push(key);
  if(t.type===0)beginExpBattle(expInfo(key,true),key);
  else if(c.defenders[key]&&!exp.cleared.includes(key))beginExpBattle(expInfo(key,false),key);
