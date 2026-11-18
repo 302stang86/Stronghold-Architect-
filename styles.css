@@ -139,9 +139,8 @@ footer{margin:0 -22px 0 -52px;padding:9px 14px 9px 56px;background:linear-gradie
 #selection{padding:34px 20px 27px;margin:17px -2px;background:var(--citadel-panel-art) center/100% 100% no-repeat;border:0!important;box-shadow:0 5px 15px #0009;color:#f7e9e6;border-radius:7px;min-height:140px}
 #selection>h2{text-align:center;font-variant:small-caps;font-size:26px;color:#f8dfad;padding-bottom:13px;border-bottom:1px solid #b58a5c66;text-shadow:0 2px 5px #0009}#selection>p{color:#dfcfe1;line-height:1.55}#selection button{margin-top:7px;width:100%}#selection .muted{color:#d4bfd9}
 #collectors,#research{background:linear-gradient(135deg,#3f244be8,#1a1125f5);border:1px solid #a4804c77!important;box-shadow:inset 0 1px #dfb9e622,0 4px 10px #0006;padding:13px;border-radius:8px;margin-top:15px}#collectors h3,#research h3{font-size:20px;margin:0 0 10px;color:#f0d2a1}.day-clock{background:linear-gradient(135deg,#472647ee,#1d1129f2);border:1px solid #b3905e99;box-shadow:inset 0 1px #ffe2b522,0 3px 8px #0006}
-button{background:linear-gradient(165deg,#55305f,#2c193b 55%,#1a1027);color:#f8e7d1;border:1px solid #b38b55;box-shadow:inset 0 1px #f3c9ff35,inset 0 -2px #17091e,0 3px 5px #0008;border-radius:7px}.game-topbar button{border-color:#b0905b99;font-size:11px}.primary,#resume-game{background:linear-gradient(170deg,#c984e5 0%,#8a409d 20%,#61236f 55%,#3e164e 75%,#6e2b83 100%);border:2px ridge #e0ba77;color:#fff0c4;text-shadow:0 2px 3px #321235;box-shadow:inset 0 1px #f4d8ff99,inset 0 -2px #210d2f,0 0 0 1px #3b2144,0 5px 10px #0008;font-family:Georgia,serif;font-weight:normal;font-size:17px;padding:13px;text-transform:uppercase;letter-spacing:.7px}.primary:hover,#resume-game:hover{background:linear-gradient(#d49beb,#8c42a1 45%,#512065);box-shadow:inset 0 1px #fff4b488,0 0 15px #bd6ede55}
-#builddialog,#roomdialog,#helpdialog,#keepdialog,#princedialog,#battle-dialog,#resume-dialog{border:3px ridge #b68c55;background:linear-gradient(135deg,#40204be8,#20112ff5),var(--citadel-panel-art) center/100% 100%;box-shadow:0 0 0 3px #1c1122,0 25px 100px #000d,inset 0 1px #f6dfb33b}
-#resume-dialog{width:min(420px,calc(100vw - 30px));padding:30px;text-align:center;background:var(--citadel-panel-art) center/100% 100%;color:#fff0d9;border-radius:12px}#resume-title{font-family:Georgia,serif;font-size:34px;color:#f6d69c;margin:9px 0 12px}#resume-day{color:#eed1b0}#resume-dialog .muted{color:#dbcbdf;line-height:1.7}.resume-crest{display:block;width:48px;height:59px;margin:auto;background:var(--citadel-crest) center/contain no-repeat}#resume-game{width:100%;min-height:49px;margin-top:15px}
+button{background:linear-gradient(165deg,#55305f,#2c193b 55%,#1a1027);color:#f8e7d1;border:1px solid #b38b55;box-shadow:inset 0 1px #f3c9ff35,inset 0 -2px #17091e,0 3px 5px #0008;border-radius:7px}.game-topbar button{border-color:#b0905b99;font-size:11px}.primary{background:linear-gradient(170deg,#c984e5 0%,#8a409d 20%,#61236f 55%,#3e164e 75%,#6e2b83 100%);border:2px ridge #e0ba77;color:#fff0c4;text-shadow:0 2px 3px #321235;box-shadow:inset 0 1px #f4d8ff99,inset 0 -2px #210d2f,0 0 0 1px #3b2144,0 5px 10px #0008;font-family:Georgia,serif;font-weight:normal;font-size:17px;padding:13px;text-transform:uppercase;letter-spacing:.7px}.primary:hover{background:linear-gradient(#d49beb,#8c42a1 45%,#512065);box-shadow:inset 0 1px #fff4b488,0 0 15px #bd6ede55}
+#builddialog,#roomdialog,#helpdialog,#keepdialog,#princedialog,#battle-dialog{border:3px ridge #b68c55;background:linear-gradient(135deg,#40204be8,#20112ff5),var(--citadel-panel-art) center/100% 100%;box-shadow:0 0 0 3px #1c1122,0 25px 100px #000d,inset 0 1px #f6dfb33b}
 #battle-actions button{background:linear-gradient(150deg,#754181,#3c1c4f);border:2px ridge #c49a62;color:#ffead0}.battle-stage{box-shadow:inset 0 0 30px #0008;border:2px ridge #96714a}
 @media(max-width:1250px){.game-topbar{flex-wrap:wrap;gap:8px 16px}.game-topbar .tools{flex:1 1 auto;justify-content:flex-end}.game-topbar #resources{flex:1 1 auto;justify-content:flex-end}.brand{min-width:220px}.brand h1{font-size:21px}.game-topbar #resources>div{padding:5px 10px}}
 @media(max-width:900px){.game-topbar{display:flex;flex-wrap:wrap}.game-topbar #resources{order:2;flex:1 1 100%;justify-content:space-between}.game-topbar .tools{order:3;flex:1 1 100%;justify-content:flex-start;flex-wrap:wrap}.game-topbar #resources>div{flex:1;text-align:center}.brand{max-width:none}.brand h1{font-size:22px}.game-topbar #resources span{font-size:9px}.game-topbar #resources strong{font-size:16px}}
@@ -170,7 +169,6 @@ button{background:linear-gradient(165deg,#55305f,#2c193b 55%,#1a1027);color:#f8e
 #rosterdialog,#servantdialog{width:min(560px,calc(100vw - 24px));max-height:88dvh;overflow:auto;padding:22px}
 #confirm-dialog{width:min(420px,calc(100vw - 30px));padding:26px}
 .dialog-buttons{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
-#resume-new{display:block;margin:14px auto 0;background:transparent;border:1px solid #b68c55aa;color:#e8d3b0}
 .room-servant{margin-top:12px}
 .dialog-buttons .primary{width:auto;margin-top:0}
 
@@ -465,3 +463,35 @@ main{grid-template-columns:minmax(0,1fr)!important}
 .pack-side .pack-levels{margin-top:4px}.pack-side .pack-levels span{width:64px;font-size:10px}.pack-side .pack-levels img{width:56px;height:48px}
 #pack-up{width:100%;padding:8px;font-size:13px}#pack-up small{letter-spacing:0;color:inherit;font-size:11px}
 @media(max-width:620px){.pack-stage{height:42vh}#packdialog{padding:14px}}
+
+/* Main menu */
+#main-menu[hidden]{display:none}
+#main-menu{position:fixed;inset:0;z-index:20;overflow:auto;display:grid;align-items:center;
+ background:radial-gradient(ellipse at 70% 20%,#524365,transparent 52%),linear-gradient(#1d182a,#11121c 65%);
+ color:#fff1d2;isolation:isolate}
+#menu-scene,#main-menu::after{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#menu-scene{z-index:-2;background:linear-gradient(#2d24454d,#191222b8),url("backdrops/gatehouse.jpg") center/cover}
+#main-menu::after{content:"";z-index:-1;background:linear-gradient(90deg,#110b1bf5 0%,#160e21e0 25%,#160e2140 58%,transparent 100%),linear-gradient(0deg,#110b1b 0%,transparent 28%)}
+.menu-content{width:min(590px,100%);padding:clamp(26px,6vw,96px);padding-right:24px}
+#menu-title{width:max-content;max-width:100%;margin:0 0 .24em;font-size:clamp(3.2rem,7vw,6.2rem);line-height:.89;font-weight:500;letter-spacing:-.045em;text-shadow:0 3px 26px #130c1c}
+#menu-title em{display:block;color:#e2b980;font-weight:400}
+#menu-campaign{font-size:14px;color:#e8d0ae;margin:16px 0 0}
+.menu-content nav{display:grid;gap:8px;margin-top:28px;width:min(100%,310px)}
+.menu-content button{min-height:46px;padding:10px 16px;text-align:left;font-weight:650}
+.menu-content button:disabled{opacity:.5;cursor:default}
+#main-menu :focus-visible,#sound-dialog :focus-visible{outline:2px solid #ffe1ac;outline-offset:3px}
+#sound-dialog{width:min(420px,calc(100% - 24px))}
+.sound-controls{display:grid;gap:10px;padding:8px 0}
+.sound-controls label{display:flex;gap:10px;justify-content:space-between;align-items:center}
+.sound-controls output{font-variant-numeric:tabular-nums;color:#edc383}
+.sound-controls input{accent-color:#d3a568}
+.sound-controls input[type="range"]{width:100%;margin:0 0 12px}
+.sound-controls .sound-mute{justify-content:flex-start;min-height:36px}
+@media(max-aspect-ratio: 4/5){
+ #main-menu{align-items:end}
+ #main-menu::after{background:linear-gradient(0deg,#110b1b 0%,#170e21e6 23%,#170e2199 52%,transparent 80%)}
+ .menu-content{padding:28px 22px max(24px,env(safe-area-inset-bottom))}
+}
+
+#menu-scene.scene-drawn{background:none}
+@media(min-width:901px) and (max-width:1250px){.game-topbar .tools{flex-wrap:wrap}}
