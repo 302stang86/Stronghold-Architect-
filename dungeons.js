@@ -1,6 +1,6 @@
 /* Dungeon landmarks live in the campaign save, outside rival stronghold simulation. */
 const DUNGEON_GRID_SIZE=10;
-const DUNGEON_LAYOUT_VERSION=2;
+const DUNGEON_LAYOUT_VERSION=3;
 const DUNGEON_TIERS = [
  {id:'dungeon-low', name:'Forgotten Cellar', tier:'Low', occupancy:.3, recommended:1, boss:'The Fallen Captain',
   warning:'Light resistance. The Captain alternates shield and counterattack turns.',
@@ -90,7 +90,7 @@ function generateDungeon(tier){
  const keyRoom=index>0?roomKey(pick(sideRooms.filter(room=>room.depth>=2))):null;
  const defenders={},caches={};
  const encounterPool=sideRooms.filter(room=>room!==first);
- for(let count=[3,5,8][index];count>0;count--){
+ for(let count=[5,10,20][index];count>0;count--){
   const [room]=encounterPool.splice(roll(encounterPool.length),1);
   defenders[roomKey(room)]={name:tier.guard,level:tier.guardLevel+roll(index+1),
    variant:tier.variant,health:.45+index*.15,skill:tier.skill,damage:.65+index*.12};
