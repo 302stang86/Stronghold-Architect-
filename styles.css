@@ -669,3 +669,58 @@ main{grid-template-columns:minmax(0,1fr)!important}
   --frame-inline: 14px;
  }
 }
+
+/* Phase 2 interface frames. Keep artwork on the chrome around interactive surfaces. */
+#main-menu .menu-content{
+ position:relative;
+ width:min(485px,calc(100% - 32px));
+ margin:20px auto 20px clamp(16px,5vw,88px);
+ padding:clamp(18px,3vw,34px);
+ border:solid transparent;
+ border-width:20px 30px;
+ border-image:url("assets/ui-amethyst-frame.webp") 48 74 47 74 stretch;
+ background:linear-gradient(#190e24db,#160d21e8),url("assets/ui-amethyst-cloth.webp") center/465px auto;
+ background-clip:padding-box;
+}
+@media(min-width:1200px){
+ #main-menu .menu-content::before,#main-menu .menu-content::after{
+  content:"";position:absolute;top:50%;width:44px;height:115px;pointer-events:none;
+  background:url("assets/ui-frame-torch.webp") center/contain no-repeat;
+  mask-image:radial-gradient(ellipse at 50% 48%,#000 38%,transparent 74%);
+ }
+ #main-menu .menu-content::before{left:-62px;transform:translateY(-50%)}
+ #main-menu .menu-content::after{right:-62px;transform:translateY(-50%) scaleX(-1)}
+}
+dialog#mapdialog{
+ border:solid transparent;
+ border-width:19px 27px;
+ border-image:url("assets/ui-stone-frame.webp") 48 74 47 74 stretch;
+}
+#expdialog .exp-top{
+ border:solid transparent;
+ border-width:12px 19px;
+ border-image:url("assets/ui-stone-frame.webp") 48 74 47 74 stretch;
+ background:linear-gradient(#191025e8,#140c1c),url("assets/ui-amethyst-cloth.webp") center/465px auto;
+ background-clip:padding-box;
+}
+:is(#packdialog,#settingsdialog,#sound-dialog,#builddialog,#researchdialog,#rosterdialog,#servantdialog,#keepdialog,#princedialog,#helpdialog,#partydialog){
+ border:solid transparent;
+ border-width:11px 17px;
+ border-radius:0;
+ border-image:url("assets/ui-amethyst-frame.webp") 48 74 47 74 stretch;
+ background:linear-gradient(#1b1025d9,#150c20eb),url("assets/ui-amethyst-cloth.webp") center/465px auto;
+ background-clip:padding-box;
+}
+.game-topbar,.game-footer,#battle-dialog .bs-bottom{
+ border-image:linear-gradient(90deg,#60466b,#be985d 24%,#84618d 50%,#be985d 76%,#60466b) 1;
+}
+#battle-dialog .bs-bottom{border-top:1px solid #be985d}
+.merchant-case .merchant-tabs button[aria-pressed=true]{
+ background:#492846;color:#fff0d1;
+ box-shadow:inset 0 0 0 1px #c39b62;
+}
+@media(max-width:700px),(max-height:500px){
+ #main-menu .menu-content{margin-inline:auto;border-width:11px 17px;padding:16px}
+ dialog#mapdialog,#expdialog .exp-top{border-width:8px 12px}
+ :is(#packdialog,#settingsdialog,#sound-dialog,#builddialog,#researchdialog,#rosterdialog,#servantdialog,#keepdialog,#princedialog,#helpdialog,#partydialog){border-width:7px 11px}
+}
