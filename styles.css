@@ -213,6 +213,7 @@ dialog#mapdialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;mar
 
 /* New stronghold setup screen: replaces the main screen until the player begins. */
 dialog#setupdialog{position:fixed;inset:0;width:100%;max-width:none;height:100%;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:radial-gradient(ellipse at top,#34224a,#100d16 75%);color:#f1e6f6;overflow:hidden}
+html:has(#setupdialog[open]){overflow:hidden}
 dialog#setupdialog[open]{display:grid;grid-template-rows:minmax(0,1fr) auto}
 .setup-scroll{min-height:0;overflow-x:hidden;overflow-y:scroll;overscroll-behavior-y:contain;scrollbar-gutter:stable;scrollbar-color:#ab86b4 #17101e}
 .setup-scroll:focus-visible{outline:2px solid #e6c48d;outline-offset:-3px}
