@@ -2,7 +2,7 @@
 const BATTLE_FX={key:'',seen:0,prev:null,figs:[],lead:null,enemy:null,busy:0};
 const BATTLE_BG={0:'throne',1:'barracks',2:'kitchen',3:'armory',4:'warroom',5:'library',6:'chapel',7:'dungeon',8:'greathall',9:'alchemy',10:'vault',11:'dungeon',17:'gatehouse',18:'vault',19:'library'},BATTLE_BG_SPARE=['greathall','dungeon','winecellar','smithy','bedchamber'];
 function battleBackdrop(c){const inv=state.invasion.active,room=c.exp?{type:c.enemyInfo.roomType}:roomFromKey(inv.room);let name=BATTLE_BG[room?room.type:0];if(!name)name=BATTLE_BG_SPARE[Math.floor(Math.random()*BATTLE_BG_SPARE.length)];const bg=$('bs-bg');bg.style.backgroundImage=`url("backdrops/${name}.jpg")`;bg.dataset.room=name}
-function battleFig(el,kind,idx,role){return{el,mover:el.querySelector('.bf-move'),art:el.querySelector('.bf-art'),atlas:COMBAT_ART[kind][idx]||COMBAT_ART[kind][0],role,until:0,row:0,hit:0,heal:0}}
+function battleFig(el,kind,idx,role){return{el,mover:el.querySelector('.bf-move'),art:el.querySelector('.bf-art'),atlas:COMBAT_ART[kind][idx]||COMBAT_ART[kind][0],portrait:kind==='invader'&&idx>=ORIGINAL_ENEMY_SPRITES,role,until:0,row:0,hit:0,heal:0}}
 function battleBuild(c){
  const inv=c.exp?c.enemyInfo:state.invasion.active,stage=$('bs-stage');stage.replaceChildren();battleBackdrop(c);BATTLE_FX.figs=[];
  const party=[];
@@ -20,7 +20,7 @@ function battleBuild(c){
  const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div></div>';if(p.companion&&Object.hasOwn(COMPANIONS,p.companion)){const pet=document.createElement('img');pet.src='assets/companion-'+p.companion+'-v2.webp';pet.alt=COMPANIONS[p.companion].name;const size=28*COMPANIONS[p.companion].size;pet.style.cssText='position:absolute;left:2%;bottom:6%;object-fit:contain;pointer-events:none;width:'+size+'%;height:'+size+'%';el.querySelector('.bf-move').append(pet)}stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.id=p.id;f.base={x,y};BATTLE_FX.figs.push(f);return f};
  for(const o of order){const f=mk(o.p,o.s[0],o.s[1],o.s[2],false);if(o.p.role==='lead')BATTLE_FX.lead=f}
  BATTLE_FX.enemy=mk({kind:'invader',idx:inv.variant,name:inv.name,role:'lead'},74,77,1.05,true);BATTLE_FX.enemy.atlas=COMBAT_ART.invader[inv.variant]||COMBAT_ART.invader[0];
- for(const f of BATTLE_FX.figs){f.art.style.backgroundImage='url("'+f.atlas+'")';f.art.style.backgroundSize='200% 400%';}
+ for(const f of BATTLE_FX.figs){f.art.style.backgroundImage='url("'+f.atlas+'")';f.art.style.backgroundSize=f.portrait?'100% 100%':'200% 400%';}
 }
 function battleCenter(f){const r=f.art.getBoundingClientRect(),s=$('bs-stage').getBoundingClientRect();return{x:r.left+r.width/2-s.left,y:r.top+r.height*.4-s.top}}
 function battleFloat(f,text,color){const p=battleCenter(f),e=document.createElement('div');e.className='bs-float';e.textContent=text;e.style.cssText=`left:${p.x}px;top:${p.y-40}px;color:${color}`;$('bs-stage').append(e);setTimeout(()=>e.remove(),1300)}

@@ -1,9 +1,23 @@
+const ORIGINAL_ENEMY_SPRITES=4;
+const EXTRA_INVADERS=[
+ {name:'Roadside Cutthroat',atk:13,skill:.46},
+ {name:'Rogue Pikeman',atk:15,skill:.5},
+ {name:'Black Banner Mercenary',atk:17,skill:.55},
+ {name:'Ashcloak Scout',atk:14,skill:.53}
+];
+const DUNGEON_ENEMIES=[
+ {name:'Dungeon Gaoler',skill:.48,damageScale:1},
+ {name:'Vault Shieldwarden',skill:.7,damageScale:.9},
+ {name:'Crypt Acolyte',skill:.64,damageScale:.95},
+ {name:'Hollow Revenant',skill:.56,damageScale:1.1}
+].map((enemy,index)=>({...enemy,variant:ORIGINAL_ENEMY_SPRITES+EXTRA_INVADERS.length+index}));
+const enemyPortrait=variant=>'assets/enemy-'+variant+'-v1.webp';
 const COMBAT_ART={
  mc:['assets/prince-battle-v2.webp'],
  servant:Array.from({length:5},(_,i)=>'assets/servant-'+i+'-battle-v2.webp'),
  guard:['assets/guard-battle-v2.webp'],
  paladin:['assets/paladin-battle-v2.webp'],
- invader:Array.from({length:4},(_,i)=>'assets/invader-'+i+'-battle-v2.webp')
+ invader:Array.from({length:ORIGINAL_ENEMY_SPRITES+EXTRA_INVADERS.length+DUNGEON_ENEMIES.length},(_,i)=>i<ORIGINAL_ENEMY_SPRITES?'assets/invader-'+i+'-battle-v2.webp':enemyPortrait(i))
 };
 function combatSpriteKind(unit){
  return unit.player||unit.kind==='prince'?'mc':unit.paladin?'paladin':unit.guard||unit.kind==='guard'?'guard':'servant';
@@ -13,7 +27,7 @@ function combatSprite(unit){
  return art[unit.look]||art[0];
 }
 const INVADER_ATLASES=Array.from({length:4},(_,i)=>'assets/invader-'+i+'-map-v2.webp');
-const INVADER_TYPES=[{name:'Guild Thief',maxHp:100,atk:12,skill:.42},{name:'Rogue Soldier',maxHp:100,atk:15,skill:.5},{name:'Hired Assassin',maxHp:100,atk:17,skill:.55},{name:'Bandit Marauder',maxHp:100,atk:15,skill:.45}];
+const INVADER_TYPES=[{name:'Guild Thief',maxHp:100,atk:12,skill:.42},{name:'Rogue Soldier',maxHp:100,atk:15,skill:.5},{name:'Hired Assassin',maxHp:100,atk:17,skill:.55},{name:'Bandit Marauder',maxHp:100,atk:15,skill:.45},...EXTRA_INVADERS];
 const MERCHANT_RATIO=.25;
 function unitById(id){return servantById(id)||(state.guards||[]).find(g=>g.id===id)||null}
 function allUnits(){return [...state.collectors,...(state.guards||[])]}
@@ -60,8 +74,8 @@ function checkScheduledInvasion(ms){
 }
 function planInvaderRoute(startKey){const throne=state.tiles.find(t=>t.type===0),eligible=state.tiles.filter(t=>![0,12,13,14,15,17].includes(t.type)),maxRooms=Math.max(1,Math.floor(eligible.length*.5)),count=Math.min(eligible.length,1+Math.floor(Math.random()*maxRooms));const shuffled=eligible.slice().sort(()=>Math.random()-.5),served=shuffled.filter(t=>state.collectors.some(n=>n.home===roomKey(t))),rest=shuffled.filter(t=>!served.includes(t));let picks=[...served,...rest].slice(0,count).filter(t=>raidPath(startKey,roomKey(t),true));const route=[];let cur=startKey;while(picks.length){let bi=0,bl=Infinity;picks.forEach((t,i)=>{const p=raidPath(cur,roomKey(t),true);if(p&&p.length<bl){bl=p.length;bi=i}});const t=picks.splice(bi,1)[0];route.push(roomKey(t));cur=roomKey(t)}route.push(roomKey(throne));return route}
 function invasionPartyLimit(level){return level>=20?3:level>=10?2:1}
-function rollInvader(){
- const variant=Math.floor(Math.random()*(state.day<=3?2:INVADER_TYPES.length));
+function rollInvader(variants){
+ const [variant]=variants.splice(Math.floor(Math.random()*variants.length),1);
  const level=Math.max(1,Math.min(MAX_LEVEL,state.prince.level+Math.floor(Math.random()*7)-3));
  return {variant,level};
 }
@@ -73,7 +87,8 @@ function readyInvader(profile,remaining,knocked){
 function spawnInvader(){
  const r=state.invasion;if(state.over||state.day<2||r.active||r.combat)return false;
  const count=1+Math.floor(Math.random()*invasionPartyLimit(state.prince.level));
- const party=Array.from({length:count},rollInvader);
+ const variants=INVADER_TYPES.map((_,index)=>index).filter(index=>state.day>3||index<2||index===4||index===5);
+ const party=Array.from({length:count},()=>rollInvader(variants));
  readyInvader(party.shift(),party,[]);
  r.merchantCredit=Math.min(3,(r.merchantCredit||0)+MERCHANT_RATIO);r.alarmMs=null;
  shakeScreen();for(const n of state.collectors)if(n.home===null)fleeToThrone(n);
@@ -221,7 +236,12 @@ function awardRoomXp(room,base){gainXp('mc',base);const sv=roomCollector(room);i
 function renderPrince(){const el=$('prince-card');if(!el)return;const p=state.prince,need=p.level>=MAX_LEVEL?0:xpNeed(p.level);if($('princebtn'))$('princebtn').textContent='Prince · Lv '+p.level;el.innerHTML=`<strong>Young Prince · Level ${p.level}</strong><div class="xpbar"><i style="width:${need?Math.min(100,p.xp/need*100):100}%"></i></div><small>${need?`Experience ${Math.floor(p.xp)} / ${need}`:'Maximum level'} · Health ${hpForLevel(p.level)} · Card power ×${powerForLevel(p.level).toFixed(2)}</small>`}
 
 function spriteStyle(el,atlas,direction,frame=0,walking=false){el.style.backgroundImage='url("'+atlas+'")';el.style.backgroundSize='200% 1600%';el.style.backgroundPosition=`${frame%2*100}% ${(direction*2+(walking?1:0))/15*100}%`}
-function renderInvader(){if($('invasion-status'))$('invasion-status').textContent=raidForecast();const r=state.invasion,inv=r?.active,grid=$('grid');let layer=$('invader-layer');if(!layer){layer=document.createElement('div');layer.id='invader-layer';grid.append(layer)}if(!inv){layer.replaceChildren();return}let actor=$('invader-sprite');if(!actor){actor=document.createElement('div');actor.id='invader-sprite';actor.setAttribute('aria-label','Invading enemy');actor.innerHTML='<span class="inv-hp"><i></i></span>';layer.append(actor)}const bar=actor.querySelector('.inv-hp i');if(bar)bar.style.width=Math.max(0,inv.hp/inv.maxHp*100)+'%';const from=roomFromKey(inv.room),to=roomFromKey(inv.target),p=to?inv.travelMs/3200:0;if(!from)return;actor.style.left=`calc(${from.x+.5+(to?(to.x-from.x)*p:0)}*var(--size))`;actor.style.top=`calc(${from.y+.65+(to?(to.y-from.y)*p:0)}*var(--size))`;const direction=to?mcFacing(to.x-from.x,to.y-from.y):1,frame=Math.floor(Date.now()/250)%8;spriteStyle(actor,INVADER_ATLASES[inv.variant],direction,frame,!!to);}
+function renderInvader(){if($('invasion-status'))$('invasion-status').textContent=raidForecast();const r=state.invasion,inv=r?.active,grid=$('grid');let layer=$('invader-layer');if(!layer){layer=document.createElement('div');layer.id='invader-layer';grid.append(layer)}if(!inv){layer.replaceChildren();return}let actor=$('invader-sprite');if(!actor){actor=document.createElement('div');actor.id='invader-sprite';actor.setAttribute('aria-label','Invading enemy');actor.innerHTML='<span class="inv-hp"><i></i></span>';layer.append(actor)}const bar=actor.querySelector('.inv-hp i');if(bar)bar.style.width=Math.max(0,inv.hp/inv.maxHp*100)+'%';const from=roomFromKey(inv.room),to=roomFromKey(inv.target),p=to?inv.travelMs/3200:0;if(!from)return;actor.style.left=`calc(${from.x+.5+(to?(to.x-from.x)*p:0)}*var(--size))`;actor.style.top=`calc(${from.y+.65+(to?(to.y-from.y)*p:0)}*var(--size))`;const direction=to?mcFacing(to.x-from.x,to.y-from.y):1,frame=Math.floor(Date.now()/250)%8;if(inv.variant<ORIGINAL_ENEMY_SPRITES)spriteStyle(actor,INVADER_ATLASES[inv.variant],direction,frame,!!to);
+ else{
+  actor.style.backgroundImage='url("'+enemyPortrait(inv.variant)+'")';
+  actor.style.backgroundSize='100% 100%';
+  actor.style.backgroundPosition='center';
+ }}
 function raidForecast(){const r=state.invasion;return r.active?`Invader inside · ${r.active.name} · HP ${r.active.hp}/${r.active.maxHp}${r.active.remaining?.length?' · '+r.active.remaining.length+' waiting at the gate':''}`:`Next invasion: day ${Math.floor(r.nextAt/DAY_MS)+1}`}
 function validateInvasion(s){const r=s.invasion,finite=(v,min,max)=>Number.isFinite(v)&&v>=min&&v<=max,keys=new Set(s.tiles.map(roomKey));if(!r||!Number.isFinite(r.nextAt)||r.nextAt<DAY_MS||r.alarmMs!=null&&!finite(r.alarmMs,0,ALARM_MS))throw Error('Invalid invasion schedule');const inv=r.active;if(inv){if(!Number.isInteger(inv.level)||inv.level<1||inv.level>MAX_LEVEL||!Number.isInteger(inv.variant)||!INVADER_TYPES[inv.variant]||!finite(inv.hp,0,10000)||!finite(inv.maxHp,1,10000)||inv.hp>inv.maxHp||!finite(inv.atk,1,1000)||!finite(inv.skill,0,1)||typeof inv.name!=='string'||!keys.has(inv.room)||!keys.has(inv.from)||inv.target!==null&&!keys.has(inv.target)||!finite(inv.travelMs,0,3200)||!finite(inv.waitMs,0,10000)||![inv.route,inv.knocked].every(Array.isArray)||inv.route.length>FIELD_SIZE*FIELD_SIZE||inv.route.some(k=>!keys.has(k))||inv.knocked.some(id=>!s.collectors.some(n=>n.id===id)&&!(s.guards||[]).some(g=>g.id===id)))throw Error('Invalid invader');if(inv.remaining!==undefined&&(!Array.isArray(inv.remaining)||inv.remaining.length>2||inv.remaining.some(x=>!x||!Number.isInteger(x.level)||x.level<1||x.level>MAX_LEVEL||!Number.isInteger(x.variant)||!INVADER_TYPES[x.variant])))throw Error('Invalid invasion party');if(inv.target&&!raidAdjacentInSave(inv.room,inv.target,s.tiles))throw Error('Invalid invasion route')}
  const c=r.combat;if(c){if(!c.exp&&(!inv||!['mc','servant'].includes(c.kind)||!['ally','enemy'].includes(c.turn)||!Number.isInteger(c.turnNumber)||c.turnNumber<1||!finite(c.waitMs,-1000,10000)||!Array.isArray(c.log)||c.log.length>5||c.log.some(x=>typeof x!=='string')||![null,'ally','enemy'].includes(c.winner)||c.kind==='servant'&&!s.collectors.some(n=>n.id===c.defenderId)&&!(s.guards||[]).some(g=>g.id===c.defenderId)))throw Error('Invalid combat');for(const a of [...(c.allies||[c.ally]),c.enemy])if(!a||typeof a.name!=='string'||!Number.isInteger(a.level)||a.level<1||a.level>MAX_LEVEL||!finite(a.maxHp,1,10000)||!finite(a.hp,0,a.maxHp)||!Number.isInteger(a.energy)||a.energy<0||a.energy>10||!finite(a.block,0,100000)||!finite(a.dmgMod,0,100)||!finite(a.skill,0,1)||!Array.isArray(a.hand)||a.hand.length>5||a.hand.some(id=>!CARD_BY_ID[id]))throw Error('Invalid combat actor')}

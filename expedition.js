@@ -122,16 +122,16 @@ function dungeonRoomBattle(info,key){
  const rollHp=()=>minHp+Math.floor(Math.random()*(maxHp-minHp+1));
  const encounters=layout.encounters??={};
  if(!encounters[key]){
-  const primary={...info,maxHp:info.boss?maxHp:rollHp()};
-  const reserves=[
-   {name:'Dungeon Skirmisher',variant:info.variant%3+1,skill:.4,damage:info.damage*.85},
-   {name:'Dungeon Enforcer',variant:(info.variant+1)%3+1,skill:.75,damage:info.damage*1.1}
-  ];
   const count=info.boss?1+Number(reinforcedRoom(exp,key)):
    1+Math.max(...Array.from({length:tierIndex+1},()=>Math.floor(Math.random()*3)));
-  let first=primary;
-  for(const reserve of reserves.slice(0,count-1).reverse()){
-   first={...reserve,level:Math.max(1,info.level-1),maxHp:rollHp(),nextDefender:first};
+  const pool=DUNGEON_ENEMIES.map(({damageScale,...enemy})=>({
+   ...enemy,level:info.level,damage:info.damage*damageScale
+  }));
+  if(!info.boss)pool.push(info);
+  let first=info.boss?{...info,maxHp}:undefined;
+  for(let n=Number(!!info.boss);n<count;n++){
+   const [enemy]=pool.splice(Math.floor(Math.random()*pool.length),1);
+   first={...enemy,maxHp:rollHp(),nextDefender:first};
   }
   encounters[key]=first;
  }
