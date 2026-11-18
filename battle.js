@@ -25,6 +25,7 @@ function battleLunge(f,target,scale,delay){const a=battleCenter(f),b=battleCente
 function battleHit(f,delay){setTimeout(()=>{f.hitUntil=performance.now()+420;f.el.classList.add('bf-hit');setTimeout(()=>f.el.classList.remove('bf-hit'),420);if(motionOK())f.mover.animate([{transform:'translateX(0)'},{transform:'translateX(-14px)'},{transform:'translateX(10px)'},{transform:'translateX(-6px)'},{transform:'translateX(0)'}],{duration:360})},delay)}
 function battleEffect(c){
  const card=CARD_BY_ID[c.lastCard],by=c.lastBy,P=BATTLE_FX.prev,lead=BATTLE_FX.lead,en=BATTLE_FX.enemy,party=BATTLE_FX.figs.filter(f=>!f.enemy);if(!card||!P)return;
+ window.StrongholdAudio?.play(card.type);
  const A=c.ally,E=c.enemy;
  if(card.type==='attack'){
   const actor=by==='ally'?lead:en,target=by==='ally'?en:lead,sideAfter=by==='ally'?E:A,sideBefore=by==='ally'?P.enemy:P.ally;

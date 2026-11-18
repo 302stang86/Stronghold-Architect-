@@ -74,5 +74,5 @@ function render(variant,home){
  R.render(sc,c);const url=R.domElement.toDataURL('image/png');
  const tip=g.userData.tip.clone().project(c),res={url,pole:{x:(tip.x+1)/2,y:(1-tip.y)/2}};
  sc.traverse(o=>{if(o.geometry)o.geometry.dispose()});cache.set(key,res);return res}
-window.Castle3D={ok,render};
+window.Castle3D={ok,render,build};
 })();
