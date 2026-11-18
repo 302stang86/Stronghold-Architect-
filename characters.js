@@ -220,7 +220,7 @@ function centerInvader(){const inv=state.invasion.active;if(!inv)return toast('N
 const SERVANT_ATLASES=['assets/b09f22c632c078ac3ed1.png', 'assets/ad4b1e850dd186a3994f.png', 'assets/9929335be6563a0c34ef.png', 'assets/6a73405483c59b154a06.png', 'assets/e7a78efc6ca663fe1c95.png'];
 const SERVANT_ROLES=[{role:'Castle Chef',hp:75,atk:12,skill:.45},{role:'Chamber Maid',hp:75,atk:12,skill:.5},{role:'Head Steward',hp:85,atk:14,skill:.6},{role:'Armory Blacksmith',hp:100,atk:17,skill:.5},{role:'Library Scribe',hp:75,atk:13,skill:.65}];
 const SERVANT_NAME_POOL=['Alda','Bram','Cedric','Dara','Edmund','Fenna','Gareth','Hilda','Ivo','Joran','Kelda','Lorcan','Maren','Nell','Osric','Petra','Quill','Rowan','Sela','Tobias','Una','Vesper','Wren','Xander','Yara','Zephyr','Aldric','Brienne','Corin','Delia','Emrys','Fionn','Greta','Hugh','Isolde','Jory','Kit','Lena','Marek','Nessa','Orla','Percy','Rhea','Sorrel','Tamsin','Ulric','Vera','Wilf','Yvaine','Zora'];
-const MC_SPRITE_ATLAS='assets/6b3611523c685ea792b1.png';
+const MC_SPRITE_ATLAS='assets/prince-map-hd.webp';
 
 function initEconomy(s){
  if(!s.prince)s.prince={level:1,xp:0};
