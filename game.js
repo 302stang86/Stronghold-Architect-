@@ -55,7 +55,9 @@ function placement(t,tiles=state.tiles){if(entranceBlocked(t.x,t.y,tiles))return
 function connected(tiles){const root=tiles.find(t=>t.type===0);if(!root)return false;const seen=new Set([root]),q=[root];while(q.length){const a=q.shift();DIRS.forEach(([dx,dy],d)=>{const b=at(a.x+dx,a.y+dy,tiles);if(b&&!seen.has(b)&&compatible(a,b,d)){seen.add(b);q.push(b)}})}return seen.size===tiles.length}
 function unlocked(i){return START_UNLOCKED.includes(i)||state.researched.includes(i)}
 function research(i){if(state.over||unlocked(i)||!RESEARCH_COST[i])return;if(!state.tiles.some(t=>t.type===19))return toast('Build a research room first.');if(state.rp<RESEARCH_COST[i])return toast('Not enough research points. Research Rooms add points as time passes.');state.rp-=RESEARCH_COST[i];state.researched.push(i);note(TYPES[i][0]+' blueprint researched.');gainXp('mc',15);save();render();toast(TYPES[i][0]+' unlocked!')}
-function income(){const total={gold:0,stone:0,rp:0,food:0};for(const room of state.tiles)for(const [k,v]of Object.entries(roomRates(room)))total[k]+=v*(k==='gold'&&state.day<=3?2:k==='food'?1/gameSpeed:1);return total}
+// The ×3 setting gives gold-producing rooms a fourfold production rate.
+function goldProductionFactor(speed){return speed===3?4/3:1}
+function income(){const total={gold:0,stone:0,rp:0,food:0};for(const room of state.tiles)for(const [k,v]of Object.entries(roomRates(room)))total[k]+=v*(k==='gold'&&state.day<=3?2:k==='food'?1/gameSpeed:1)*(roomRates(room).gold>0?goldProductionFactor(gameSpeed):1);return total}
 function toast(t){$('toast').textContent=t;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3500)}
 function note(t){state.log.unshift(`Day ${state.day} · ${t}`);state.log=state.log.slice(0,12);floatLog(`Day ${state.day} · ${t}`)}
 function floatLog(text){const box=document.getElementById('logfloat');if(!box)return;const p=document.createElement('p');p.textContent=text;box.append(p);while(box.children.length>5)box.firstChild.remove();setTimeout(()=>p.classList.add('fade'),2600);setTimeout(()=>p.remove(),3200)}
@@ -248,7 +250,8 @@ function renderClock(){
 function resetDayClock(){lastClockTick=Date.now();lastClockSave=lastClockTick;clockSuspended=awaitingResume;}
 function applyElapsedTime(elapsed,speed=1){
  if(awaitingResume||state.over||!Number.isFinite(elapsed)||elapsed<=0)return;
- while(elapsed>0&&!state.over){const step=Math.min(elapsed,250,DAY_MS-state.dayElapsedMs);if(state.invasion.combat){tickCombat(step);elapsed-=step;continue}if(state.expedition){elapsed-=step;continue}simulateEconomy(step,step/speed);state.dayElapsedMs+=step;tickInvasion(step);elapsed-=step;if(state.dayElapsedMs>=DAY_MS){state.dayElapsedMs=0;completeDay()}}
+ const goldFactor=goldProductionFactor(speed);
+ while(elapsed>0&&!state.over){const step=Math.min(elapsed,250,DAY_MS-state.dayElapsedMs);if(state.invasion.combat){tickCombat(step);elapsed-=step;continue}if(state.expedition){elapsed-=step;continue}simulateEconomy(step,step/speed,step*goldFactor);state.dayElapsedMs+=step;tickInvasion(step);elapsed-=step;if(state.dayElapsedMs>=DAY_MS){state.dayElapsedMs=0;completeDay()}}
  if(state.over)state.dayElapsedMs=0;
 }
 

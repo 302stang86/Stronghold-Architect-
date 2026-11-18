@@ -220,10 +220,10 @@ function tickServant(n,ms){
  if(route&&route.length)n.path=route;else n.waitMs=1500;
 }
 function autoCollectRoom(room){const worker=roomCollector(room);if(worker)gainXp(worker,1);for(const [k,v]of Object.entries(room.stock||{}))state[k]=roundResource(state[k]+v*SERVANT_BONUS);room.stock={};room.productionMs=0;refreshEconomyUI()}
-function simulateEconomy(ms,realMs=ms){
+function simulateEconomy(ms,realMs=ms,goldMs=ms){
  if(state.over)return;
  advanceMC(ms);
- for(const room of state.tiles){const rates=roomRates(room);if(!Object.keys(rates).length)continue;const produced=(room.productionMs||0)+(room.type===2?realMs:ms);room.productionMs=produced>=BATCH_MS-.00001?BATCH_MS:produced;if(room.productionMs===BATCH_MS&&!Object.values(room.stock||{}).some(v=>v>0))room.stock=batchFor(room)}
+ for(const room of state.tiles){const rates=roomRates(room);if(!Object.keys(rates).length)continue;const productionStep=room.type===2?realMs:rates.gold>0?goldMs:ms;const produced=(room.productionMs||0)+productionStep;room.productionMs=produced>=BATCH_MS-.00001?BATCH_MS:produced;if(room.productionMs===BATCH_MS&&!Object.values(room.stock||{}).some(v=>v>0))room.stock=batchFor(room)}
  const throne=state.tiles.find(r=>r.type===0);if(throne&&throne.productionMs===BATCH_MS&&Object.values(throne.stock||{}).some(v=>v>0)){for(const [key,value]of Object.entries(throne.stock))state[key]=roundResource(state[key]+value);throne.stock={};throne.productionMs=0;refreshEconomyUI()}
  for(const room of state.tiles){if(room.type===0||room.productionMs<BATCH_MS||!Object.values(room.stock||{}).some(v=>v>0))continue;const n=roomCollector(room);if(n&&n.mode==='working'&&!isKnockedOut(n))autoCollectRoom(room)}
  for(const n of allUnits())tickServant(n,n.guard?realMs:ms);
