@@ -529,13 +529,16 @@ main{grid-template-columns:minmax(0,1fr)!important}
 .game-footer #game-speed button[aria-pressed="true"]{border-color:#d0a164;background:#653862;color:#fff2cc}
 .game-footer #game-speed button:focus-visible{outline:2px solid #ffe1ac;outline-offset:-2px}
 
-#world-map-toggle{position:absolute;right:calc(62px + env(safe-area-inset-right));bottom:48px;z-index:8;
- width:58px;height:58px;padding:0;font-size:35px;display:grid;place-items:center;
- background:none;border:0;box-shadow:none}
-#world-map-toggle span{line-height:1;filter:drop-shadow(0 2px 2px #000) drop-shadow(0 0 5px #ffd98b88)}
+#world-map-toggle{
+ position:absolute;right:max(var(--footer-inset),env(safe-area-inset-right));bottom:calc(100% + 38px);z-index:8;
+ width:54px;height:54px;padding:0;display:grid;place-items:center;
+ border:2px solid #d8ad69;border-radius:50%;font-size:32px;
+ background:radial-gradient(circle at 38% 28%,#423052,#191325 72%);
+ box-shadow:inset 0 0 0 2px #25162f,0 3px 12px #000b;
+}
+#world-map-toggle span{line-height:1;filter:drop-shadow(0 2px 2px #000)}
 #world-map-toggle:hover span{filter:brightness(1.18) drop-shadow(0 2px 3px #000)}
-#world-map-toggle:focus-visible{outline:2px solid #ffe1ac;outline-offset:2px}
-@media(max-width:760px){#world-map-toggle{right:calc(14px + env(safe-area-inset-right))}}
+#world-map-toggle:focus-visible{outline:2px solid #ffe1ac;outline-offset:3px}
 .merchant-tabs{display:flex;gap:6px;margin-bottom:8px}
 .merchant-tabs [aria-pressed="true"]{border-color:#ffd788;background:#68406d}
 #merchant-quantity label,#trade-quantity{display:block;margin:8px 0}
@@ -555,15 +558,17 @@ main{grid-template-columns:minmax(0,1fr)!important}
 
 .gc-art img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 2px 2px #000c) drop-shadow(0 0 4px color-mix(in srgb,var(--accent) 45%,transparent));pointer-events:none}
 
-.game-footer{flex-wrap:wrap;justify-content:flex-start;gap:8px 14px}
-.play-tools{display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-width:0}
+.game-footer{
+ --footer-inset:clamp(76px,6vw,116px);
+ position:relative;flex-direction:column;align-items:center;gap:5px;
+ padding-inline:max(var(--footer-inset),env(safe-area-inset-left)) max(var(--footer-inset),env(safe-area-inset-right));
+}
+.play-tools{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;min-width:0;max-width:100%}
 .play-tools>button,.game-footer #game-speed button{min-height:34px}
-.game-footer #hint{flex:1 1 16rem}
-.game-footer #deselect{margin-left:auto}
+.game-footer #hint{text-align:center}
 @media(max-width:760px){
- .game-footer{gap:6px 8px}
- .game-footer #hint{flex-basis:calc(100% - 90px)}
- .world #world-map-toggle{bottom:112px}
+ .game-footer{--footer-inset:44px}
+ #world-map-toggle{width:46px;height:46px;font-size:27px;bottom:calc(100% + 28px)}
 }
 
 #research-list .research-row{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:10px}
