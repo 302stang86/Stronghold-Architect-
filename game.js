@@ -220,8 +220,25 @@ function setupFieldGestures(){
 }
 $('closepack').onclick=()=>$('packdialog').close();$('closeroom').onclick=()=>$('roomdialog').close();$('roomdialog').addEventListener('close',()=>{viewedRoom=null});setupFieldGestures();
 
+const speedButtons=Array.from($('game-speed').querySelectorAll('[data-speed]'));
+const supportedSpeeds=speedButtons.map(button=>Number(button.dataset.speed));
+let gameSpeed=supportedSpeeds.includes(settings.gameSpeed)?settings.gameSpeed:1;
+function renderGameSpeed(){
+ for(const button of speedButtons)button.setAttribute('aria-pressed',String(Number(button.dataset.speed)===gameSpeed));
+}
+for(const button of speedButtons)button.onclick=()=>{
+ if(awaitingResume||document.hidden)return;
+ tickDayClock();
+ gameSpeed=Number(button.dataset.speed);
+ settings.gameSpeed=gameSpeed;
+ saveSettings();
+ renderGameSpeed();
+ renderClock();
+};
+renderGameSpeed();
+
 function renderClock(){
- const remaining=Math.max(0,DAY_MS-state.dayElapsedMs),seconds=Math.ceil(remaining/1000),minutes=Math.floor(seconds/60);
+ const remaining=Math.max(0,DAY_MS-state.dayElapsedMs),seconds=Math.ceil(remaining/(1000*gameSpeed)),minutes=Math.floor(seconds/60);
  $('daytimer').textContent=state.over?'Clock stopped':`${String(minutes).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')} until Day ${state.day+1}`;
  $('dayclockfill').style.width=(state.dayElapsedMs/DAY_MS*100)+'%';$('chip-text').textContent=state.over?'The keep has fallen':`Day ${state.day} · ${String(minutes).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;$('chip-fill').style.width=(state.dayElapsedMs/DAY_MS*100)+'%';
 }
@@ -233,7 +250,7 @@ function applyElapsedTime(elapsed){
 }
 
 function tickDayClock(now=Date.now()){
- if(clockSuspended)return;const elapsed=Math.max(0,now-lastClockTick);lastClockTick=now;applyElapsedTime(elapsed);renderClock();renderWorldEconomy();renderAlarm();
+ if(clockSuspended)return;const elapsed=Math.max(0,now-lastClockTick);lastClockTick=now;applyElapsedTime(elapsed*gameSpeed);renderClock();renderWorldEconomy();renderAlarm();
  if(now-lastClockSave>=5000){save();lastClockSave=now}
 }
 setInterval(tickDayClock,250);
