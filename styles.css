@@ -140,7 +140,7 @@ footer{margin:0 -22px 0 -52px;padding:9px 14px 9px 56px;background:linear-gradie
 #selection>h2{text-align:center;font-variant:small-caps;font-size:26px;color:#f8dfad;padding-bottom:13px;border-bottom:1px solid #b58a5c66;text-shadow:0 2px 5px #0009}#selection>p{color:#dfcfe1;line-height:1.55}#selection button{margin-top:7px;width:100%}#selection .muted{color:#d4bfd9}
 #collectors,#research{background:linear-gradient(135deg,#3f244be8,#1a1125f5);border:1px solid #a4804c77!important;box-shadow:inset 0 1px #dfb9e622,0 4px 10px #0006;padding:13px;border-radius:8px;margin-top:15px}#collectors h3,#research h3{font-size:20px;margin:0 0 10px;color:#f0d2a1}.day-clock{background:linear-gradient(135deg,#472647ee,#1d1129f2);border:1px solid #b3905e99;box-shadow:inset 0 1px #ffe2b522,0 3px 8px #0006}
 button{background:linear-gradient(165deg,#55305f,#2c193b 55%,#1a1027);color:#f8e7d1;border:1px solid #b38b55;box-shadow:inset 0 1px #f3c9ff35,inset 0 -2px #17091e,0 3px 5px #0008;border-radius:7px}.game-topbar button{border-color:#b0905b99;font-size:11px}.primary,#resume-game{background:linear-gradient(170deg,#c984e5 0%,#8a409d 20%,#61236f 55%,#3e164e 75%,#6e2b83 100%);border:2px ridge #e0ba77;color:#fff0c4;text-shadow:0 2px 3px #321235;box-shadow:inset 0 1px #f4d8ff99,inset 0 -2px #210d2f,0 0 0 1px #3b2144,0 5px 10px #0008;font-family:Georgia,serif;font-weight:normal;font-size:17px;padding:13px;text-transform:uppercase;letter-spacing:.7px}.primary:hover,#resume-game:hover{background:linear-gradient(#d49beb,#8c42a1 45%,#512065);box-shadow:inset 0 1px #fff4b488,0 0 15px #bd6ede55}
-#builddialog,#roomdialog,#helpdialog,#battle-dialog,#resume-dialog{border:3px ridge #b68c55;background:linear-gradient(135deg,#40204be8,#20112ff5),var(--citadel-panel-art) center/100% 100%;box-shadow:0 0 0 3px #1c1122,0 25px 100px #000d,inset 0 1px #f6dfb33b}
+#builddialog,#roomdialog,#helpdialog,#keepdialog,#princedialog,#battle-dialog,#resume-dialog{border:3px ridge #b68c55;background:linear-gradient(135deg,#40204be8,#20112ff5),var(--citadel-panel-art) center/100% 100%;box-shadow:0 0 0 3px #1c1122,0 25px 100px #000d,inset 0 1px #f6dfb33b}
 #resume-dialog{width:min(420px,calc(100vw - 30px));padding:30px;text-align:center;background:var(--citadel-panel-art) center/100% 100%;color:#fff0d9;border-radius:12px}#resume-title{font-family:Georgia,serif;font-size:34px;color:#f6d69c;margin:9px 0 12px}#resume-day{color:#eed1b0}#resume-dialog .muted{color:#dbcbdf;line-height:1.7}.resume-crest{display:block;width:48px;height:59px;margin:auto;background:var(--citadel-crest) center/contain no-repeat}#resume-game{width:100%;min-height:49px;margin-top:15px}
 #battle-actions button{background:linear-gradient(150deg,#754181,#3c1c4f);border:2px ridge #c49a62;color:#ffead0}.battle-stage{box-shadow:inset 0 0 30px #0008;border:2px ridge #96714a}
 @media(max-width:1250px){.game-topbar{flex-wrap:wrap;gap:8px 16px}.game-topbar .tools{flex:1 1 auto;justify-content:flex-end}.game-topbar #resources{flex:1 1 auto;justify-content:flex-end}.brand{min-width:220px}.brand h1{font-size:21px}.game-topbar #resources>div{padding:5px 10px}}
@@ -393,3 +393,31 @@ dialog#expdialog[open]{display:block}
 #exp-status{margin:0;text-align:center;padding:6px 12px;font-size:13px;color:#f4dab1;background:#0009}
 #exp-log{margin:0;padding:6px 14px 10px;font:12px/1.5 system-ui,sans-serif;color:#cbbbda;background:#0009;max-height:84px;overflow:auto;white-space:pre-wrap}
 @media(max-width:700px){#exp-grid{--ecell:clamp(78px,22vw,110px)}.exp-head h2{font-size:18px}.exp-member i{width:48px}}
+
+/* Wide three-tile castle entrance: gate tile plus the two reserved side tiles drawn as one picture */
+.cell.gate-wide-cell{position:relative;z-index:2;overflow:visible}
+.cell img.gate-wide{position:absolute;left:-100%;top:0;width:300%;height:100%;max-width:none;object-fit:fill;pointer-events:none;filter:none}
+.cell.occupied.gate-wide-cell>img.gate-wide{filter:none}
+.cell.reserved{background:transparent!important;border:0!important;box-shadow:none!important}
+
+/* Side bar removed: single-column layout, banner chips, popups, fading log */
+main{grid-template-columns:minmax(0,1fr)!important}
+#legacy-panel{display:none!important}
+.game-topbar .day-chip{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:118px;padding:6px 10px 7px;font-variant-numeric:tabular-nums}
+.day-chip i{display:block;width:100%;height:4px;background:#0d0813;border-radius:3px;overflow:hidden}.day-chip b{display:block;height:100%;background:linear-gradient(90deg,#b8863f,#f0cf8a)}
+#keepdialog,#princedialog{width:min(460px,calc(100vw - 28px));padding:24px}
+#keepdialog #forecast{font-size:13px;line-height:1.7;color:#e6dcc8}
+#keepdialog .day-clock{margin-top:16px}
+#princedialog #prince-card{margin-top:6px}
+#logfloat{position:fixed;right:14px;top:84px;width:min(300px,60vw);z-index:40;pointer-events:none;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+#logfloat p{margin:0;padding:8px 12px;font-size:12px;line-height:1.45;color:#f6e7c9;background:linear-gradient(135deg,#3f244bf0,#1a1125f2);border:1px solid #a4804c99;border-radius:7px;box-shadow:0 4px 14px #000a;transition:opacity .5s;opacity:1}
+#logfloat p.fade{opacity:0}
+.room-research{margin-top:14px;padding-top:12px;border-top:1px solid #a4804c55}.room-research h3{margin:0 0 6px;font-size:18px}
+#roomdialog .room-info{max-height:70dvh;overflow:auto}
+
+.game-topbar{gap:10px}.game-topbar .brand{min-width:0;flex:0 1 auto}.game-topbar .brand h1{white-space:nowrap}.keep-name{white-space:nowrap}
+@media(max-width:1250px){.game-topbar .brand h1{font-size:19px}.game-topbar .day-chip{min-width:96px}}
+@media(max-width:1400px){.game-topbar .brand h1{font-size:17px}.game-topbar .brand{min-width:0;padding-left:34px}.game-topbar #resources{gap:6px}.game-topbar #resources>div{padding:3px 8px}.game-topbar .tools{gap:3px}.game-topbar .tools button{padding:6px 7px;font-size:11.5px}.game-topbar .day-chip{min-width:92px}#holdflag{width:26px;height:32px}}
+
+.room-tools{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding:12px 0 4px;background:linear-gradient(0deg,#2a1636 70%,transparent);border-top:1px solid #a4804c55}.room-tools button{margin:0}
+.room-tools{background:#2b1737;z-index:3}.room-tools button{display:inline-block!important;width:auto!important;font-size:12px;padding:7px 10px}
