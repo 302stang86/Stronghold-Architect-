@@ -525,10 +525,13 @@ main{grid-template-columns:minmax(0,1fr)!important}
 .game-topbar #game-speed button[aria-pressed="true"]{border-color:#d0a164;background:#653862;color:#fff2cc}
 .game-topbar #game-speed button:focus-visible{outline:2px solid #ffe1ac;outline-offset:-2px}
 
-#world-map-toggle{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:48px;z-index:8;
- width:52px;height:52px;padding:0;font-size:29px;display:grid;place-items:center;border-radius:12px;
- background:#201628e8;border:1px solid #c49a62;box-shadow:0 4px 10px #000a}
+#world-map-toggle{position:absolute;right:calc(62px + env(safe-area-inset-right));bottom:48px;z-index:8;
+ width:58px;height:58px;padding:0;font-size:35px;display:grid;place-items:center;
+ background:none;border:0;box-shadow:none}
+#world-map-toggle span{line-height:1;filter:drop-shadow(0 2px 2px #000) drop-shadow(0 0 5px #ffd98b88)}
+#world-map-toggle:hover span{filter:brightness(1.18) drop-shadow(0 2px 3px #000)}
 #world-map-toggle:focus-visible{outline:2px solid #ffe1ac;outline-offset:2px}
+@media(max-width:760px){#world-map-toggle{right:calc(14px + env(safe-area-inset-right))}}
 .merchant-tabs{display:flex;gap:6px;margin-bottom:8px}
 .merchant-tabs [aria-pressed="true"]{border-color:#ffd788;background:#68406d}
 #merchant-quantity label,#trade-quantity{display:block;margin:8px 0}
