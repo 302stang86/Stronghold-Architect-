@@ -36,6 +36,30 @@ function battleEffect(c){
  else if(card.type==='healing'){const g=(by==='ally'?party:[en]);g.forEach(f=>{f.healUntil=performance.now()+900;battleBurst(f,12,'#7be6a1',true)});const h=Math.round((by==='ally'?A:E).hp-(by==='ally'?P.ally:P.enemy).hp);battleFloat(by==='ally'?lead:en,'+'+h,'#7be6a1')}
  else{const f=by==='ally'?lead:en;if(motionOK())f.mover.animate([{transform:'translateY(0)'},{transform:'translateY(-22px)'},{transform:'translateY(-22px)'},{transform:'translateY(0)'}],{duration:900,easing:'ease-in-out'});battleBurst(f,24,'#ffcc55');battleFloat(f,'+'+Math.round((by==='ally'?A:E).energy-(by==='ally'?P.ally:P.enemy).energy)+' energy','#ffcc55')}
 }
+function renderCombatMeters(combat){
+ const energyMax=10;
+ for(const side of ['ally','enemy']){
+  const fighter=combat[side];
+  $('bs-'+side+'-hud').classList.toggle('is-turn',combat.turn===side&&!combat.winner);
+  for(const [stat,label,amount,max] of [
+   ['hp',fighter.name,Math.ceil(fighter.hp),fighter.maxHp],
+   ['en','Energy',fighter.energy,energyMax],
+  ]){
+   const meter=$('bs-'+side+'-'+stat);
+   const value=Math.min(max,Math.max(0,amount));
+   meter.style.setProperty('--fill',value/max*100+'%');
+   meter.setAttribute('aria-label',stat==='hp'?label+' health':fighter.name+' energy');
+   meter.setAttribute('aria-valuemax',max);
+   meter.setAttribute('aria-valuenow',value);
+   meter.querySelector('.bs-meter-name').textContent=label;
+   meter.querySelector('.bs-meter-value').textContent=value+'/'+max;
+  }
+  const block=$('bs-'+side+'-block');
+  block.hidden=!(fighter.block>0);
+  if(!block.hidden)block.textContent=Math.ceil(fighter.block)+' block';
+ }
+}
+
 function renderBattle(){
  if(awaitingResume)return;const c=state.invasion?.combat,modal=$('battle-dialog');if(!modal)return;
  if(!c){if(modal.open)modal.close();BATTLE_FX.key='';return}
@@ -54,7 +78,7 @@ function renderBattle(){
  $('battle-subtitle').textContent=`Turn ${c.turnNumber} · ${actor.name}’s turn` +
   (boss==='dungeon-high'&&(c.enraged||c.enemy.hp<=c.enemy.maxHp/2)?' · Chains broken':'');
 
- {const a=actor;$('bs-hp-fill').style.width=Math.max(0,a.hp/a.maxHp*100)+'%';$('bs-blk-fill').style.width=Math.min(100,a.block/a.maxHp*100)+'%';$('bs-hp-val').textContent=Math.ceil(a.hp)+' / '+a.maxHp;$('bs-en-fill').style.width=a.energy*10+'%';$('bs-en-val').textContent=a.energy+' / 10';$('bs-bars').classList.toggle('foe',c.turn==='enemy')}
+ renderCombatMeters(c);
  for(const f of BATTLE_FX.figs)f.el.classList.toggle('bf-guarded',f.enemy?c.enemy.block>0:c.ally.block>0);
  if(c.lastCount!==BATTLE_FX.seen){BATTLE_FX.seen=c.lastCount;battleEffect(c)}
  BATTLE_FX.prev={ally:{hp:c.ally.hp,block:c.ally.block,energy:c.ally.energy},enemy:{hp:c.enemy.hp,block:c.enemy.block,energy:c.enemy.energy}};
