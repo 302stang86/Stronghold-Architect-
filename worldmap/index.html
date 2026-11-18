@@ -46,6 +46,14 @@ html.embed #map-wrapper{touch-action:none;cursor:grab}html.embed #map-wrapper.pa
 .wm-flag{transform-box:fill-box;transform-origin:0 0;animation:wmWave 3.6s ease-in-out infinite}
 @keyframes wmWave{0%,100%{transform:skewY(-2.5deg) scaleX(1)}50%{transform:skewY(3deg) scaleX(.94)}}
 @media(prefers-reduced-motion:reduce){.wm-flag{animation:none}}html.nomotion .wm-flag{animation:none}
+
+.dungeon-marker{--tier:#9bd6aa;display:grid;justify-items:center;align-content:center;gap:1px;color:var(--tier);padding:0;min-width:34px!important}
+.dungeon-marker[data-tier="medium"]{--tier:#ffd278}
+.dungeon-marker[data-tier="high"]{--tier:#ffa3a3}
+.dungeon-marker svg{width:26px!important;height:27px!important;filter:drop-shadow(0 1px 2px #000)}
+.dungeon-marker span{border:1px solid currentColor;border-radius:4px;background:#141211;line-height:1.2;font-weight:750;font-size:9px;padding:0 3px}
+.dungeon-marker.sealed svg{filter:grayscale(.8)}
+.dungeon-emblem{width:42px;height:42px;color:#e2bc7f}
 </style>
 </head>
 <body><script>if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add("embed");try{if(JSON.parse(localStorage.getItem("stronghold-architect-settings")||"{}").reduceMotion)document.documentElement.classList.add("nomotion")}catch(e){}</script><main class="page">
@@ -143,6 +151,68 @@ function addMarker(c,home=false){
  tile.dataset.type=home?'stronghold':'castle';tile.dataset.castleId=c.id;
  b.className='castle-button'+(home?' home':'');b.type='button';b.title=(home?homeName():c.rulingName)+' · Tile '+(c.x+1)+', '+(c.y+1);b.setAttribute('aria-label',b.title+' — open details');b.className+=mine?' mine':'';b.innerHTML=markerSvg(a,home,parseInt(String(c.id).replace(/\D/g,''))||0,mine);tile.appendChild(b);
 }
+const DUNGEON_ICON='<svg viewBox="0 0 36 38" aria-hidden="true"><path d="M4 35V16a14 14 0 0 1 28 0v19Z" fill="#554c4c" stroke="currentColor" stroke-width="2"/><path d="M11 35V17a7 7 0 0 1 14 0v18Z" fill="#161318"/><path d="M6 24h5m14 0h5M6 30h5m14 0h5M18 4v6M8 10l4 4m16-4-4 4M3 36h30" fill="none" stroke="#c3b5ae" stroke-width="1.4"/></svg>';
+let dungeonStatusTimer;
+function mapDungeons(){
+ if(!document.documentElement.classList.contains('embed'))return [];
+ try{return parent.dungeonMapInfo?.()||[]}catch{return []}
+}
+function addDungeonMarker(d){
+ const tile=tiles.get(d.x+','+d.y);
+ tile.dataset.type='dungeon';
+ const button=document.createElement('button');
+ button.type='button';
+ button.className='castle-button dungeon-marker'+(d.remaining>0?' sealed':'');
+ button.dataset.tier=d.tier.toLowerCase();
+ button.dataset.dungeonId=d.id;
+ button.setAttribute('aria-label',d.name+' · '+d.tier+' dungeon');
+ button.innerHTML=DUNGEON_ICON+'<span>'+d.tier+'</span>';
+ tile.append(button);
+ const row=document.createElement('button');
+ row.className='ruler';
+ row.type='button';
+ row.innerHTML='<span class="dungeon-emblem">'+DUNGEON_ICON+'</span><span><strong></strong><small></small></span>';
+ row.querySelector('strong').textContent=d.name;
+ row.querySelector('small').textContent=d.tier+' dungeon';
+ row.onclick=()=>selectTile(tile,d.x,d.y);
+ roster.append(row);
+}
+function showDungeonDetails(d){
+ document.getElementById('castle-name').textContent=d.name;
+ document.getElementById('castle-kind').textContent=d.tier+' dungeon';
+ document.getElementById('castle-arms').innerHTML='<div class="dungeon-emblem" style="width:100%;height:auto;max-width:140px;margin:auto">'+DUNGEON_ICON+'</div>';
+ document.getElementById('charge-name').textContent=d.boss;
+ document.getElementById('castle-location').textContent=`Column ${d.x+1}, row ${d.y+1}`;
+ document.getElementById('castle-type').textContent='Boss Vault';
+ const status=document.createElement('p'),warning=document.createElement('p'),enter=document.createElement('button');
+ status.className='relation';
+ warning.className='foe-note';
+ warning.textContent=`Recommended prince level ${d.recommended}+. ${d.warning} The prince explores solo.`;
+ enter.className='btn';
+ enter.type='button';
+ enter.onclick=()=>{
+  detailDialog.close();
+  parent.postMessage({type:'startExpedition',mode:'dungeon',castleId:d.id},location.origin);
+ };
+ document.getElementById('castle-extra').replaceChildren(status,warning,enter);
+ function update(){
+  const live=mapDungeons().find(entry=>entry.id===d.id);
+  if(!live)return;
+  const {remaining,blocked,dayMs,hasProgress}=live;
+ tiles.get(d.x+','+d.y).querySelector('.dungeon-marker')?.classList.toggle('sealed',remaining>0);
+  if(remaining>0){
+   const days=Math.floor(remaining/dayMs),seconds=Math.ceil((remaining%dayMs)/1000);
+   status.textContent=`Sealed for ${days?days+'d ':''}${Math.floor(seconds/60)}m ${seconds%60}s of game time`;
+  }else status.textContent=blocked||(hasProgress?'Progress saved':'Open from day one');
+  enter.disabled=remaining>0||!!blocked;
+  enter.textContent=hasProgress?'Resume expedition':'Enter dungeon';
+ }
+ update();
+ if(!detailDialog.open)detailDialog.showModal();
+ clearInterval(dungeonStatusTimer);
+ dungeonStatusTimer=setInterval(update,1000);
+}
+detailDialog.addEventListener('close',()=>clearInterval(dungeonStatusTimer));
 function renderWorld(){
  selectedTileEl?.classList.remove('selected');selectedTileEl=null;
  for(const t of tiles.values()){t.replaceChildren();t.dataset.type=(t.dataset.x==='14'&&t.dataset.y==='14')?'stronghold':'wilderness';delete t.dataset.castleId;}
@@ -155,7 +225,9 @@ function renderWorld(){
   button.querySelector('strong').textContent=c.rulingName;button.querySelector('small').textContent=home?'Player stronghold':'Tile '+(c.x+1)+', '+(c.y+1);
   button.addEventListener('click',()=>selectTile(tiles.get(c.x+','+c.y),c.x,c.y));roster.appendChild(button);
  }
- document.getElementById('count-label').textContent=world?world.castles.length+' castles + your stronghold':'Your stronghold';
+ const dungeons=mapDungeons();
+ dungeons.forEach(addDungeonMarker);
+ document.getElementById('count-label').textContent=world?world.castles.length+' castles + your stronghold'+(dungeons.length?' · '+dungeons.length+' dungeons':''):'Your stronghold';
 }
 function showDetails(c,home){
  const mine=!home&&c.flag==='player',a=ARMS_POOL.find(a=>a.id===(c.flag&&c.flag!=='player'?c.flag:c.armsId))||ARMS_POOL.find(a=>a.id===c.armsId),ownerC=(!home&&world)?world.castles.find(x=>x.id===c.ownerId):null,foreign=!home&&!mine&&ownerC&&ownerC.id!==c.id;
@@ -178,6 +250,8 @@ function showDetails(c,home){
 }
 function selectTile(tile,x,y){
  selectedTileEl?.classList.remove('selected');tile.classList.add('selected');selectedTileEl=tile;
+ const dungeon=mapDungeons().find(d=>d.x===x&&d.y===y);
+ if(dungeon){showDungeonDetails(dungeon);return}
  const home=x===14&&y===14,c=home?{id:'stronghold',x,y,rulingName:homeName()}:world?.castles.find(c=>c.x===x&&c.y===y);
  const detail={x,y,type:tile.dataset.type,castle:c?structuredClone(c):null};
  window.dispatchEvent(new CustomEvent('mapTileClicked',{detail}));

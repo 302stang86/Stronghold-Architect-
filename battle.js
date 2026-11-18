@@ -42,8 +42,17 @@ function renderBattle(){
  if(!modal.open)modal.showModal();
  if(BATTLE_FX.key!==key){BATTLE_FX.key=key;battleBuild(c);BATTLE_FX.seen=c.lastCount;BATTLE_FX.prev=null;BATTLE_FX.over=false;$('battle-hand').dataset.sig='';$('battle-played').dataset.sig=''}
  const actor=c[c.turn];
- $('battle-title').textContent=c.exp?(c.enemyInfo.throne?'Prince of the Stronghold':'Defenders of the Stronghold'):(c.kind==='mc'?'Defend the Throne':'Servant Skirmish');
- $('battle-subtitle').textContent=`Turn ${c.turnNumber} · ${actor.name}’s turn`;
+ $('battle-title').textContent=c.exp?(c.enemyInfo.boss?c.enemy.name:c.enemyInfo.dungeon?'Dungeon Defender':c.enemyInfo.throne?'Prince of the Stronghold':'Defenders of the Stronghold'):(c.kind==='mc'?'Defend the Throne':'Servant Skirmish');
+ const boss=c.enemyInfo?.boss, candle=$('battle-candle');
+ candle.hidden=boss!=='dungeon-medium'||c.candles===0;
+ if(!candle.hidden){
+  candle.textContent=`Snuff candle (${c.candles??3} left · 2 energy)`;
+  candle.disabled=c.turn!=='ally'||!!c.winner||c.noMoves||c.ally.energy<2||c.lockMs>0;
+  candle.onclick=snuffDungeonCandle;
+ }
+ $('battle-subtitle').textContent=`Turn ${c.turnNumber} · ${actor.name}’s turn` +
+  (boss==='dungeon-high'&&(c.enraged||c.enemy.hp<=c.enemy.maxHp/2)?' · Chains broken':'');
+
  {const a=actor;$('bs-hp-fill').style.width=Math.max(0,a.hp/a.maxHp*100)+'%';$('bs-blk-fill').style.width=Math.min(100,a.block/a.maxHp*100)+'%';$('bs-hp-val').textContent=Math.ceil(a.hp)+' / '+a.maxHp;$('bs-en-fill').style.width=a.energy*10+'%';$('bs-en-val').textContent=a.energy+' / 10';$('bs-bars').classList.toggle('foe',c.turn==='enemy')}
  for(const f of BATTLE_FX.figs)f.el.classList.toggle('bf-guarded',f.enemy?c.enemy.block>0:c.ally.block>0);
  if(c.lastCount!==BATTLE_FX.seen){BATTLE_FX.seen=c.lastCount;battleEffect(c)}
