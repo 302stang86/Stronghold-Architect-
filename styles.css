@@ -316,8 +316,8 @@ dialog#battle-dialog[open]{display:block}
 .bf-guard{position:absolute;left:-8%;right:-8%;top:6%;bottom:2%;border-radius:50%;border:3px solid #9cc8ff;background:radial-gradient(#8cf4,transparent 70%);opacity:0;transition:opacity .2s}
 .bf.bf-guarded .bf-guard{opacity:.45}.bf.bf-shield .bf-guard{opacity:1}
 .bf.bf-hit .bf-art{filter:drop-shadow(0 0 12px #f33) brightness(1.7)}
-.bf.bf-down{transition:opacity 1s,transform 1s;opacity:.35;filter:grayscale(1)}
-.bf.bf-down .bf-art{transform:rotate(-78deg) translateY(20%)}.bf.enemy.bf-down .bf-art{transform:scaleX(-1) rotate(-78deg) translateY(20%)}
+.bf.bf-kneeling{transition:filter .6s;filter:saturate(.7)}
+
 .bs-float{position:absolute;transform:translate(-50%,0);font:700 32px Georgia,serif;text-shadow:0 2px 6px #000,0 0 3px #000;animation:bsup 1.2s forwards;pointer-events:none;z-index:300;white-space:nowrap}
 @keyframes bsup{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,-90px);opacity:0}}
 .bs-p{position:absolute;border-radius:50%;pointer-events:none;z-index:299}

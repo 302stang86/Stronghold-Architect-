@@ -83,25 +83,50 @@ function renderCombatMeters(combat){
  }
 }
 
-function battleFall(f,combat){
- if(f.falling)return;
- f.falling=true;
- if(!motionOK()){f.el.classList.add('bf-down');return}
+// Repose the current sprite frame so atlas fighters and single-frame enemies
+// share the same defeat animation and keep their original artwork.
+const KNEEL_PARTS=[
+ {clip:'polygon(0 0,100% 0,100% 58%,70% 66%,30% 66%,0 58%)',origin:'50% 64%',pose:'translate(-3%, 14%) rotate(-7deg)'},
+ {clip:'polygon(48% 58%,100% 58%,100% 100%,48% 100%)',origin:'62% 97%',pose:'translateX(6%) scaleY(.63) skewX(-13deg)'},
+ {clip:'polygon(0 58%,52% 58%,52% 100%,0 100%)',origin:'40% 96%',pose:'translateX(-7%) scaleY(.52) skewX(22deg)'}
+];
+function poseBattleKneel(f,animate,onLand){
+ const art=f.art;
+ if(!f.portrait)art.style.backgroundPosition='0% 66.6667%';
+ const image=art.style.backgroundImage,size=art.style.backgroundSize,position=art.style.backgroundPosition;
+ const parts=KNEEL_PARTS.map(({clip,origin,pose})=>{
+  const part=document.createElement('div');
+  Object.assign(part.style,{
+   position:'absolute',inset:'0',clipPath:clip,transformOrigin:origin,transform:pose,
+   backgroundImage:image,backgroundSize:size,backgroundPosition:position,backgroundRepeat:'no-repeat'
+  });
+  art.prepend(part);
+  return {part,pose};
+ });
+ art.style.backgroundImage='none';
+ f.el.classList.add('bf-kneeling');
+ if(!animate)return;
+ for(const [index,{part,pose}] of parts.entries()){
+  const drop=part.animate([
+   {transform:'none'},
+   {transform:'translateY(3%)',offset:.2},
+   {transform:pose}
+  ],{duration:540,easing:'cubic-bezier(.45,.05,.65,1)'});
+  if(index===0)drop.onfinish=onLand;
+ }
+}
+function battleKneel(f,combat){
+ if(f.defeated)return;
+ f.defeated=true;
+ if(!motionOK()){poseBattleKneel(f,false);return}
+ const active=()=>state.invasion.combat===combat&&f.el.isConnected;
  setTimeout(()=>{
-  if(state.invasion.combat!==combat||!f.el.isConnected)return;
-  const facing=f.enemy?'scaleX(-1) ':'',push=f.enemy?18:-18;
-  f.art.style.backgroundPosition='0% 66.6667%';
-  const fall=f.art.animate([
-   {transform:facing+'translate(0,0) rotate(0deg)'},
-   {transform:facing+'translate('+push+'px,-8px) rotate(-18deg)',offset:.22},
-   {transform:facing+'translate('+push+'px,14%) rotate(-86deg)',offset:.76},
-   {transform:facing+'rotate(-78deg) translateY(20%)'}
-  ],{duration:690,easing:'ease-in',fill:'forwards'});
-  fall.onfinish=()=>{
-   if(state.invasion.combat!==combat||!f.el.isConnected)return;
-   f.el.classList.add('bf-down');fall.cancel();
-   window.StrongholdAudio?.play('fall');battleBurst(f,16,'#d1b99d',true);
-  };
+  if(!active())return;
+  poseBattleKneel(f,true,()=>{
+   if(!active())return;
+   window.StrongholdAudio?.play('fall');
+   battleBurst(f,10,'#d1b99d',true);
+  });
  },370);
 }
 function renderBattle(){
@@ -126,7 +151,7 @@ function renderBattle(){
  for(const f of BATTLE_FX.figs){
   const fighter=f.enemy?c.enemy:c.allies?.find(a=>a.id===f.id)||c.ally;
   f.el.classList.toggle('bf-guarded',fighter.block>0);
-  if(fighter.hp<=0)battleFall(f,c);
+  if(fighter.hp<=0)battleKneel(f,c);
  }
  if(c.lastCount!==BATTLE_FX.seen){BATTLE_FX.seen=c.lastCount;battleEffect(c)}
  BATTLE_FX.prev={allyId:c.ally.id,ally:{hp:c.ally.hp,block:c.ally.block,energy:c.ally.energy},enemy:{hp:c.enemy.hp,block:c.enemy.block,energy:c.enemy.energy}};
@@ -143,7 +168,7 @@ function renderBattle(){
 }
 function animateCombatVisuals(now){
  const c=state?.invasion?.combat;
- if(c&&BATTLE_FX.figs.length){const t=performance.now();for(const f of BATTLE_FX.figs){if(f.falling)continue;let row=0,frame=Math.floor(now/200)%8;
+ if(c&&BATTLE_FX.figs.length){const t=performance.now();for(const f of BATTLE_FX.figs){if(f.defeated)continue;let row=0,frame=Math.floor(now/200)%8;
   if(f.until>t&&t>=(f.start||0)){row=f.healUntil>t?3:1;frame=Math.min(7,Math.floor((t-f.start)/650*8))}
   else if(f.healUntil>t||f.el.classList.contains('bf-shield')){row=3;frame=Math.floor(now/110)%8}
   else if(f.hitUntil>t){row=2;frame=Math.min(7,Math.floor((1-(f.hitUntil-t)/420)*8))}
