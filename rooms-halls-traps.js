@@ -11,12 +11,12 @@ const TYPES=[
 ['Puzzle Room',80,45,0,[5,11],'Open optional treasure doors in rival keeps and dungeons. One per keep.'],
 ['Arcane Lab',100,50,0,[5],'Craft single-use runes. Upgrade the Lab to unlock more recipes.'],
 ['Vault',90,45,0,[3,4],'Produces 35 gold daily.'],
-['Trap Room',45,25,0,[],'Deadly defenses. No effect yet; its role is being redesigned.'],
+['Trap Room',45,25,0,[],'Your trap workshop. Build at least one Trap Room to install or upgrade traps in Empty Rooms. Traps trigger in the room where they are installed.'],
 ['Straight Hall',10,5,0,[],'Connects north and south.'],
 ['Turn Hall',10,5,0,[],'Connects north and east.'],
 ['T Junction',15,8,0,[],'Connects north, east, and west.'],
 ['Crossroads',20,10,0,[],'Connects all four directions.'],
-['Empty Room',20,10,0,[],'A spacious chamber. Install one trap style, or leave it clear to receive the throne. A servant can be assigned here.'],
+['Empty Room',20,10,0,[],'Assign a servant, leave this room clear for the throne, or install one trap after building a Trap Room.'],
 ['Entrance',0,0,0,[],'Castle gate at the southern edge. Build only inward above it; the immediate left, right, and below are reserved. Cannot be duplicated, rotated, or demolished.'],
 ['Gold Mine',60,30,0,[],'Produces 25 gold daily.'],
 ['Research Room',60,30,0,[],'Produces 10 research points daily. Spend them to permanently unlock room blueprints.']
@@ -69,7 +69,8 @@ function canUpgradeRoom(room){return [1,4].includes(room.type)||Object.keys(room
 function roomCombatBonus(type){return state.tiles.reduce((total,room)=>total+(room.type===type?(room.level||1)*.03:0),0)}
 function upgradeResourceRoom(room){if(state.over||!state.tiles.includes(room)||!canUpgradeRoom(room)||(room.level||1)>=5)return false;const cost=resourceUpgradeCost(room);if(state.gold<cost.gold||state.stone<cost.stone)return false;state.gold-=cost.gold;state.stone-=cost.stone;room.level=(room.level||1)+1;window.StrongholdAudio?.play('upgrade');note(`${TYPES[room.type][0]} upgraded to Level ${room.level}.`);save();render();return true}
 function trapUpgradeCost(room){return Math.ceil(TRAPS[room.trap].price*.5*(room.trapLevel||1))}
-function upgradeTrap(room){if(state.over||!state.tiles.includes(room)||room.type!==16||!room.trap||(room.trapLevel||1)>=5)return false;const cost=trapUpgradeCost(room);if(state.gold<cost)return false;state.gold-=cost;room.trapLevel=(room.trapLevel||1)+1;window.StrongholdAudio?.play('upgrade');note(`${TRAPS[room.trap].name} upgraded to Level ${room.trapLevel}.`);save();render();return true}
+function hasTrapWorkshop(){return state.tiles.some(room=>room.type===11)}
+function upgradeTrap(room){if(state.over||!state.tiles.includes(room)||room.type!==16||!room.trap||(room.trapLevel||1)>=5||!hasTrapWorkshop())return false;const cost=trapUpgradeCost(room);if(state.gold<cost)return false;state.gold-=cost;room.trapLevel=(room.trapLevel||1)+1;window.StrongholdAudio?.play('upgrade');note(`${TRAPS[room.trap].name} upgraded to Level ${room.trapLevel}.`);save();render();return true}
 function renderResourceUpgrade(room,target){if(!canUpgradeRoom(room))return;const section=document.createElement('section'),p=document.createElement('p'),b=document.createElement('button');p.textContent=`Room · Level ${room.level||1} / 5`+(room.type===2?` · Allows ${kitchenBonus(room.level)} servant${kitchenBonus(room.level)===1?'':'s'} · 0.5 food per 60 real seconds`:room.type===1?` · ${room.level||1} guard slots`:room.type===4?` · +${(room.level||1)*3}% attack damage`:` · +${((room.level||1)-1)*25}% production`);section.append(p);const cost=resourceUpgradeCost(room);b.textContent=(room.level||1)>=5?'Maximum level reached':`Upgrade to Level ${(room.level||1)+1} · ${cost.gold} gold + ${cost.stone} stone`;b.disabled=state.over||(room.level||1)>=5||state.gold<cost.gold||state.stone<cost.stone;b.onclick=()=>upgradeResourceRoom(room);section.append(b);target.append(section)}
 
 function batchFor(room,day=state.day){return Object.fromEntries(Object.entries(roomRates(room)).map(([k,v])=>[k,v*BATCH_MS/DAY_MS*(k==='gold'&&day<=3?2:1)]))}

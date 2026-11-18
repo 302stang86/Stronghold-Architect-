@@ -170,6 +170,7 @@ function changeZoom(delta){const vp=$('viewport'),r=vp.getBoundingClientRect();z
 function trapDemolitionCost(id){return Math.ceil(TRAPS[id].price*.25)}
 function installTrap(id){
  if(state.over||!selected||!state.tiles.includes(selected)||selected.type!==16||!Object.hasOwn(TRAPS,id))return false;
+ if(!hasTrapWorkshop()){toast('Build a Trap Room before installing traps.');return false}
  if(selected.trap){toast('Demolish the installed trap before buying another style.');return false}
  const trap=TRAPS[id];if(state.gold<trap.price){toast('Not enough gold to install this trap.');return false}
  state.gold-=trap.price;selected.trap=id;selected.trapLevel=1;note(`${trap.name} installed. It hurts invaders only.`);gainXp('mc',10);save();render();return true;
@@ -180,11 +181,13 @@ function demolishTrap(){
  state.gold-=cost;delete selected.trap;delete selected.trapLevel;note(`${TRAPS[id].name} demolished for ${cost} gold. The room can receive a new trap style.`);save();render();return true;
 }
 function renderTrapOptions(target=$('selection')){
- const panel=document.createElement('section');panel.className='trap-upgrades';const h=document.createElement('h3');h.textContent='Room trap upgrade';panel.append(h);
+ const panel=document.createElement('section');panel.className='trap-upgrades';const h=document.createElement('h3');h.textContent='Room traps';panel.append(h);
+ const workshop=hasTrapWorkshop();
+ if(!workshop){const required=document.createElement('p');required.textContent='Build a Trap Room to install or upgrade traps. Existing traps still work and can be removed.';panel.append(required)}
  const help=document.createElement('p');help.className='muted';help.textContent='Weakest → strongest · Hurts invaders only, never allies. A trap cannot take an invader below 10% health. One style per room. Remove the current trap before changing styles.';panel.append(help);
- if(selected.trap){const trap=TRAPS[selected.trap],active=document.createElement('p');active.className='installed-trap';active.textContent=`Installed: ${trap.name} · Level ${selected.trapLevel||1} / 5 · ${fmt(trapStrength(selected))} damage`;panel.append(active);const room=selected,up=document.createElement('button'),upgradeCost=trapUpgradeCost(room);up.textContent=(room.trapLevel||1)>=5?'Maximum trap level reached':`Upgrade trap to Level ${(room.trapLevel||1)+1} · ${upgradeCost} gold`;up.disabled=state.over||(room.trapLevel||1)>=5||state.gold<upgradeCost;up.onclick=()=>upgradeTrap(room);panel.append(up);const remove=document.createElement('button');remove.className='remove-trap';const cost=trapDemolitionCost(selected.trap);remove.textContent=`Demolish trap · ${cost} gold`;remove.disabled=state.over||state.gold<cost;remove.onclick=demolishTrap;panel.append(remove)}
+ if(selected.trap){const trap=TRAPS[selected.trap],active=document.createElement('p');active.className='installed-trap';active.textContent=`Installed: ${trap.name} · Level ${selected.trapLevel||1} / 5 · ${fmt(trapStrength(selected))} damage`;panel.append(active);const room=selected,up=document.createElement('button'),upgradeCost=trapUpgradeCost(room);up.textContent=(room.trapLevel||1)>=5?'Maximum trap level reached':`Upgrade trap to Level ${(room.trapLevel||1)+1} · ${upgradeCost} gold`;up.disabled=state.over||!workshop||(room.trapLevel||1)>=5||state.gold<upgradeCost;up.onclick=()=>upgradeTrap(room);panel.append(up);const remove=document.createElement('button');remove.className='remove-trap';const cost=trapDemolitionCost(selected.trap);remove.textContent=`Demolish trap · ${cost} gold`;remove.disabled=state.over||state.gold<cost;remove.onclick=demolishTrap;panel.append(remove)}
  for(const [id,trap] of Object.entries(TRAPS)){
-  const button=document.createElement('button');button.className='trap-option';button.style.setProperty('--trap-color',trap.color);button.disabled=state.over||!!selected.trap||state.gold<trap.price;
+  const button=document.createElement('button');button.className='trap-option';button.style.setProperty('--trap-color',trap.color);button.disabled=state.over||!workshop||!!selected.trap||state.gold<trap.price;
   const name=document.createElement('strong');name.textContent=trap.name;const info=document.createElement('span');info.textContent=`${trap.price} gold · ${trap.strength} damage · remove ${trapDemolitionCost(id)} gold`;button.append(name,info);button.onclick=()=>installTrap(id);panel.append(button)
  }
  target.append(panel);
@@ -207,8 +210,16 @@ function renderRoomViewer(){
  if([5,19].includes(room.type)){
   const blueprints=document.createElement('button');blueprints.textContent='Research blueprints';blueprints.onclick=()=>openResearchGallery(room.type);actions.append(blueprints);
  }
- if(!viewingRoomManagement){stopCrowd();return}
- const tools=document.createElement('div');tools.className='room-tools';renderRoomEconomy(room,actions);renderResourceUpgrade(room,actions);if(room.type===16)renderTrapOptions(actions);else if([7,8].includes(room.type))renderPhaseRoom(room,actions);else if(room.type===9)renderArcaneLab(room,actions);else if(!canUpgradeRoom(room)){const p=document.createElement('p');p.className='muted';p.textContent='This room has no resource upgrades.';actions.append(p)}
+ if(!viewingRoomManagement){
+  stopCrowd();
+  if(room.type!==17){
+   const manage=document.createElement('button');manage.type='button';manage.textContent=room.type===16?'Manage room and traps':'Manage room';
+   manage.onclick=()=>{viewingRoomManagement=true;renderRoomViewer();$('room-actions').querySelector('button:not(:disabled)')?.focus({preventScroll:true})};
+   actions.append(manage);
+  }
+  return;
+ }
+ const tools=document.createElement('div');tools.className='room-tools';renderRoomEconomy(room,actions);renderResourceUpgrade(room,actions);if(room.type===16)renderTrapOptions(actions);else if([7,8].includes(room.type))renderPhaseRoom(room,actions);else if(room.type===9)renderArcaneLab(room,actions);else if(room.type!==11&&!canUpgradeRoom(room)){const p=document.createElement('p');p.className='muted';p.textContent='This room has no resource upgrades.';actions.append(p)}
  if(room.type===0){const p=document.createElement('p');p.className='room-role-note';p.textContent='The evil prince wanders only inside this throne room and automatically collects its gold and stone. He follows the throne when relocated. He eats 1 food per day.';actions.append(p);const move=document.createElement('button');move.textContent='Relocate throne · 50 gold + 25 stone';move.disabled=state.over;move.onclick=()=>{$('roomdialog').close();relocating=true;blueprint=null;render()};tools.append(move)}
  renderMC();if(room.type===17)startCrowd();else stopCrowd();
  if(room.type===0){const sv=document.createElement('button');const assigned=state.collectors.filter(n=>n.home!==null).length;sv.textContent=`Manage servants · ${state.collectors.length} of ${servantCap()} · ${assigned} assigned`;sv.onclick=openRoster;tools.append(sv)}
