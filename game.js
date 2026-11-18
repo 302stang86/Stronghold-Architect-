@@ -2,6 +2,7 @@
 'use strict';
 const DIRS=[[0,-1],[1,0],[0,1],[-1,0]],$=id=>document.getElementById(id),KEY='stronghold-architect-v2';
 const SETTINGS_KEY='stronghold-architect-settings';let settings=(()=>{const d={reduceMotion:false,seenAlarm:false};try{return {...d,...JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}}catch{return d}})(),activeTab='keep',fxEl=null,shakeTimer=null,lastSaveBody='';
+let gameSpeed=[1,2,3].includes(settings.gameSpeed)?settings.gameSpeed:1;
 function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings))}catch{}}
 function motionOK(){return !settings.reduceMotion&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)}
 
@@ -221,8 +222,6 @@ function setupFieldGestures(){
 $('closepack').onclick=()=>$('packdialog').close();$('closeroom').onclick=()=>$('roomdialog').close();$('roomdialog').addEventListener('close',()=>{viewedRoom=null});setupFieldGestures();
 
 const speedButtons=Array.from($('game-speed').querySelectorAll('[data-speed]'));
-const supportedSpeeds=speedButtons.map(button=>Number(button.dataset.speed));
-let gameSpeed=supportedSpeeds.includes(settings.gameSpeed)?settings.gameSpeed:1;
 function renderGameSpeed(){
  for(const button of speedButtons)button.setAttribute('aria-pressed',String(Number(button.dataset.speed)===gameSpeed));
 }
