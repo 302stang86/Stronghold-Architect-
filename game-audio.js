@@ -4,7 +4,7 @@ window.StrongholdAudio=(()=>{
  const track=new Audio('assets/frostbound.mp3');
  track.loop=true;
  track.preload='auto';
- let ctx,music,effects,noise,atmosphere,values=defaults;
+ let ctx,music,effects,cueBus,noise,atmosphere,values=defaults;
  let unlocked=false;
  let scene='menu',lastActionCue=-Infinity;
  // Tone layers: delay, duration, volume, start/end pitch, waveform.
@@ -34,6 +34,8 @@ window.StrongholdAudio=(()=>{
   'dungeon-medium':[tone(0,.57,.09,277,322),tone(.05,.67,.07,392,350),texture(.17,.37,.085,1800)],
   'dungeon-high':[tone(0,.77,.16,78,44,'triangle'),texture(.04,.6,.14,270,.85)],
   trade:coin(0),
+  collect:coin(0,.14),
+  test:[tone(0,.17,.13,440),tone(.13,.20,.12,660)],
   build:[texture(0,.19,.14,420),tone(0,.17,.13,100,49,'triangle')],
   upgrade:[texture(0,.105,.12,1870,2),tone(.01,.18,.085,698,661,'triangle'),texture(.19,.09,.1,1620,2)],
   spikes:[texture(0,.14,.14,2250,2),tone(0,.19,.11,327,171,'triangle')],
@@ -68,6 +70,16 @@ window.StrongholdAudio=(()=>{
    ctx.createMediaElementSource(track).connect(music);
    music.connect(ctx.destination);
    effects.connect(ctx.destination);
+   // Boost short cues independently of ambient sound and limit overlapping peaks.
+   cueBus=ctx.createGain();
+   cueBus.gain.value=3.6;
+   const compressor=ctx.createDynamicsCompressor();
+   compressor.threshold.value=-12;
+   compressor.knee.value=12;
+   compressor.ratio.value=5;
+   compressor.attack.value=.003;
+   compressor.release.value=.12;
+   cueBus.connect(compressor).connect(effects);
    set(values);
    applyScene();
   }
@@ -83,7 +95,7 @@ window.StrongholdAudio=(()=>{
   return noise;
  }
  function play(name){
-  if(!ctx||ctx.state!=='running'||values.mute||values.effects===0||document.hidden||!cues[name])return;
+  if(!ctx||ctx.state!=='running'||values.mute||values.effects===0||document.hidden||!Object.hasOwn(cues,name))return false;
   const now=ctx.currentTime;
   if(name!=='click')lastActionCue=now;
   for(const layer of cues[name]){
@@ -91,7 +103,7 @@ window.StrongholdAudio=(()=>{
    env.gain.setValueAtTime(.001,start);
    env.gain.exponentialRampToValueAtTime(layer.volume,start+Math.min(.017,layer.duration/3));
    env.gain.exponentialRampToValueAtTime(.001,end);
-   env.connect(effects);
+   env.connect(cueBus);
    let source;
    if(layer.hz){
     source=ctx.createBufferSource();
@@ -109,6 +121,13 @@ window.StrongholdAudio=(()=>{
    source.start(start);
    source.stop(end);
   }
+  return true;
+ }
+ async function testEffects(event){
+  if(values.mute||values.effects===0)return 'Unmute the game and turn up Sound effects to test.';
+  unlock(event);
+  if(ctx&&ctx.state!=='running')await ctx.resume().catch(()=>{});
+  return play('test')?'Test sound played.':'The browser’s audio output is paused or unavailable.';
  }
  function applyScene(){
   if(!ctx)return;
@@ -139,7 +158,7 @@ window.StrongholdAudio=(()=>{
  document.addEventListener('pointerdown',unlock,{capture:true});
  document.addEventListener('keydown',unlock,{capture:true});
  document.addEventListener('click',e=>{
-  if(ctx&&ctx.currentTime-lastActionCue>.08&&e.target.closest('button:not(:disabled):not(.hand-card):not(#save-game)'))play('click');
+  if(ctx&&ctx.currentTime-lastActionCue>.08&&e.target.closest('button:not(:disabled):not(.hand-card):not(#save-game):not(#test-effects)'))play('click');
  });
  function setVisibility(){
   syncTrack();
@@ -152,5 +171,5 @@ window.StrongholdAudio=(()=>{
   ctx?.suspend().catch(()=>{});
  });
  window.addEventListener('pageshow',setVisibility);
- return {set,normalize,play,setScene};
+ return {set,normalize,play,setScene,testEffects};
 })();

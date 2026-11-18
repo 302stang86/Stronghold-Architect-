@@ -326,6 +326,9 @@ $('menu-continue').onclick=resumeGame;
 $('menu-new').onclick=startNewStronghold;
 $('menu-help').onclick=()=>$('helpdialog').showModal();
 $('close-sound').onclick=()=>$('sound-dialog').close();
+$('test-effects').onclick=async event=>{
+ $('effects-test-status').textContent=await StrongholdAudio.testEffects(event);
+};
 const soundFields={music:$('music-volume'),effects:$('effects-volume')};
 function updateSoundControls(){
  settings.sound=StrongholdAudio.normalize(settings.sound);
@@ -336,7 +339,7 @@ function updateSoundControls(){
  $('mute-all').checked=settings.sound.mute;
  StrongholdAudio.set(settings.sound);
 }
-$('menu-sound').onclick=()=>{updateSoundControls();$('sound-dialog').showModal()};
+$('menu-sound').onclick=()=>{$('effects-test-status').textContent='';updateSoundControls();$('sound-dialog').showModal()};
 for(const [key,field] of Object.entries(soundFields))field.oninput=()=>{
  settings.sound[key]=field.valueAsNumber;
  updateSoundControls();
