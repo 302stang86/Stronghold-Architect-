@@ -8,19 +8,19 @@ function battleBuild(c){
  const party=[];
  if(c.allies){
   for(const [index,fighter] of c.allies.entries())party.push({
-   id:fighter.id,paladin:fighter.paladin,kind:fighter.player?'mc':'servant',idx:fighter.look||0,role:index===0?'lead':'help',
+   id:fighter.id,companion:fighter.companion,kind:combatSpriteKind({...unitById(fighter.id),...fighter}),idx:fighter.look||0,role:index===0?'lead':'help',
   });
  }else{
   const id=c.exp?c.leadId:c.defenderId;
   const fighter=c.exp?state.expedition?.party.find(unit=>unit.id===id):unitById(id);
-  party.push({id,kind:c.kind==='mc'?'mc':'servant',idx:fighter?.look||0,role:'lead'});
+  party.push({id,kind:c.kind==='mc'?'mc':combatSpriteKind(fighter||{}),idx:fighter?.look||0,role:'lead'});
  }
  const slots=[[28,78,1],[14,75,.82],[40,74,.8],[7,81,.86]];
  const order=party.map((p,i)=>({p,s:slots[i]})).sort((a,b)=>a.s[1]-b.s[1]);
- const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div></div>';if(p.paladin){el.querySelector('.bf-move').insertAdjacentHTML('beforeend','<svg aria-hidden="true" viewBox="0 0 20 68" style="position:absolute;width:18%;height:55%;left:68%;bottom:12%;transform:rotate(30deg);pointer-events:none"><path d="M10 2 13 50H7Z" fill="#e2e8f0" stroke="#374151"/><path d="M4 50h12M10 51v13" stroke="#d8aa51" stroke-width="3" stroke-linecap="round"/></svg>')}stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.id=p.id;f.base={x,y};BATTLE_FX.figs.push(f);return f};
+ const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div></div>';if(p.companion&&Object.hasOwn(COMPANIONS,p.companion)){const pet=document.createElement('img');pet.src='assets/companion-'+p.companion+'-v2.webp';pet.alt=COMPANIONS[p.companion].name;const size=28*COMPANIONS[p.companion].size;pet.style.cssText='position:absolute;left:2%;bottom:6%;object-fit:contain;pointer-events:none;width:'+size+'%;height:'+size+'%';el.querySelector('.bf-move').append(pet)}stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.id=p.id;f.base={x,y};BATTLE_FX.figs.push(f);return f};
  for(const o of order){const f=mk(o.p,o.s[0],o.s[1],o.s[2],false);if(o.p.role==='lead')BATTLE_FX.lead=f}
  BATTLE_FX.enemy=mk({kind:'invader',idx:inv.variant,name:inv.name,role:'lead'},74,77,1.05,true);BATTLE_FX.enemy.atlas=COMBAT_ART.invader[inv.variant]||COMBAT_ART.invader[0];
- for(const f of BATTLE_FX.figs)f.art.style.backgroundImage='url("'+f.atlas+'")';
+ for(const f of BATTLE_FX.figs){f.art.style.backgroundImage='url("'+f.atlas+'")';f.art.style.backgroundSize='200% 400%';}
 }
 function battleCenter(f){const r=f.art.getBoundingClientRect(),s=$('bs-stage').getBoundingClientRect();return{x:r.left+r.width/2-s.left,y:r.top+r.height*.4-s.top}}
 function battleFloat(f,text,color){const p=battleCenter(f),e=document.createElement('div');e.className='bs-float';e.textContent=text;e.style.cssText=`left:${p.x}px;top:${p.y-40}px;color:${color}`;$('bs-stage').append(e);setTimeout(()=>e.remove(),1300)}
@@ -123,8 +123,8 @@ function animateCombatVisuals(now){
  const c=state?.invasion?.combat;
  if(c&&BATTLE_FX.figs.length){const t=performance.now();for(const f of BATTLE_FX.figs){let row=0,frame=Math.floor(now/200)%8;
   if(f.until>t&&t>=(f.start||0)){row=f.healUntil>t?3:1;frame=Math.min(7,Math.floor((t-f.start)/650*8))}
-  else if(f.healUntil>t){row=3;frame=Math.floor(now/110)%8}
+  else if(f.healUntil>t||f.el.classList.contains('bf-shield')){row=3;frame=Math.floor(now/110)%8}
   else if(f.hitUntil>t){row=2;frame=Math.min(7,Math.floor((1-(f.hitUntil-t)/420)*8))}
   if(f.until<=t&&f.row===1)f.row=0;
-  f.art.style.backgroundPosition=`${frame/7*100}% ${row/3*100}%`}}
+  f.art.style.backgroundPosition=`${frame%2*100}% ${row/3*100}%`}}
  requestAnimationFrame(animateCombatVisuals)}

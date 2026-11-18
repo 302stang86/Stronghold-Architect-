@@ -88,9 +88,9 @@ function renderCompanions(){
   let marker=$('companion-'+id);
   if(!marker){
    marker=document.createElement('span');marker.id='companion-'+id;marker.title=COMPANIONS[id].name;
-   marker.textContent=COMPANIONS[id].icon;
+   const image=document.createElement('img');image.src='assets/companion-'+id+'-v2.webp';image.alt='';image.style.cssText='display:block;width:100%;height:100%;object-fit:contain';marker.append(image);
    marker.style.cssText='position:absolute;z-index:6;pointer-events:none;transform:translate(-50%,-50%);transition:left .5s linear,top .5s linear';
-   marker.style.fontSize='calc(var(--size) * '+(.33*COMPANIONS[id].size)+')';grid.append(marker);
+   marker.style.width=marker.style.height='calc(var(--size) * '+(.23809524*COMPANIONS[id].size)+')';grid.append(marker);
   }
   marker.style.left='calc(var(--field-pad-x, 0px) + var(--size) * '+(tile.x+.7)+')';
   marker.style.top='calc(var(--field-pad-y, 0px) + var(--size) * '+(tile.y+.65)+')';

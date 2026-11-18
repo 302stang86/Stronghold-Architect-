@@ -59,7 +59,7 @@ function choosePartyDialog(mode,castleId){
  const refresh=()=>{const issue=partyIssue(mode,[...pick]);msg.textContent=issue;start.disabled=!!issue;for(const b of list.querySelectorAll('button.party-unit'))b.classList.toggle('on',pick.has(b.dataset.id)||pick.has(Number(b.dataset.id)))};
  list.replaceChildren();
  if(mode!=='raid'){const p=document.createElement('div');p.className='party-unit locked on';p.textContent='Young Prince · Level '+state.prince.level+' (always joins)';list.append(p)}
- for(const u of units){const b=document.createElement('button');b.className='party-unit';b.dataset.id=u.id;const art=document.createElement('span');art.className='portrait';portraitStyle(art,u.look||0);const t=document.createElement('span');t.innerHTML='';const nm=document.createElement('strong');nm.textContent=u.name;const sm=document.createElement('small');sm.textContent=(u.paladin?'Paladin':u.kind==='guard'?'Guard':'Servant')+' · Level '+u.level;t.append(nm,sm);b.append(art,t);b.onclick=()=>{if(pick.has(u.id))pick.delete(u.id);else pick.add(u.id);refresh()};list.append(b)}
+ for(const u of units){const b=document.createElement('button');b.className='party-unit';b.dataset.id=u.id;const art=document.createElement('span');art.className='portrait';portraitStyle(art,u.look||0,u);const t=document.createElement('span');t.innerHTML='';const nm=document.createElement('strong');nm.textContent=u.name;const sm=document.createElement('small');sm.textContent=(u.paladin?'Paladin':u.kind==='guard'?'Guard':'Servant')+' · Level '+u.level;t.append(nm,sm);b.append(art,t);b.onclick=()=>{if(pick.has(u.id))pick.delete(u.id);else pick.add(u.id);refresh()};list.append(b)}
  const support=document.createElement('select');
  if(mode!=='dungeon'&&ownedCompanions().length){const label=document.createElement('label');label.textContent='Companion support (free slot) ';support.add(new Option('No companion',''));for(const id of ownedCompanions())support.add(new Option(COMPANIONS[id].name,id));label.append(support);list.append(label)}
  start.onclick=()=>{const ids=[...pick];if(partyIssue(mode,ids))return;dlg.close();startExpedition(mode,castleId,ids,support.value)};
@@ -131,7 +131,7 @@ function beginExpBattle(info,key,enemyHp,followup){
   const level=member.level||guardLevel(),player=member.kind==='prince';
   const penalty=player?state.hungryDays>=2?MC_HUNGER_PENALTY:0:state.hungryDays?SERVANT_HUNGER_PENALTY:0;
   const actor=applyGuardBuffs(combatant(member.name,level,member.maxHp,1-penalty,.65),player||member.kind==='guard',member.paladin);
-  return Object.assign(actor,{id:member.id,player,look:member.look||0,hp:Math.min(member.maxHp,member.hp)});
+  return Object.assign(actor,{id:member.id,player,look:member.look||0,guard:member.kind==='guard',hp:Math.min(member.maxHp,member.hp)});
  });
  attachCompanion(allies,exp.companion);
  const enemy=combatant(info.name,info.level,Math.round(hpForLevel(info.level)*(info.health||1)),info.damage||1,info.skill);
@@ -223,8 +223,8 @@ function renderExpedition(){
  if(!dlg.open&&!awaitingResume)dlg.showModal();
  $('exp-mode').textContent=exp.mode==='dungeon'?dungeonTier(exp.castleId).tier.toUpperCase()+' DUNGEON':exp.mode==='raid'?'RAID':'ATTACK';$('exp-title').textContent=c.rulingName;
  const party=$('exp-party');party.replaceChildren();
- for(const m of exp.party){const d=document.createElement('div');d.className='exp-member'+(m.hp<=0?' down':'');const a=document.createElement('span');a.className='exp-face';const kind=m.kind==='prince'?'mc':'servant';a.style.backgroundImage=`url("${COMBAT_ART[kind][m.kind==='prince'?0:(m.look||0)]}")`;const nm=document.createElement('b');nm.textContent=m.name;const bar=document.createElement('i');bar.innerHTML=`<u style="width:${Math.max(0,m.hp/m.maxHp*100)}%"></u>`;d.append(a,nm,bar);party.append(d)}
- const pet=COMPANIONS[exp.companion];if(pet){const label=document.createElement('div');label.className='exp-member';label.textContent=pet.icon+' '+pet.name+' · Support';party.append(label)}
+ for(const m of exp.party){const d=document.createElement('div');d.className='exp-member'+(m.hp<=0?' down':'');const a=document.createElement('span');a.className='exp-face';a.style.backgroundImage=`url("${combatSprite(m)}")`;a.style.backgroundSize='200% 400%';const nm=document.createElement('b');nm.textContent=m.name;const bar=document.createElement('i');bar.innerHTML=`<u style="width:${Math.max(0,m.hp/m.maxHp*100)}%"></u>`;d.append(a,nm,bar);party.append(d)}
+ const pet=COMPANIONS[exp.companion];if(pet){const label=document.createElement('div');label.className='exp-member';const picture=document.createElement('img');picture.src='assets/companion-'+exp.companion+'-v2.webp';picture.alt='';picture.style.cssText='width:34px;height:38px;object-fit:contain';label.append(picture,pet.name+' · Support');party.append(label)}
  const loot=$('exp-loot'),carried={...exp.loot,gold:exp.loot.gold+(exp.sideGold||0)};const parts=EXP_RES.filter(k=>carried[k]>0).map(k=>`${carried[k]} ${RESOURCE_INFO[k].name}`);loot.textContent='Carrying: '+(parts.join(' · ')||'nothing yet');
  const tiles=exp.discovered.map(expTile).filter(Boolean),minX=Math.min(...tiles.map(t=>t.x)),maxX=Math.max(...tiles.map(t=>t.x)),minY=Math.min(...tiles.map(t=>t.y)),maxY=Math.max(...tiles.map(t=>t.y));
  const grid=$('exp-grid');grid.replaceChildren();grid.style.gridTemplateColumns=`repeat(${maxX-minX+1},var(--ecell))`;grid.style.gridTemplateRows=`repeat(${maxY-minY+1},var(--ecell))`;
@@ -251,7 +251,7 @@ function renderExpedition(){
    marker.textContent=opened?'Chest opened':chestHere.locked?'Locked chest':'Treasure chest';
    cell.append(marker);
   }
-  if(key===exp.current){const who=document.createElement('div');who.className='exp-party-token';for(const m of exp.party.slice(0,3)){const f=document.createElement('span');const kind=m.kind==='prince'?'mc':'servant';f.style.backgroundImage=`url("${COMBAT_ART[kind][m.kind==='prince'?0:(m.look||0)]}")`;who.append(f)}cell.append(who)}
+  if(key===exp.current){const who=document.createElement('div');who.className='exp-party-token';for(const m of exp.party.slice(0,3)){const f=document.createElement('span');f.style.backgroundImage=`url("${combatSprite(m)}")`;f.style.backgroundSize='200% 400%';who.append(f)}cell.append(who)}
   if(!busy&&key!==exp.current){cell.classList.add('go');cell.onclick=()=>moveTo(key)}
   for(const n of expNeighbors(t,c.tiles)){const nk=roomKey(n.room);const door=lockedSideDoor(exp,key,nk);if(door?.secret&&!exp.revealedDoors?.includes(nk)||exp.discovered.includes(nk))continue;if(n.room.type===0&&exp.mode!=='attack')continue;const a=document.createElement('button');a.className='exp-arrow d'+n.d;a.textContent=EXP_ARROW[n.d];a.setAttribute('aria-label','Explore an unseen room '+['north','east','south','west'][n.d]);if(door){a.style.color=door.secret?'#ddaaff':'#ff7272';a.textContent=door.secret?'✦':'🔒'+EXP_ARROW[n.d];a.title=(door.secret?'Hidden':'Locked')+' door · Puzzle Room level '+door.level;a.setAttribute('aria-label',a.title)}a.disabled=busy;a.onclick=e=>{e.stopPropagation();if(door){if(moveTo(key))openSideDoor(exp,door)}else arrowClick(key,nk)};cell.append(a)}
   grid.append(cell)}
