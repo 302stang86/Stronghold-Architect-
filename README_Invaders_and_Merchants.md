@@ -53,3 +53,46 @@ Double-click the Entrance. The window shows the prince, servants and guards who 
 - Merchant trade offers and a trade window.
 - Guard levels that differ from the prince.
 - Guard orders such as patrol routes.
+
+## Backpack (Phase 2)
+
+- Floating button at the upper left of the playing field, clear of the left ornament and the top banner. Tap it to open or close the grid. Open or closed is saved.
+- Level 1: 6 spots. Level 2: 9 spots (600 gold and 150 stone). Level 3: 15 spots (2000 gold and 500 stone). Maximum level 3.
+- One item per spot. Tap an item to read it, use it or discard it. Discarding gives nothing back.
+- Resource bundles (Food, Stone, Mixed Crate) go straight to your stores and never take a spot.
+
+## Merchant trading (Phase 2, still testing)
+
+- Saying Yes at the gate opens a shop with 6 random items from the catalogue. You buy with gold. Stock is fresh for each merchant. There is no selling yet.
+- Items that need a free spot cannot be bought when the backpack is full.
+
+## Item catalogue
+
+Numbers 5, 8, 9, 18, 19 and 29 are reserved.
+
+| # | Item | Price (gold) | Effect |
+|---|---|---|---|
+| 1 | Food Bundle | 40 | +25 food |
+| 2 | Timber Bundle | 35 | Backpack only, no use yet |
+| 3 | Stone Shipment | 50 | +30 stone |
+| 4 | Iron Ingot Crate | 70 | Backpack only, no use yet |
+| 6 | Medicinal Herb Bundle | 30 | Backpack only, no use yet |
+| 7 | Alchemical Ingredient Satchel | 60 | Backpack only, no use yet |
+| 10 | Mixed Provision Crate | 60 | +15 food, +15 stone (wood share when wood exists) |
+| 11 | Minor Health Potion | 30 | Heals 25% of maximum health |
+| 12 | Greater Health Potion | 70 | Heals 50% |
+| 13 | Royal Health Potion | 140 | Heals to full |
+| 14 | Minor Energy Potion | 25 | +3 energy (cap 10) |
+| 15 | Greater Energy Potion | 55 | +6 energy (cap 10) |
+| 16 | Royal Energy Potion | 110 | +10 energy (cap 10) |
+| 17 | Field Bandage Pack | 45 | On a raid or attack, between room battles: heals the weakest party member 30% |
+| 20 | Strength Elixir | 80 | Prince battle: +25% damage until the battle ends |
+| 21 | Ironhide Elixir | 80 | Prince battle: 6 block now and at the start of each of his turns |
+| 22 | Regeneration Draught | 70 | Prince battle: heals 5% of maximum health at the start of each of the next 5 turns |
+| 30 | Prince's Training Manual | 150 | Prince gains experience worth half his current level-up need |
+
+Where items work: potions, elixirs and the draught in manual prince battles, on the prince's turn, from the Backpack row above the cards. Health potions and bandages on a march, from the Backpack row in the march window. The Manual from the backpack panel outside battle.
+
+## Planned items (merchants do not offer them yet)
+
+23 Sharpening Stone, 24 Armor Repair Kit, 25 Reinforced Shield, 26 Steel Sword (need equipment), 27 Lockpick Set (needs locked chests), 28 Trap Disarming Kit (needs traps in rival rooms).

@@ -53,6 +53,7 @@ function renderBattle(){
  if(played.dataset.sig!==psig){played.dataset.sig=psig;played.innerHTML=psig?cardHTML(CARD_BY_ID[c.lastCard],c[c.lastBy].level)+`<p>${c.lastAction}</p>`:''}
  $('battle-result').textContent=c.winner?(c.winner==='ally'?'Victory!':'Defeated!'):'';
  $('battle-action-status').textContent=c.winner?'Battle finished':c.noMoves?`${actor.name} has no playable cards · turn ends`:c.auto?`Watching ${actor.name}’s turn`:c.turn!=='ally'?`Enemy turn · ${actor.name} is playing`:(c.lockMs||0)>0?'Card played…':'Your turn · tap a card to play it';
+ renderPackBar($('battle-pack'),'battle');
  const hand=$('battle-hand'),sig=[c.turn,actor.hand.join(','),actor.energy,actor.level,canAct].join('|');
  if(hand.dataset.sig!==sig){hand.dataset.sig=sig;hand.replaceChildren();actor.hand.forEach((id,i)=>{const card=CARD_BY_ID[id],b=document.createElement('button');b.className='hand-card'+(card.cost>actor.energy?' unplayable':'');b.style.setProperty('--i',i-(actor.hand.length-1)/2);b.disabled=!canAct||card.cost>actor.energy;b.innerHTML=cardHTML(card,actor.level);b.setAttribute('aria-label',`Play ${card.name}, ${card.cost} energy`);b.onclick=()=>choosePlayerCard(i);hand.append(b)});if(!actor.hand.length){const p=document.createElement('p');p.className='muted';p.textContent='No cards left this turn.';hand.append(p)}}
  $('battle-skip').hidden=!(c.auto&&!c.winner);

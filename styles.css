@@ -436,3 +436,19 @@ main{grid-template-columns:minmax(0,1fr)!important}
 .room-guard{margin-top:12px;padding-top:10px;border-top:1px solid #a4804c55}.room-guard h3{margin:0 0 6px;font-size:18px}
 
 #roomdialog.wide .room-view-layout{grid-template-columns:1fr!important}#roomdialog.wide .room-art{max-width:100%}
+/* Backpack, item bars and merchant shop */
+#pack{position:absolute;top:26px;left:96px;z-index:8;width:max-content;max-width:230px}
+#pack-toggle{padding:6px 12px;font-size:12px;background:linear-gradient(135deg,#3f244bf0,#1a1125f2);border:1px solid #a4804c;color:#f6e7c9;box-shadow:0 4px 14px #000a}
+.pack-body{margin-top:6px;padding:10px;background:linear-gradient(135deg,#40204bf2,#20112ff7);border:2px ridge #b68c55;border-radius:8px;box-shadow:0 6px 20px #000b;color:#f2e3c8}
+.pack-grid{display:grid;grid-template-columns:repeat(3,44px);gap:5px}
+.pack-slot{width:44px;height:44px;padding:0;display:grid;place-items:center;font-size:22px;border:1px solid #6f536f;border-radius:6px;background:#150d1d}
+.pack-slot.full{background:#2d1b3a;cursor:pointer}.pack-slot.sel{border-color:var(--gold);box-shadow:0 0 0 2px #dcba7677}
+.pack-info{margin:8px 0 0;font-size:11px;line-height:1.45;color:#e2d3b8;max-width:150px}
+.pack-btns{display:flex;gap:6px;margin-top:6px}.pack-btns button,#pack-up{padding:5px 9px;font-size:11px}
+#pack-up{margin-top:8px;width:100%}
+.pack-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin:4px 0;font-size:12px;color:#f2e3c8}
+.pack-bar button{padding:4px 9px;font-size:11px}.pack-bar[hidden]{display:none}
+.shop-list{display:flex;flex-direction:column;gap:7px;max-height:50vh;overflow:auto;margin-top:8px}
+.shop-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 9px;border:1px solid #6f536f;border-radius:6px;background:#150d1d99;text-align:left}
+.shop-row small{color:#c9b9a3;letter-spacing:0;font-size:11px}.shop-row button{min-width:58px;flex:none}
+@media(max-width:760px){#pack{left:50px;top:14px}.pack-grid{grid-template-columns:repeat(3,40px)}.pack-slot{width:40px;height:40px}}

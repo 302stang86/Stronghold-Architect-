@@ -127,6 +127,7 @@ function checkConquest(){if(!state.world||state.worldWon||!state.world.castles.e
 function stealResources(){if(state.expedition?.status==='victoryChoice')expeditionEnd('steal')}
 const EXP_ARROW=['▲','▶','▼','◀'];
 function renderExpedition(){
+ if(typeof renderPackBar==='function')renderPackBar($('exp-pack'),'march');
  const exp=state.expedition,dlg=$('expdialog');if(!exp){if(dlg.open)dlg.close();return}
  const c=expCastle();if(!c){state.expedition=null;if(dlg.open)dlg.close();return}
  if(!dlg.open&&!awaitingResume)dlg.showModal();
