@@ -495,3 +495,9 @@ main{grid-template-columns:minmax(0,1fr)!important}
 
 #menu-scene.scene-drawn{background:none}
 @media(min-width:901px) and (max-width:1250px){.game-topbar .tools{flex-wrap:wrap}}
+
+.game-topbar #game-speed{display:inline-flex;align-items:center;gap:2px;flex:none;padding:2px;
+ border:1px solid #886848;border-radius:8px;background:#180f21}
+.game-topbar #game-speed button{min-width:30px;padding:4px 5px;border-color:transparent;background:transparent;box-shadow:none}
+.game-topbar #game-speed button[aria-pressed="true"]{border-color:#d0a164;background:#653862;color:#fff2cc}
+.game-topbar #game-speed button:focus-visible{outline:2px solid #ffe1ac;outline-offset:-2px}
