@@ -100,17 +100,20 @@ function startRoomCombat(inv){
  const allies=roomDefenders(inv).map(roomCombatant);
  if(roomFromKey(inv.room)?.type===0)allies.unshift(roomCombatant(null));
  if(!allies.length)return false;
+ attachCompanion(allies,state.homeCompanion);
  for(const id of ['roomdialog','builddialog','helpdialog','servantdialog','rosterdialog','settingsdialog','researchdialog','mapdialog','packdialog'])if($(id)?.open)$(id).close();
  const enemy=combatant(inv.name,inv.level,inv.maxHp,1,inv.skill);
  enemy.hp=inv.hp;
  const combat={allies,enemy,auto:!allies.some(a=>a.player),turn:'ally',turnNumber:1,waitMs:700,noMoves:false,winner:null,
   log:['Each fighter takes a turn with five cards and 10 energy.'],lastAction:'',lastCard:null,lastBy:null,lastCount:0,lastMs:0,lockMs:0};
+ const supported=allies.find(a=>a.companion);
+ if(supported)combat.log.push(COMPANIONS[supported.companion].name+' supports '+supported.name+'.');
  state.invasion.combat=combat;
  selectCombatAlly(combat,0);
  beginCombatTurn('ally');save();renderBattle();
  return true;
 }
-function beginCombatTurn(side){const c=state.invasion.combat;if(!c)return;c.turn=side;c.noMoves=false;c.waitMs=side==='ally'&&!c.auto?0:900;const actor=c[side];actor.energy=10;if(!actor.openingBlock)actor.block=0;delete actor.openingBlock;if(side==='ally'){if(actor.ironhide)actor.block+=actor.ironhide;if(actor.regen&&actor.regen.turns>0){actor.regen.turns--;const h=Math.round(actor.maxHp*actor.regen.pct);actor.hp=Math.min(actor.maxHp,actor.hp+h);c.lastAction=`${actor.name} regenerates ${h} health.`}}actor.hand=drawHand(5);if(c.enemyInfo?.boss)dungeonBossTurn(c)}
+function beginCombatTurn(side){const c=state.invasion.combat;if(!c)return;c.turn=side;c.noMoves=false;c.waitMs=side==='ally'&&!c.auto?0:900;const actor=c[side];const pet=side==='ally'?COMPANIONS[actor.companion]:null;actor.energy=10-(pet?.energy||(!actor.companionTurn&&pet?.firstEnergy)||0);if(pet)actor.companionTurn=true;if(!actor.openingBlock)actor.block=0;delete actor.openingBlock;if(side==='ally'){if(actor.ironhide)actor.block+=actor.ironhide;if(actor.regen&&actor.regen.turns>0){actor.regen.turns--;const h=Math.round(actor.maxHp*actor.regen.pct);actor.hp=Math.min(actor.maxHp,actor.hp+h);c.lastAction=`${actor.name} regenerates ${h} health.`}}actor.hand=drawHand(5);if(c.enemyInfo?.boss)dungeonBossTurn(c)}
 function combatLog(message){const c=state.invasion.combat;c.lastAction=message;c.log.push(message);c.log=c.log.slice(-5)}
 function endCombatTurn(){
  const c=state.invasion.combat;
@@ -128,16 +131,16 @@ function endCombatTurn(){
  beginCombatTurn('ally');
 }
 function playCard(index){const c=state.invasion.combat;if(!c||c.winner)return false;const side=c.turn,actor=c[side],target=c[side==='ally'?'enemy':'ally'],id=actor.hand[index],card=CARD_BY_ID[id];if(!card||card.cost>actor.energy)return false;actor.hand.splice(index,1);actor.energy-=card.cost;c.lastCard=id;c.lastBy=side;c.lastAllyId=c.ally.id;c.lastCount++;c.lastMs=1500;c.flashActor=side;c.flashAction=card.type==='healing'?'heal':card.type==='attack'?'basic':card.type==='defense'?'defend':'energy';c.flashType=card.type;c.flashMs=650;c.flashAt=Date.now();const amt=cardAmount(card,actor.level);
- if(card.type==='attack'){const raw=Math.max(1,Math.round(amt*actor.dmgMod)),absorbed=Math.min(target.block,raw);target.block-=absorbed;target.hp=Math.max(0,target.hp-(raw-absorbed));combatLog(`${actor.name} plays ${card.name}: ${raw} damage${absorbed?` (${absorbed} blocked)`:''}.`)}
- else if(card.type==='defense'){const block=Math.round(amt*(actor.paladin?1.05:1));actor.block+=block;combatLog(`${actor.name} plays ${card.name}: ${block} block.`)}
- else if(card.type==='healing'){const before=actor.hp;actor.hp=Math.min(actor.maxHp,actor.hp+amt);combatLog(`${actor.name} plays ${card.name}: restores ${actor.hp-before} health.`)}
+ if(card.type==='attack'){const raw=Math.max(1,Math.round(amt*actor.dmgMod*companionAttack(actor))),absorbed=Math.min(target.block,raw);actor.companionAttacked=true;target.block-=absorbed;target.hp=Math.max(0,target.hp-(raw-absorbed));combatLog(`${actor.name} plays ${card.name}: ${raw} damage${absorbed?` (${absorbed} blocked)`:''}.`)}
+ else if(card.type==='defense'){const block=Math.round(amt*(actor.paladin?1.05:1)*(COMPANIONS[actor.companion]?.block||1));actor.block+=block;combatLog(`${actor.name} plays ${card.name}: ${block} block.`)}
+ else if(card.type==='healing'){const before=actor.hp;const pet=COMPANIONS[actor.companion],heal=Math.round(amt*(pet?.heal||(!actor.companionHealed&&pet?.firstHeal)||1));actor.companionHealed=true;actor.hp=Math.min(actor.maxHp,actor.hp+heal);combatLog(`${actor.name} plays ${card.name}: restores ${actor.hp-before} health.`)}
  else{const before=actor.energy;actor.energy=Math.min(10,actor.energy+amt);combatLog(`${actor.name} plays ${card.name}: energy ${before} → ${actor.energy}.`)}
  if(!c.exp&&state.invasion.active)state.invasion.active.hp=c.enemy.hp;if(c.enemy.hp<=0)c.winner='ally';else if(c.ally.hp<=0&&(!c.allies||!c.allies.some(a=>a.hp>0)||c.exp&&c.ally.player))c.winner='enemy';
  else if(side==='enemy'&&c.ally.hp<=0){c.noMoves=true;c.waitMs=450;save();return true}
  if(c.winner){c.waitMs=1100;save();return true}
  c.noMoves=!actor.hand.some(h=>CARD_BY_ID[h].cost<=actor.energy);if(c.noMoves)c.waitMs=900;save();return true}
 function aiChoose(actor,target){const opts=actor.hand.map((id,i)=>({i,card:CARD_BY_ID[id]})).filter(o=>o.card.cost<=actor.energy);if(!opts.length)return -1;if(Math.random()>actor.skill)return opts[Math.floor(Math.random()*opts.length)].i;const amt=o=>cardAmount(o.card,actor.level),atk=opts.filter(o=>o.card.type==='attack');
- const kill=atk.filter(o=>Math.round(amt(o)*actor.dmgMod)>=target.hp+target.block).sort((a,b)=>a.card.cost-b.card.cost);if(kill.length)return kill[0].i;
+ const kill=atk.filter(o=>Math.round(amt(o)*actor.dmgMod*companionAttack(actor))>=target.hp+target.block).sort((a,b)=>a.card.cost-b.card.cost);if(kill.length)return kill[0].i;
  if(actor.hp<=actor.maxHp*.45){const heals=opts.filter(o=>o.card.type==='healing').sort((a,b)=>b.card.value-a.card.value);if(heals.length)return heals[0].i}
  const en=opts.find(o=>o.card.type==='energy'&&actor.hand.some(id=>{const k=CARD_BY_ID[id];return k.cost>actor.energy-1&&k.cost<=Math.min(10,actor.energy-1+o.card.value)}));if(en)return en.i;
  if(atk.length)return atk.sort((a,b)=>b.card.value-a.card.value)[0].i;

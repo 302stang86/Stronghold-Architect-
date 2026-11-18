@@ -169,8 +169,8 @@ function finishDungeon(exp,result){
   landmark.readyAt=dungeonClock(state)+3*DAY_MS;
   landmark.layout=null;
  }else{
-  const {current,discovered,cleared,looted,vaultKey,openedChests=[]}=exp;
-  landmark.layout.progress={current,discovered,cleared,looted,vaultKey,openedChests};
+  const {current,discovered,cleared,looted,vaultKey,openedChests=[],sideDoors,unlockedDoors,revealedDoors}=exp;
+  landmark.layout.progress={current,discovered,cleared,looted,vaultKey,openedChests,sideDoors,unlockedDoors,revealedDoors};
  }
  const supplies=Object.entries(exp.loot).filter(([,v])=>v>0).map(([k,v])=>{
   state[k]=roundResource(state[k]+v);
@@ -229,7 +229,7 @@ function startDungeonVisit(id,party){
  const entrance=roomKey(layout.tiles.find(t=>t.type===17));
  const progress=layout.progress?structuredClone(layout.progress):
   {current:entrance,discovered:[entrance],cleared:[],looted:[],vaultKey:false};
- state.expedition={id:'x'+Date.now().toString(36),mode:'dungeon',castleId:id,party,partySize:party.length,...progress,
+ state.expedition={id:'x'+Date.now().toString(36),mode:'dungeon',castleId:id,party,partySize:party.length,...progress,sideDoors:progress.sideDoors||sideDoors(layout).filter(door=>!progress.discovered.includes(door.to)),
   packAtEntry:[...state.pack.items],princeAtEntry:{...state.prince},
   loot:{gold:0,stone:0,food:0,rp:0},status:'exploring',encounter:null,
   log:[layout.progress?'You return to where you left off.':'You enter '+tier.name+'.']};

@@ -60,7 +60,9 @@ function choosePartyDialog(mode,castleId){
  list.replaceChildren();
  if(mode!=='raid'){const p=document.createElement('div');p.className='party-unit locked on';p.textContent='Young Prince · Level '+state.prince.level+' (always joins)';list.append(p)}
  for(const u of units){const b=document.createElement('button');b.className='party-unit';b.dataset.id=u.id;const art=document.createElement('span');art.className='portrait';portraitStyle(art,u.look||0);const t=document.createElement('span');t.innerHTML='';const nm=document.createElement('strong');nm.textContent=u.name;const sm=document.createElement('small');sm.textContent=(u.paladin?'Paladin':u.kind==='guard'?'Guard':'Servant')+' · Level '+u.level;t.append(nm,sm);b.append(art,t);b.onclick=()=>{if(pick.has(u.id))pick.delete(u.id);else pick.add(u.id);refresh()};list.append(b)}
- start.onclick=()=>{const ids=[...pick];if(partyIssue(mode,ids))return;dlg.close();startExpedition(mode,castleId,ids)};
+ const support=document.createElement('select');
+ if(mode!=='dungeon'&&ownedCompanions().length){const label=document.createElement('label');label.textContent='Companion support (free slot) ';support.add(new Option('No companion',''));for(const id of ownedCompanions())support.add(new Option(COMPANIONS[id].name,id));label.append(support);list.append(label)}
+ start.onclick=()=>{const ids=[...pick];if(partyIssue(mode,ids))return;dlg.close();startExpedition(mode,castleId,ids,support.value)};
  $('party-cancel').onclick=()=>dlg.close();refresh();if(!dlg.open)dlg.showModal();return true}
 function castleById(id){return state.world?.castles.find(c=>c.id===id)||null}
 function expCastle(){
@@ -81,7 +83,7 @@ function expReason(mode,id){
  if(c.ownerId==='player')return'This stronghold already belongs to you.';if(state.over)return'Your keep has fallen.';if(state.expedition)return'An expedition is already under way.';
  if(state.invasion.active||state.invasion.combat)return'Finish the invasion first.';
  if(mode==='attack'&&!state.guards.length)return'An attack needs your prince and at least one guard. Hire a guard at your Barracks.';if(mode==='raid'&&!availableUnits().length)return'A raid needs at least one available guard or servant.';return''}
-function startExpedition(mode,castleId,ids){
+function startExpedition(mode,castleId,ids,companion){
  const why=expReason(mode,castleId);if(why){toast(why);return false}
  if(!Array.isArray(ids))return choosePartyDialog(mode,castleId);if(partyIssue(mode,ids)){toast(partyIssue(mode,ids));return false}
  const party=availableUnits().filter(u=>ids.includes(u.id)).map(u=>({id:u.id,kind:u.kind,name:u.name,look:u.look,level:u.level,hp:0,maxHp:0}));
@@ -92,7 +94,7 @@ function startExpedition(mode,castleId,ids){
  const producers={};for(const t of c.tiles)if(t.type!==0)for(const k of Object.keys(roomRates(t)))producers[k]=(producers[k]||0)+1;
  const share={};for(const k of EXP_RES)share[k]=producers[k]?c.treasury[k]/producers[k]:0;
  const key=roomKey(entrance);
- state.expedition={id:'x'+Date.now().toString(36),mode,castleId,party,partySize:party.length,current:key,discovered:[key],looted:[],cleared:[],loot:{gold:0,stone:0,food:0,rp:0},share,status:'exploring',encounter:null,log:['You arrive at the gate of '+c.rulingName+'.']};
+ state.expedition={id:'x'+Date.now().toString(36),mode,castleId,party,partySize:party.length,companion:ownedCompanions().includes(companion)?companion:null,sideDoors:sideDoors(c),current:key,discovered:[key],looted:[],cleared:[],loot:{gold:0,stone:0,food:0,rp:0},share,status:'exploring',encounter:null,log:['You arrive at the gate of '+c.rulingName+'.']};
  try{$('mapdialog').close()}catch{}
  note(`${mode==='raid'?'Raid':'Attack'} on ${c.rulingName} begins.`);save();showExpedition();return true}
 function lootRoom(key,defended){
@@ -131,6 +133,7 @@ function beginExpBattle(info,key,enemyHp,followup){
   const actor=applyGuardBuffs(combatant(member.name,level,member.maxHp,1-penalty,.65),player||member.kind==='guard',member.paladin);
   return Object.assign(actor,{id:member.id,player,look:member.look||0,hp:Math.min(member.maxHp,member.hp)});
  });
+ attachCompanion(allies,exp.companion);
  const enemy=combatant(info.name,info.level,Math.round(hpForLevel(info.level)*(info.health||1)),info.damage||1,info.skill);
  if(enemyHp!==undefined)enemy.hp=Math.min(enemy.maxHp,enemyHp);
  const combat={allies,exp:true,auto:!allies.some(a=>a.player),enemy,turn:'ally',turnNumber:1,waitMs:700,noMoves:false,winner:null,
@@ -172,6 +175,7 @@ function resolveExpeditionCombat(c){
  beginExpBattle(info,key,c.enemy.hp,followup)}
 function expeditionEnd(result){
  const exp=state.expedition,c=expCastle();if(!exp)return;
+ if(exp.mode!=='dungeon'&&result!=='defeat'&&exp.sideGold){c.claimedSideTreasure=[...new Set([...(c.claimedSideTreasure||[]),...exp.sideTreasureClaims])];exp.loot.gold+=exp.sideGold}
  const loot=exp.loot,parts=EXP_RES.filter(k=>loot[k]>0).map(k=>`${loot[k]} ${RESOURCE_INFO[k].name.toLowerCase()}`);
  if(exp.mode==='dungeon')finishDungeon(exp,result);
  else if(result==='defeat'){if(c)for(const k of EXP_RES)c.treasury[k]=roundResource(c.treasury[k]+(loot[k]||0));note(`The expedition against ${c?.rulingName||'the stronghold'} failed.${parts.length?' The loot was returned.':''}`);toast('The expedition failed. Carried loot was returned.')}
@@ -180,7 +184,7 @@ function expeditionEnd(result){
 function enterRoom(key){
  const exp=state.expedition;if(!exp||exp.status!=='exploring')return false;
  const cur=expTile(exp.current),t=expTile(key);if(!cur||!t)return false;
- if(!expNeighbors(cur,expCastle().tiles).some(n=>roomKey(n.room)===key))return false;
+ if(lockedSideDoor(exp,exp.current,key)||!expNeighbors(cur,expCastle().tiles).some(n=>roomKey(n.room)===key))return false;
  if(t.type===0&&exp.mode!=='attack'){toast('Raiders cannot enter the throne room.');return false}
  const c=expCastle();
  if(exp.mode==='dungeon'&&key===c.bossKey&&c.keyRoom&&!exp.vaultKey){
@@ -189,7 +193,7 @@ function enterRoom(key){
   return false;
  }
  window.StrongholdAudio?.play('door');
- exp.current=key;if(!exp.discovered.includes(key))exp.discovered.push(key);
+ exp.current=key;if(!exp.discovered.includes(key))exp.discovered.push(key);revealSideDoors(exp);
  if(t.type===0)enterExpBattle(expInfo(key,true),key);
  else if(c.defenders[key]&&!exp.cleared.includes(key))enterExpBattle(expInfo(key,false),key);
  else{lootRoom(key,false);save();renderExpedition()}
@@ -197,8 +201,8 @@ function enterRoom(key){
 function moveTo(key){
  const exp=state.expedition;if(!exp||exp.status!=='exploring'||!exp.discovered.includes(key))return false;if(key===exp.current)return true;
  const tiles=expCastle().tiles,prev=new Map([[exp.current,null]]),q=[exp.current];
- while(q.length){const k=q.shift();if(k===key)break;for(const n of expNeighbors(expTile(k),tiles)){const nk=roomKey(n.room);if(exp.discovered.includes(nk)&&!prev.has(nk)){prev.set(nk,k);q.push(nk)}}}
- if(!prev.has(key))return false;exp.current=key;save();renderExpedition();return true}
+ while(q.length){const k=q.shift();if(k===key)break;for(const n of expNeighbors(expTile(k),tiles)){const nk=roomKey(n.room);if(exp.discovered.includes(nk)&&!prev.has(nk)&&!lockedSideDoor(exp,k,nk)){prev.set(nk,k);q.push(nk)}}}
+ if(!prev.has(key))return false;exp.current=key;revealSideDoors(exp);save();renderExpedition();return true}
 function arrowClick(fromKey,toKey){if(!moveTo(fromKey))return;enterRoom(toKey)}
 async function leaveExpedition(){
  const exp=state.expedition;if(!exp||exp.status!=='exploring')return;
@@ -219,17 +223,18 @@ function renderExpedition(){
  $('exp-mode').textContent=exp.mode==='dungeon'?dungeonTier(exp.castleId).tier.toUpperCase()+' DUNGEON':exp.mode==='raid'?'RAID':'ATTACK';$('exp-title').textContent=c.rulingName;
  const party=$('exp-party');party.replaceChildren();
  for(const m of exp.party){const d=document.createElement('div');d.className='exp-member'+(m.hp<=0?' down':'');const a=document.createElement('span');a.className='exp-face';const kind=m.kind==='prince'?'mc':'servant';a.style.backgroundImage=`url("${COMBAT_ART[kind][m.kind==='prince'?0:(m.look||0)]}")`;const nm=document.createElement('b');nm.textContent=m.name;const bar=document.createElement('i');bar.innerHTML=`<u style="width:${Math.max(0,m.hp/m.maxHp*100)}%"></u>`;d.append(a,nm,bar);party.append(d)}
- const loot=$('exp-loot');const parts=EXP_RES.filter(k=>exp.loot[k]>0).map(k=>`${exp.loot[k]} ${RESOURCE_INFO[k].name}`);loot.textContent='Carrying: '+(parts.join(' · ')||'nothing yet');
+ const pet=COMPANIONS[exp.companion];if(pet){const label=document.createElement('div');label.className='exp-member';label.textContent=pet.icon+' '+pet.name+' · Support';party.append(label)}
+ const loot=$('exp-loot'),carried={...exp.loot,gold:exp.loot.gold+(exp.sideGold||0)};const parts=EXP_RES.filter(k=>carried[k]>0).map(k=>`${carried[k]} ${RESOURCE_INFO[k].name}`);loot.textContent='Carrying: '+(parts.join(' · ')||'nothing yet');
  const tiles=exp.discovered.map(expTile).filter(Boolean),minX=Math.min(...tiles.map(t=>t.x)),maxX=Math.max(...tiles.map(t=>t.x)),minY=Math.min(...tiles.map(t=>t.y)),maxY=Math.max(...tiles.map(t=>t.y));
  const grid=$('exp-grid');grid.replaceChildren();grid.style.gridTemplateColumns=`repeat(${maxX-minX+1},var(--ecell))`;grid.style.gridTemplateRows=`repeat(${maxY-minY+1},var(--ecell))`;
  const busy=exp.status!=='exploring';
- const chestButton=$('exp-chest'),chest=exp.mode==='dungeon'?c.chests?.[exp.current]:null;
+ const chestButton=$('exp-chest'),bonusChest=sideTreasure(exp,exp.current),chest=bonusChest||(exp.mode==='dungeon'?c.chests?.[exp.current]:null);
  chestButton.hidden=busy||!chest||exp.openedChests?.includes(exp.current)||
   !!(c.defenders[exp.current]&&!exp.cleared.includes(exp.current));
  if(!chestButton.hidden){
   const key=exp.current;
   chestButton.textContent=chest.locked?'Unlock chest · 1 Lockpick Set':'Open treasure chest';
-  chestButton.onclick=()=>openDungeonChest(key);
+  chestButton.onclick=()=>bonusChest?collectSideTreasure(exp,key):openDungeonChest(key);
  }
 
  for(const t of tiles){
@@ -237,16 +242,16 @@ function renderExpedition(){
   const im=document.createElement('img');im.src=art(t.type);im.alt=TYPES[t.type][0];im.style.transform=`rotate(${t.rot*90}deg)`;cell.append(im);
   const lab=document.createElement('span');lab.className='exp-label';lab.textContent=key===c.bossKey?'Boss Vault':TYPES[t.type][0];cell.append(lab);
   if(exp.cleared.includes(key)&&t.type!==0){const k=document.createElement('span');k.className='exp-flag';k.textContent='✔ cleared';cell.append(k)}
-  const chestHere=exp.mode==='dungeon'?c.chests?.[key]:null;
+  const chestHere=exp.sideDoors?.find(d=>d.to===key&&d.gold)||(exp.mode==='dungeon'?c.chests?.[key]:null);
   if(chestHere){
-   const marker=document.createElement('span'),opened=exp.openedChests?.includes(key);
+   const marker=document.createElement('span'),opened=exp.openedChests?.includes(key)||c.claimedSideTreasure?.includes(key);
    marker.className='exp-chest-marker';
    marker.textContent=opened?'Chest opened':chestHere.locked?'Locked chest':'Treasure chest';
    cell.append(marker);
   }
   if(key===exp.current){const who=document.createElement('div');who.className='exp-party-token';for(const m of exp.party.slice(0,3)){const f=document.createElement('span');const kind=m.kind==='prince'?'mc':'servant';f.style.backgroundImage=`url("${COMBAT_ART[kind][m.kind==='prince'?0:(m.look||0)]}")`;who.append(f)}cell.append(who)}
   if(!busy&&key!==exp.current){cell.classList.add('go');cell.onclick=()=>moveTo(key)}
-  for(const n of expNeighbors(t,c.tiles)){const nk=roomKey(n.room);if(exp.discovered.includes(nk))continue;if(n.room.type===0&&exp.mode!=='attack')continue;const a=document.createElement('button');a.className='exp-arrow d'+n.d;a.textContent=EXP_ARROW[n.d];a.setAttribute('aria-label','Explore an unseen room '+['north','east','south','west'][n.d]);a.disabled=busy;a.onclick=e=>{e.stopPropagation();arrowClick(key,nk)};cell.append(a)}
+  for(const n of expNeighbors(t,c.tiles)){const nk=roomKey(n.room);const door=lockedSideDoor(exp,key,nk);if(door?.secret&&!exp.revealedDoors?.includes(nk)||exp.discovered.includes(nk))continue;if(n.room.type===0&&exp.mode!=='attack')continue;const a=document.createElement('button');a.className='exp-arrow d'+n.d;a.textContent=EXP_ARROW[n.d];a.setAttribute('aria-label','Explore an unseen room '+['north','east','south','west'][n.d]);if(door){a.style.color=door.secret?'#ddaaff':'#ff7272';a.textContent=door.secret?'✦':'🔒'+EXP_ARROW[n.d];a.title=(door.secret?'Hidden':'Locked')+' door · Puzzle Room level '+door.level;a.setAttribute('aria-label',a.title)}a.disabled=busy;a.onclick=e=>{e.stopPropagation();if(door){if(moveTo(key))openSideDoor(exp,door)}else arrowClick(key,nk)};cell.append(a)}
   grid.append(cell)}
  $('exp-status').textContent=exp.status==='battle'?'Battle in progress. You cannot leave until it ends.':exp.status==='victoryChoice'?'The resident prince is beaten. Choose what to do with the stronghold.':exp.log[exp.log.length-1]||'';
  $('exp-leave').disabled=exp.status!=='exploring';$('exp-choice').hidden=exp.status!=='victoryChoice';
@@ -254,6 +259,7 @@ function renderExpedition(){
 function showExpedition(){
  const exp=state.expedition;if(!exp||awaitingResume)return;
  const dungeon=exp.mode==='dungeon'?expCastle():null;
+ revealSideDoors(exp);
  if(dungeon&&placeDungeonChests(dungeon,dungeonTier(exp.castleId)))save();
 
  if(exp.status==='battle'&&!state.invasion.combat){exp.status='exploring';const k=exp.current,c=expCastle();if(c&&expTile(k)&&((expTile(k).type===0)||(c.defenders[k]&&!exp.cleared.includes(k)))){const pending=exp.encounter;if(pending?.key===k&&pending.info)beginExpBattle(pending.info,k,undefined,pending.followup);else enterExpBattle(expInfo(k,expTile(k).type===0),k);return}}
