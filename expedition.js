@@ -30,17 +30,17 @@ function unitLevel(m){return m.level||guardLevel()}
 function availableUnits(){return [...state.guards.map(g=>({id:g.id,kind:'guard',name:g.name,look:g.look,level:guardLevel()})),...state.collectors.map(n=>({id:n.id,kind:'servant',name:n.name,look:n.look,level:n.level||1}))]}
 function partyIssue(mode,ids){
  const units=availableUnits().filter(u=>ids.includes(u.id)),guards=units.filter(u=>u.kind==='guard').length,servants=units.length-guards;
- if(mode==='attack'){if(guards!==1)return'Choose exactly one guard to join the prince.';if(servants>1)return'An attack party can include only one servant.';return''}
+ if(mode!=='raid'){if(guards!==1)return'Choose exactly one guard to join the prince.';if(servants>1)return'You can bring only one servant.';return''}
  if(units.length<1)return'Choose at least one guard or servant.';if(units.length>3)return'A raid party has at most three units.';return''}
 function choosePartyDialog(mode,castleId){
  const why=expReason(mode,castleId);if(why){toast(why);return false}
- const c=castleById(castleId),dlg=$('partydialog'),list=$('party-list'),units=availableUnits(),pick=new Set();
- $('party-title').textContent=(mode==='raid'?'Choose your raid party':'Choose your attack party')+' · '+c.rulingName;
- $('party-rules').textContent=mode==='raid'?'A raid party is one to three guards or servants. The prince stays home.':'An attack party is the prince, one guard, and optionally one servant.';
+ const target=mode==='dungeon'?dungeonTier(castleId).name:castleById(castleId).rulingName,dlg=$('partydialog'),list=$('party-list'),units=availableUnits(),pick=new Set();
+ $('party-title').textContent=(mode==='raid'?'Choose your raid party':mode==='dungeon'?'Choose your dungeon party':'Choose your attack party')+' · '+target;
+ $('party-rules').textContent=mode==='raid'?'A raid party is one to three guards or servants. The prince stays home.':'Bring the prince, one guard, and optionally one servant.';
  const start=$('party-start'),msg=$('party-msg');
  const refresh=()=>{const issue=partyIssue(mode,[...pick]);msg.textContent=issue;start.disabled=!!issue;for(const b of list.querySelectorAll('button.party-unit'))b.classList.toggle('on',pick.has(b.dataset.id)||pick.has(Number(b.dataset.id)))};
  list.replaceChildren();
- if(mode==='attack'){const p=document.createElement('div');p.className='party-unit locked on';p.textContent='Young Prince · Level '+state.prince.level+' (always joins)';list.append(p)}
+ if(mode!=='raid'){const p=document.createElement('div');p.className='party-unit locked on';p.textContent='Young Prince · Level '+state.prince.level+' (always joins)';list.append(p)}
  for(const u of units){const b=document.createElement('button');b.className='party-unit';b.dataset.id=u.id;const art=document.createElement('span');art.className='portrait';portraitStyle(art,u.look||0);const t=document.createElement('span');t.innerHTML='';const nm=document.createElement('strong');nm.textContent=u.name;const sm=document.createElement('small');sm.textContent=(u.kind==='guard'?'Guard':'Servant')+' · Level '+u.level;t.append(nm,sm);b.append(art,t);b.onclick=()=>{if(pick.has(u.id))pick.delete(u.id);else pick.add(u.id);refresh()};list.append(b)}
  start.onclick=()=>{const ids=[...pick];if(partyIssue(mode,ids))return;dlg.close();startExpedition(mode,castleId,ids)};
  $('party-cancel').onclick=()=>dlg.close();refresh();if(!dlg.open)dlg.showModal();return true}
@@ -56,7 +56,8 @@ function expReason(mode,id){
  if(mode==='dungeon'){
   const dungeon=dungeonMapInfo().find(d=>d.id===id);
   if(!dungeon)return 'That dungeon is not part of this campaign.';
-  return dungeon.blocked||(dungeon.remaining>0?'The Boss Vault is still sealed.':'');
+  return dungeon.blocked||(dungeon.remaining>0?'The Boss Vault is still sealed.':'')||
+   (state.guards.length?'':'A dungeon needs your prince and one guard. Hire a guard at your Barracks.');
  }
  const c=castleById(id);if(!state.world||!c)return'That stronghold is not part of this game.';
  if(c.ownerId==='player')return'This stronghold already belongs to you.';if(state.over)return'Your keep has fallen.';if(state.expedition)return'An expedition is already under way.';
@@ -64,16 +65,16 @@ function expReason(mode,id){
  if(mode==='attack'&&!state.guards.length)return'An attack needs your prince and at least one guard. Hire a guard at your Barracks.';if(mode==='raid'&&!availableUnits().length)return'A raid needs at least one available guard or servant.';return''}
 function startExpedition(mode,castleId,ids){
  const why=expReason(mode,castleId);if(why){toast(why);return false}
- if(mode==='dungeon')return startDungeonVisit(castleId);
  if(!Array.isArray(ids))return choosePartyDialog(mode,castleId);if(partyIssue(mode,ids)){toast(partyIssue(mode,ids));return false}
- const c=castleById(castleId),entrance=c.tiles.find(t=>t.type===17);if(!entrance)return false;
  const party=availableUnits().filter(u=>ids.includes(u.id)).map(u=>({id:u.id,kind:u.kind,name:u.name,look:u.look,level:u.level,hp:0,maxHp:0}));
- if(mode==='attack')party.push({id:'mc',kind:'prince',name:'Young Prince',look:0,level:state.prince.level,hp:0,maxHp:0});
+ if(mode!=='raid')party.push({id:'mc',kind:'prince',name:'Young Prince',look:0,level:state.prince.level,hp:0,maxHp:0});
  for(const m of party){m.maxHp=m.kind==='prince'?Math.round(hpForLevel(m.level)*(state.hungryDays>=5?.8:1)):hpForLevel(m.level);m.hp=m.maxHp}
+ if(mode==='dungeon')return startDungeonVisit(castleId,party);
+ const c=castleById(castleId),entrance=c.tiles.find(t=>t.type===17);if(!entrance)return false;
  const producers={};for(const t of c.tiles)if(t.type!==0)for(const k of Object.keys(roomRates(t)))producers[k]=(producers[k]||0)+1;
  const share={};for(const k of EXP_RES)share[k]=producers[k]?c.treasury[k]/producers[k]:0;
  const key=roomKey(entrance);
- state.expedition={id:'x'+Date.now().toString(36),mode,castleId,party,current:key,discovered:[key],looted:[],cleared:[],loot:{gold:0,stone:0,food:0,rp:0},share,status:'exploring',encounter:null,log:['You arrive at the gate of '+c.rulingName+'.']};
+ state.expedition={id:'x'+Date.now().toString(36),mode,castleId,party,partySize:party.length,current:key,discovered:[key],looted:[],cleared:[],loot:{gold:0,stone:0,food:0,rp:0},share,status:'exploring',encounter:null,log:['You arrive at the gate of '+c.rulingName+'.']};
  try{$('mapdialog').close()}catch{}
  note(`${mode==='raid'?'Raid':'Attack'} on ${c.rulingName} begins.`);save();showExpedition();return true}
 function lootRoom(key,defended){
@@ -84,7 +85,25 @@ function lootRoom(key,defended){
  for(const k of Object.keys(rates)){const take=Math.min(Math.round(exp.share[k]*rate),Math.floor(c.treasury[k]));if(take>0){c.treasury[k]=roundResource(c.treasury[k]-take);exp.loot[k]=(exp.loot[k]||0)+take;got.push(`${take} ${RESOURCE_INFO[k].name.toLowerCase()}`)}}
  exp.log.push(`${TYPES[t.type][0]}: `+(got.length?'you take '+got.join(' and ')+(defended?' (defended room, 20%)':' (10%)')+'.':'nothing worth taking.'))}
 function expInfo(key,throne){const c=expCastle();if(state.expedition.mode==='dungeon')return c.defenders[key];const cap=state.prince.level+3;if(throne)return{name:c.prince.name,level:Math.min(c.prince.level,cap),variant:c.prince.variant||0,skill:.75,throne:true};const d=c.defenders[key];return{name:d.name,level:Math.min(d.level,cap),variant:d.variant||0,skill:.6,throne:false}}
-function beginExpBattle(info,key,enemyHp){
+function reinforcedRoom(exp,key){
+ if(exp.partySize!==3)return false;
+ const layout=expCastle();
+ const dungeon=exp.mode==='dungeon';
+ if(key===layout.bossKey)return exp.castleId!=='dungeon-low';
+ if(exp.mode==='attack'&&expTile(key)?.type===0)return true;
+ const limit=exp.castleId==='dungeon-high'?3:exp.castleId==='dungeon-medium'||exp.mode==='attack'?2:1;
+ const rooms=Object.keys(layout.defenders).filter(room=>room!==layout.bossKey).sort();
+ return rooms.filter((room,index)=>index%Math.max(1,Math.floor(rooms.length/limit))===0).slice(0,limit).includes(key);
+}
+function enterExpBattle(info,key){
+ const exp=state.expedition;
+ if(!reinforcedRoom(exp,key))return beginExpBattle(info,key);
+ const name=exp.mode==='dungeon'?'Vault sentry':'Reserve guard';
+ const level=Math.max(1,info.level-1);
+ exp.log.push(name+' blocks the way. A second defender waits behind.');
+ return beginExpBattle({name,level,variant:info.variant,skill:.55,health:.8},key,undefined,info);
+}
+function beginExpBattle(info,key,enemyHp,followup){
  const exp=state.expedition,live=exp.party.filter(m=>m.hp>0);
  let lead=info.throne||exp.mode==='dungeon'?live.find(m=>m.kind==='prince'):null;lead=lead||live.find(m=>m.kind==='guard')||live.find(m=>m.kind==='servant')||live.find(m=>m.kind==='prince');
  if(!lead){expeditionEnd('defeat');return}
@@ -102,11 +121,11 @@ function beginExpBattle(info,key,enemyHp){
  state.invasion.combat=combat;
  selectCombatAlly(combat,0);
  if(info.boss)window.StrongholdAudio?.play(info.boss);
- exp.status='battle';exp.encounter={key,info};beginCombatTurn('ally');save();renderBattle();renderExpedition()}
+ exp.status='battle';exp.encounter={key,info,followup};beginCombatTurn('ally');save();renderBattle();renderExpedition()}
 function resolveExpeditionCombat(c){
  const exp=state.expedition;state.invasion.combat=null;const m=$('battle-dialog');if(m?.open)m.close();
  if(!exp){save();render();return}
- const member=exp.party.find(x=>x.id===c.leadId),key=exp.encounter.key,info=exp.encounter.info;
+ const member=exp.party.find(x=>x.id===c.leadId),{key,info,followup}=exp.encounter;
  if(c.allies){
   for(const actor of c.allies){
    const participant=exp.party.find(unit=>unit.id===actor.id);
@@ -121,7 +140,9 @@ function resolveExpeditionCombat(c){
   if(c.winner!=='ally')return expeditionEnd('defeat');
  }
  if(c.winner==='ally'){
-  if(member)member.hp=Math.max(1,Math.ceil(c.ally.hp));gainXp('mc',8+c.enemy.level*2);exp.cleared.push(key);exp.encounter=null;
+  if(member&&!c.allies)member.hp=Math.max(1,Math.ceil(c.ally.hp));
+  if(followup){exp.log.push(info.name+' is defeated. '+followup.name+' steps forward.');return beginExpBattle(followup,key)}
+  gainXp('mc',8+c.enemy.level*2);exp.cleared.push(key);exp.encounter=null;
   if(info.boss)return expeditionEnd('dungeonVictory');
   if(info.throne){exp.status='victoryChoice';exp.log.push(`${info.name} is beaten. The stronghold is yours to decide.`)}
   else{exp.status='exploring';exp.log.push(`${info.name} is defeated.`);lootRoom(key,true)}
@@ -130,7 +151,7 @@ function resolveExpeditionCombat(c){
  if(member){member.hp=0;if(member.kind==='guard'){state.guards=state.guards.filter(g=>g.id!==member.id);note(`${member.name} fell and is lost for good. Buy a replacement at the Barracks.`)}else if(member.kind==='servant'){state.collectors=state.collectors.filter(n=>n.id!==member.id);note(`${member.name} fell and is lost for good.`)}}
  exp.party=exp.party.filter(x=>x.hp>0);
  if(!exp.party.length||member?.kind==='prince')return expeditionEnd('defeat');
- beginExpBattle(info,key,c.enemy.hp)}
+ beginExpBattle(info,key,c.enemy.hp,followup)}
 function expeditionEnd(result){
  const exp=state.expedition,c=expCastle();if(!exp)return;
  const loot=exp.loot,parts=EXP_RES.filter(k=>loot[k]>0).map(k=>`${loot[k]} ${RESOURCE_INFO[k].name.toLowerCase()}`);
@@ -151,8 +172,8 @@ function enterRoom(key){
  }
  window.StrongholdAudio?.play('door');
  exp.current=key;if(!exp.discovered.includes(key))exp.discovered.push(key);
- if(t.type===0)beginExpBattle(expInfo(key,true),key);
- else if(c.defenders[key]&&!exp.cleared.includes(key))beginExpBattle(expInfo(key,false),key);
+ if(t.type===0)enterExpBattle(expInfo(key,true),key);
+ else if(c.defenders[key]&&!exp.cleared.includes(key))enterExpBattle(expInfo(key,false),key);
  else{lootRoom(key,false);save();renderExpedition()}
  return true}
 function moveTo(key){
@@ -217,7 +238,7 @@ function showExpedition(){
  const dungeon=exp.mode==='dungeon'?expCastle():null;
  if(dungeon&&placeDungeonChests(dungeon,dungeonTier(exp.castleId)))save();
 
- if(exp.status==='battle'&&!state.invasion.combat){exp.status='exploring';const k=exp.current,c=expCastle();if(c&&expTile(k)&&((expTile(k).type===0)||(c.defenders[k]&&!exp.cleared.includes(k)))){beginExpBattle(expInfo(k,expTile(k).type===0),k);return}}
+ if(exp.status==='battle'&&!state.invasion.combat){exp.status='exploring';const k=exp.current,c=expCastle();if(c&&expTile(k)&&((expTile(k).type===0)||(c.defenders[k]&&!exp.cleared.includes(k)))){const pending=exp.encounter;if(pending?.key===k&&pending.info)beginExpBattle(pending.info,k,undefined,pending.followup);else enterExpBattle(expInfo(k,expTile(k).type===0),k);return}}
  renderExpedition()}
 $('exp-leave').onclick=leaveExpedition;$('exp-steal').onclick=stealResources;$('exp-take').onclick=takeOver;$('expdialog').addEventListener('cancel',e=>e.preventDefault());
 window.addEventListener('message',e=>{const d=e.data;if(e.source!==$('mapframe').contentWindow||e.origin!==location.origin||!$('mapdialog').open)return;if(d&&d.type==='startExpedition'&&typeof d.castleId==='string'&&['raid','attack','dungeon'].includes(d.mode))startExpedition(d.mode,d.castleId)});

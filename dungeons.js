@@ -219,7 +219,7 @@ function snuffDungeonCandle(){
  renderBattle();
 }
 
-function startDungeonVisit(id){
+function startDungeonVisit(id,party){
  const landmark=dungeonLandmark(id),tier=dungeonTier(id);
  if(!landmark.layout?.progress&&landmark.layout?.version!==DUNGEON_LAYOUT_VERSION){
   landmark.layout=generateDungeon(tier);
@@ -229,9 +229,7 @@ function startDungeonVisit(id){
  const entrance=roomKey(layout.tiles.find(t=>t.type===17));
  const progress=layout.progress?structuredClone(layout.progress):
   {current:entrance,discovered:[entrance],cleared:[],looted:[],vaultKey:false};
- const level=state.prince.level,maxHp=Math.round(hpForLevel(level)*(state.hungryDays>=5?.8:1));
- const party=[{id:'mc',kind:'prince',name:'Young Prince',look:0,level,hp:maxHp,maxHp}];
- state.expedition={id:'x'+Date.now().toString(36),mode:'dungeon',castleId:id,party,...progress,
+ state.expedition={id:'x'+Date.now().toString(36),mode:'dungeon',castleId:id,party,partySize:party.length,...progress,
   packAtEntry:[...state.pack.items],princeAtEntry:{...state.prince},
   loot:{gold:0,stone:0,food:0,rp:0},status:'exploring',encounter:null,
   log:[layout.progress?'You return to where you left off.':'You enter '+tier.name+'.']};
@@ -239,4 +237,5 @@ function startDungeonVisit(id){
  note('Dungeon expedition begins in '+tier.name+'.');
  save();
  showExpedition();
+ return true;
 }
