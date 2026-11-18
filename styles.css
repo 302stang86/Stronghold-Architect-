@@ -616,3 +616,51 @@ main{grid-template-columns:minmax(0,1fr)!important}
 .exp-room-chest.is-floating:not(:disabled) img{animation:exp-chest-hover 2.25s ease-in-out infinite}
 @keyframes exp-chest-hover{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media(prefers-reduced-motion:reduce){.exp-room-chest.is-floating img{animation:none}}
+
+/* Phase 1 decorative frames for setup, room inspection, and confirmations. */
+#setupdialog,
+#roomdialog {
+ --frame-block: 22px;
+ --frame-inline: 34px;
+ border: solid transparent;
+ border-width: var(--frame-block) var(--frame-inline);
+ border-radius: 0;
+ border-image: url("assets/ui-amethyst-frame.webp") 48 74 47 74 stretch;
+ background: linear-gradient(#160d21b8,#130b1ce0), url("assets/ui-amethyst-cloth.webp") center / 465px auto;
+ background-clip: padding-box;
+}
+#setupdialog {
+ --frame-block: 28px;
+ --frame-inline: 43px;
+}
+#roomdialog {
+ max-height: 90dvh;
+}
+#confirm-dialog {
+ border: 1px solid #b99156;
+ border-radius: 8px;
+ background: linear-gradient(#1b1025c9,#140c1ced), url("assets/ui-amethyst-cloth.webp") center / 465px auto;
+ box-shadow: inset 0 0 0 3px #291637, inset 0 0 0 4px #b9915680, 0 18px 65px #000b;
+}
+#confirm-title::before {
+ content: "";
+ display: block;
+ width: 10px;
+ height: 10px;
+ margin: 2px auto 14px;
+ transform: rotate(45deg);
+ border: 1px solid #dab57a;
+ background: linear-gradient(135deg,#bc79ed,#4e236e 60%,#321542);
+}
+@media (max-width: 700px) {
+ #setupdialog, #roomdialog {
+  --frame-block: 12px;
+  --frame-inline: 19px;
+ }
+}
+@media (max-height: 450px) {
+ #setupdialog, #roomdialog {
+  --frame-block: 9px;
+  --frame-inline: 14px;
+ }
+}

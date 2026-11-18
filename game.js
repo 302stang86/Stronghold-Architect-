@@ -193,32 +193,23 @@ function renderTrapOptions(target=$('selection')){
  target.append(panel);
 }
 
-function renderSelection(){$('manage-room').hidden=!selected;$('rotate').disabled=state.over||!selected||selected.type===17||state.gold<ROTATION_COST;$('selection').innerHTML='';if(selected){const t=TYPES[selected.type];const h=document.createElement('h2');h.textContent=t[0];$('selection').append(h);const p=document.createElement('p');p.textContent=t[5];$('selection').append(p);const rot=document.createElement('button');rot.textContent='Rotate · 10 gold ↻';rot.onclick=rotateSelected;rot.disabled=selected.type===17||state.over||state.gold<ROTATION_COST;$('selection').append(rot);if(selected.type===0){const move=document.createElement('button');move.textContent='Relocate throne · 50 gold + 25 stone';move.disabled=state.over;move.onclick=()=>{relocating=true;blueprint=null;render()};$('selection').append(move)}if(![0,17].includes(selected.type)){const del=document.createElement('button');del.textContent=selected.trap?'Remove trap before demolishing room':`Demolish · ${DEMOLISH_COST} gold`;del.disabled=state.over||!!selected.trap||state.gold<DEMOLISH_COST;del.onclick=demolish;$('selection').append(del)}}else $('selection').textContent='Select any placed tile to inspect its room name and details.';
+function renderSelection(){$('rotate').disabled=state.over||!selected||selected.type===17||state.gold<ROTATION_COST;$('selection').innerHTML='';if(selected){const t=TYPES[selected.type];const h=document.createElement('h2');h.textContent=t[0];$('selection').append(h);const p=document.createElement('p');p.textContent=t[5];$('selection').append(p);const rot=document.createElement('button');rot.textContent='Rotate · 10 gold ↻';rot.onclick=rotateSelected;rot.disabled=selected.type===17||state.over||state.gold<ROTATION_COST;$('selection').append(rot);if(selected.type===0){const move=document.createElement('button');move.textContent='Relocate throne · 50 gold + 25 stone';move.disabled=state.over;move.onclick=()=>{relocating=true;blueprint=null;render()};$('selection').append(move)}if(![0,17].includes(selected.type)){const del=document.createElement('button');del.textContent=selected.trap?'Remove trap before demolishing room':`Demolish · ${DEMOLISH_COST} gold`;del.disabled=state.over||!!selected.trap||state.gold<DEMOLISH_COST;del.onclick=demolish;$('selection').append(del)}}else $('selection').textContent='Select any placed tile to inspect its room name and details.';
 if(selected&&selected.type===16)renderTrapOptions();
 if(selected){renderRoomEconomy(selected,$('selection'));renderResourceUpgrade(selected,$('selection'));}
 }
 
 function syncRoomSelection(){const grid=$('grid');for(const b of grid.children){b.classList.remove('selected');const tag=b.querySelector('.tag');if(tag)tag.remove()}if(selected){const cell=grid.children[selected.y*FIELD_SIZE+selected.x];cell.classList.add('selected');const tag=document.createElement('span');tag.className='tag';tag.textContent=TYPES[selected.type][0];cell.append(tag)}}
-let viewingRoomManagement=false;
-function openRoomViewer(x,y,manage=false){const room=at(x,y);if(!room)return;viewingRoomManagement=manage;viewedRoom={x,y};selected=room;blueprint=null;renderSelection();syncRoomSelection();renderRoomViewer();if(!$('roomdialog').open)$('roomdialog').showModal()}
+function openRoomViewer(x,y){const room=at(x,y);if(!room)return;viewedRoom={x,y};selected=room;blueprint=null;renderSelection();syncRoomSelection();renderRoomViewer();if(!$('roomdialog').open)$('roomdialog').showModal()}
 function renderRoomViewer(){
  if(!viewedRoom)return;const room=at(viewedRoom.x,viewedRoom.y);if(!room){viewedRoom=null;if($('roomdialog').open)$('roomdialog').close();return}
- selected=room;$('room-title').textContent=TYPES[room.type][0];$('room-image').src=room.type===17?GATE_WIDE_ART:art(room.type);$('room-image').style.transform=room.type===17?'':`rotate(${room.rot*90}deg)`;$('room-image').parentElement.style.aspectRatio=room.type===17?'3/1':'';$('roomdialog').classList.toggle('wide',room.type===17&&viewingRoomManagement);$('roomdialog').classList.toggle('room-summary-only',!viewingRoomManagement);
+ selected=room;$('room-title').textContent=TYPES[room.type][0];$('room-image').src=room.type===17?GATE_WIDE_ART:art(room.type);$('room-image').style.transform=room.type===17?'':`rotate(${room.rot*90}deg)`;$('room-image').parentElement.style.aspectRatio=room.type===17?'3/1':'';$('roomdialog').classList.toggle('wide',room.type===17);
  $('room-overlay').innerHTML=room.trap?'<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'+TRAP_ART[room.trap]+'</svg>':'';$('room-overlay').className=room.trap?'trap-floor trap-'+room.trap:'trap-floor';
- $('room-description').textContent=TYPES[room.type][5];$('room-stats').hidden=!viewingRoomManagement;$('room-stats').textContent=`Location ${room.x+1}, ${room.y+1} · Rotation ${room.rot*90}°`+(room.trap?` · Trap damage ${fmt(trapStrength(room))}`:'');
+ $('room-description').textContent=TYPES[room.type][5];$('room-stats').hidden=false;$('room-stats').textContent=`Location ${room.x+1}, ${room.y+1} · Rotation ${room.rot*90}°`+(room.trap?` · Trap damage ${fmt(trapStrength(room))}`:'');
  const actions=$('room-actions');actions.replaceChildren();
  if([5,19].includes(room.type)){
   const blueprints=document.createElement('button');blueprints.textContent='Research blueprints';blueprints.onclick=()=>openResearchGallery(room.type);actions.append(blueprints);
  }
- if(!viewingRoomManagement){
-  stopCrowd();
-  if(room.type!==17){
-   const manage=document.createElement('button');manage.type='button';manage.textContent=room.type===16?'Manage room and traps':'Manage room';
-   manage.onclick=()=>{viewingRoomManagement=true;renderRoomViewer();$('room-actions').querySelector('button:not(:disabled)')?.focus({preventScroll:true})};
-   actions.append(manage);
-  }
-  return;
- }
+
  const tools=document.createElement('div');tools.className='room-tools';renderRoomEconomy(room,actions);renderResourceUpgrade(room,actions);if(room.type===16)renderTrapOptions(actions);else if([7,8].includes(room.type))renderPhaseRoom(room,actions);else if(room.type===9)renderArcaneLab(room,actions);else if(room.type!==11&&!canUpgradeRoom(room)){const p=document.createElement('p');p.className='muted';p.textContent='This room has no resource upgrades.';actions.append(p)}
  if(room.type===0){const p=document.createElement('p');p.className='room-role-note';p.textContent='The evil prince wanders only inside this throne room and automatically collects its gold and stone. He follows the throne when relocated. He eats 1 food per day.';actions.append(p);const move=document.createElement('button');move.textContent='Relocate throne · 50 gold + 25 stone';move.disabled=state.over;move.onclick=()=>{$('roomdialog').close();relocating=true;blueprint=null;render()};tools.append(move)}
  renderMC();if(room.type===17)startCrowd();else stopCrowd();
@@ -265,7 +256,6 @@ function setupFieldGestures(){
  const finish=(e,cancelled=false)=>{const p=pointers.get(e.pointerId);if(!p)return;clearTimeout(p.holdTimer);pointers.delete(e.pointerId);if(pointers.size<2)gesture=null;vp.classList.remove('is-map-dragging');try{vp.releasePointerCapture(e.pointerId)}catch{}if(cancelled||p.dragging||p.wasPinch){lastTap=null;suppressClickUntil=Date.now()+700;return}const cell=cellAt(e.clientX,e.clientY),key=cellKey(cell),now=Date.now(),short=now-p.time<240;if(p.second&&short){e.preventDefault();lastTap=null;suppressClickUntil=now+700;if(cell&&key===p.firstKey&&!relocating){const x=Number(cell.getAttribute('data-x')),y=Number(cell.getAttribute('data-y'));if(at(x,y))openRoomViewer(x,y)}return}lastTap={time:now,px:e.clientX,py:e.clientY,key};if(p.type==='touch'&&cell){e.preventDefault();suppressClickUntil=now+500;clickCell(Number(cell.getAttribute('data-x')),Number(cell.getAttribute('data-y')))}};
  vp.addEventListener('pointerup',e=>finish(e));vp.addEventListener('pointercancel',e=>finish(e,true));vp.addEventListener('lostpointercapture',e=>{if(pointers.has(e.pointerId))finish(e,true)});vp.addEventListener('dblclick',e=>{if(Date.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation()}},true);
 }
-$('manage-room').onclick=()=>{if(selected)openRoomViewer(selected.x,selected.y,true)};
 $('closepack').onclick=()=>$('packdialog').close();$('closeroom').onclick=()=>$('roomdialog').close();$('roomdialog').addEventListener('close',()=>{viewedRoom=null});setupFieldGestures();
 
 const speedButtons=Array.from($('game-speed').querySelectorAll('[data-speed]'));
