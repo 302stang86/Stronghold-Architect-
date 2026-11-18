@@ -1,0 +1,34 @@
+/* Phase 3 gold and amethyst button accents. The center slice is omitted. */
+:root{
+ --button-frame:url("assets/ui-button-frame.webp");
+ --button-gold:#d5ac6f;
+}
+:is(button,input[type=button],input[type=submit],input[type=reset]):not(:where(.cell,.castle-button,.exp-room-chest,.hand-card,.swatch,#world-map-toggle)){
+ border-image-width:var(--button-frame-width,7px)!important;
+ border-image-source:var(--button-frame)!important;
+ border-image-slice:13 15 13 15!important;
+ border-image-repeat:stretch!important;
+}
+:is(.menu-content button,.setup-actions button,button.primary,.dialog-buttons button){
+ --button-frame-width:9px;
+}
+:is(.game-topbar button,.game-footer button,.merchant-slot,.tile,.target,.map-close,.bs-tools button){
+ --button-frame-width:5px;
+}
+:is(button,input[type=button],input[type=submit],input[type=reset]):not(:where(.cell,.castle-button,.exp-room-chest,.hand-card,.swatch)):focus-visible{
+ outline:2px solid #ffe2a8;
+ outline-offset:2px;
+}
+:is(button,input[type=button],input[type=submit],input[type=reset]):not(:disabled,[aria-disabled=true]):not(:where(.cell,.castle-button,.exp-room-chest,.hand-card,.swatch,#world-map-toggle)):hover{
+ border-image-width:calc(var(--button-frame-width,7px) + 1px)!important;
+}
+:is(button,input[type=button],input[type=submit],input[type=reset]):is(:disabled,[aria-disabled=true]):not(:where(.cell,.castle-button,.exp-room-chest,.hand-card,.swatch,#world-map-toggle)){
+ border-image-source:linear-gradient(135deg,#806f5b,#544458)!important;
+ border-image-slice:1!important;
+ border-image-width:1px!important;
+}
+#world-map-toggle,.swatch{border-color:var(--button-gold)}
+#world-map-toggle{box-shadow:inset 0 0 0 2px #3f254d,0 0 0 1px #67486f,0 3px 12px #000b}
+@media(forced-colors:active){
+ button,input[type=button],input[type=submit],input[type=reset]{border-image:none!important}
+}
