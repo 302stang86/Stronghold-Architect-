@@ -47,31 +47,142 @@ function useItem(id){const it=ITEMS[id];if(!it||!state.pack.items.includes(id))r
 function healWeakest(id,pct){const exp=state.expedition;if(!exp||state.invasion.combat)return 'Use this between room battles.';const live=exp.party.filter(m=>m.hp>0&&m.hp<m.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];if(!live)return 'Everyone in the party is at full health.';live.hp=Math.min(live.maxHp,Math.round(live.hp+live.maxHp*pct));takeItem(id);exp.log.push(`${live.name} is treated with ${ITEMS[id].name}.`);save();render();if(window.renderExpedition)renderExpedition();return ''}
 /* Shows use buttons for the items that work right now. mode is 'battle' or 'march'. */
 function renderPackBar(el,mode){if(!el)return;const ctx=itemContext(),usable=[...new Set(state.pack.items)].filter(id=>{const u=ITEMS[id].use;if(mode==='battle')return ['heal','energy','strength','ironhide','regen'].includes(u);return ['heal','bandage','manual'].includes(u)});const sig=mode+'|'+ctx+'|'+usable.map(id=>id+'x'+state.pack.items.filter(x=>x===id).length).join(',');if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.replaceChildren();if(!usable.length){el.hidden=true;return}el.hidden=false;const h=document.createElement('span');h.textContent='Backpack:';el.append(h);for(const id of usable){const it=ITEMS[id],n=state.pack.items.filter(x=>x===id).length,b=document.createElement('button');b.type='button';b.textContent=`${it.icon} ${it.name}${n>1?' ×'+n:''}`;b.title=it.text;b.disabled=mode==='battle'&&ctx!=='battle';b.onclick=()=>{const r=useItem(id);if(r)toast(r);el.dataset.sig=''};el.append(b)}}
-let packSel=null;
+let packSel=null,packForSale=false;
 /* Open-backpack pictures. box is [left, top, width, height] of the picture in the source sheet; slots are [centreX, centreY, width, height] of each drawn pocket, in reading order. */
 const PACK_ART={
  1:{box:[80,50,360,480],slots:[[234,175,44,45],[287,175,44,45],[234,228,44,45],[287,228,44,45],[233,391,45,47],[288,391,45,47],[233,446,45,47],[288,446,45,47]]},
  2:{box:[490,30,390,520],slots:[340,395,451].flatMap(y=>[625,679,733].map(x=>[x,y,45,46]))},
  3:{box:[920,40,420,520],slots:[339,387,436,484].flatMap(y=>[1050,1093,1138,1181].map(x=>[x,y,38,40]))}
 };
-function renderPack(){const p=state.pack,spots=packSpots(),el=$('pack');if(el){const h=`<button id="pack-toggle" aria-label="Open backpack, ${p.items.length} of ${spots} spots used" title="Backpack level ${p.level}"><img src="assets/backpack-${p.level}.png" alt=""><span class="pack-count">${p.items.length}/${spots}</span></button>`;if(el.dataset.html!==h){el.dataset.html=h;el.innerHTML=h;$('pack-toggle').onclick=openPack}}
+function renderPack(){const p=state.pack,spots=packSpots(),el=$('pack');if(el){const h=`<button id="pack-toggle" aria-label="Open backpack, ${p.items.length} of ${spots} spots used" title="Backpack level ${p.level}"><img src="assets/backpack-${p.level}.png" alt=""><span class="pack-count">${p.items.length}/${spots}</span></button>`;if(el.dataset.html!==h){el.dataset.html=h;el.innerHTML=h;$('pack-toggle').onclick=()=>openPack()}}
  const d=$('packdialog');if(d&&d.open)renderPackDialog()}
-function openPack(){const d=$('packdialog');if(!d)return;if(document.querySelector('dialog[open]'))return;packSel=null;renderPackDialog();d.showModal()}
+function openPack(forSale=false){
+ const d=$('packdialog');
+ if(!d)return;
+ if(forSale?(!$('merchantdialog').open||merchantTab!=='sell'):!!document.querySelector('dialog[open]'))return;
+ packForSale=forSale;packSel=null;renderPackDialog();d.showModal();
+}
 function renderPackDialog(){const p=state.pack,spots=packSpots(),art=PACK_ART[p.level],[bx,by,bw,bh]=art.box,up=packUpgradeCost(),body=$('pack-body');
  let h=`<div class="pack-stage" style="aspect-ratio:${bw}/${bh}"><img src="assets/backpack-open-${p.level}.png" alt="Open level ${p.level} backpack">`;
  art.slots.forEach(([cx,cy,w,hh],i)=>{const st=`left:${(cx-w/2-bx)/bw*100}%;top:${(cy-hh/2-by)/bh*100}%;width:${w/bw*100}%;height:${hh/bh*100}%`;if(i>=spots)h+=`<span class="pslot sealed" style="${st}" title="Sealed pocket. Not part of this backpack's ${spots} spots."></span>`;else{const id=p.items[i];h+=id?`<button class="pslot full${packSel===i?' sel':''}" style="${st}" data-i="${i}" title="${ITEMS[id].name}">${ITEMS[id].icon}</button>`:`<span class="pslot" style="${st}"></span>`}});
  h+='</div><div class="pack-side">';
  const sid=packSel!==null?p.items[packSel]:null;
+ if(packForSale){h+='<h3>Sell backpack items</h3><p>Tap an item to add it to the sale list.</p></div>'}
+ else {
  if(sid){const it=ITEMS[sid];h+=`<h3>${it.icon} ${it.name}</h3><p>${it.text}</p><div class="pack-btns">${it.use!=='none'?'<button id="pack-use">Use</button>':''}<button id="pack-drop">Discard</button></div>`}else h+=`<h3>Level ${p.level} backpack</h3><p>${p.items.length} of ${spots} spots used. Tap an item to read it, use it or discard it.</p>`;
  h+='<div class="pack-levels">'+[1,2,3].map(n=>`<span class="${n===p.level?'cur':n<p.level?'done':'lock'}" title="Level ${n}: ${PACK_LEVELS[n].spots} spots"><img src="assets/backpack-${n}.png" alt="Level ${n}"><small>${PACK_LEVELS[n].spots} spots</small></span>`).join('')+'</div>';
  h+=up?`<button id="pack-up">Upgrade to ${up.spots} spots<br><small>${up.gold} gold · ${up.stone} stone</small></button>`:'<p class="muted">Fully upgraded.</p>';
  h+='</div>';
+ }
  if(body.dataset.html===h)return;body.dataset.html=h;body.innerHTML=h;
- body.querySelectorAll('.pslot.full').forEach(b=>b.onclick=()=>{packSel=packSel===+b.dataset.i?null:+b.dataset.i;renderPackDialog()});
+ body.querySelectorAll('.pslot.full').forEach(b=>b.onclick=()=>{if(packForSale){addItemToSale(p.items[+b.dataset.i]);return}packSel=packSel===+b.dataset.i?null:+b.dataset.i;renderPackDialog()});
  const u=$('pack-use');if(u)u.onclick=()=>{const r=useItem(state.pack.items[packSel]);if(r)toast(r);packSel=null;renderPackDialog()};
  const dr=$('pack-drop');if(dr)dr.onclick=()=>{state.pack.items.splice(packSel,1);packSel=null;save();render();renderPackDialog()};
  const g=$('pack-up');if(g){g.onclick=()=>{upgradePack();packSel=null;renderPackDialog()};g.disabled=state.gold<up.gold||state.stone<up.stone}}
 /* Merchant trade window. Stock is picked when the merchant arrives. */
 let merchantStock=[];
 function pickMerchantStock(){const ids=Object.keys(ITEMS).map(Number);for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]]}merchantStock=ids.slice(0,MERCHANT_STOCK_SIZE).sort((a,b)=>a-b)}
-function renderMerchantShop(){const t=$('merchant-text');t.replaceChildren();const gold=document.createElement('p');gold.textContent=`Your gold: ${Math.floor(state.gold)} · Backpack spots free: ${packFree()}`;t.append(gold);const list=document.createElement('div');list.className='shop-list';for(const id of merchantStock){const it=ITEMS[id],row=document.createElement('div'),info=document.createElement('span'),b=document.createElement('button');row.className='shop-row';info.innerHTML=`<b>${it.icon} ${it.name}</b><br><small>${it.text}</small>`;b.textContent=`${it.price}g`;b.disabled=state.gold<it.price||it.kind==='pack'&&packFree()<1;b.title=it.kind==='pack'&&packFree()<1?'Backpack is full':'';b.onclick=()=>{const r=buyItem(id);if(r)toast(r);renderMerchantShop()};row.append(info,b);list.append(row)}t.append(list)}
+const RESOURCE_SALE_RATES={gold:1,stone:.8,food:.8,rp:1};
+let merchantTab='buy',saleItems=new Map(),saleResources=new Map();
+function resetMerchantTrade(){
+ merchantTab='buy';
+ saleItems.clear();
+ saleResources.clear();
+}
+function tradeButton(label,action){
+ const button=document.createElement('button');
+ button.type='button';button.textContent=label;button.onclick=action;
+ return button;
+}
+function tradeQuantity(label,max,step,onConfirm){
+ const dialog=$('merchant-quantity'),input=$('trade-quantity');
+ $('trade-quantity-label').textContent=label+' · Available '+fmt(max);
+ input.min=String(step);input.max=String(max);input.step=String(step);
+ input.value=String(Math.min(1,max));
+ $('trade-quantity-cancel').onclick=()=>dialog.close();
+ $('trade-quantity-form').onsubmit=event=>{
+  event.preventDefault();
+  const value=input.valueAsNumber;
+  if(!input.checkValidity()||!Number.isFinite(value)||value<=0||value>max)return;
+  dialog.close();onConfirm(value);
+ };
+ dialog.showModal();input.focus();input.select();
+}
+function addItemToSale(id){
+ const owned=state.pack.items.filter(item=>item===id).length;
+ const remaining=owned-(saleItems.get(id)||0);
+ if(remaining<=0)return toast('All copies are already on the sale list.');
+ const add=amount=>{
+  saleItems.set(id,(saleItems.get(id)||0)+amount);
+  $('packdialog').close();
+  renderMerchantShop();
+ };
+ if(owned>1)tradeQuantity(ITEMS[id].name,remaining,1,add);
+ else add(1);
+}
+function itemSalePrice(id){return Number.isFinite(ITEMS[id]?.price)?ITEMS[id].price*.5:10}
+function totalSale(){
+ return roundResource([...saleItems].reduce((sum,[id,qty])=>sum+itemSalePrice(id)*qty,0)+
+  [...saleResources].reduce((sum,[key,qty])=>sum+RESOURCE_SALE_RATES[key]*qty,0));
+}
+function completeMerchantSale(){
+ if(!$('merchantdialog').open||merchantTab!=='sell'||state.over)return;
+ if([...saleItems].some(([id,qty])=>state.pack.items.filter(item=>item===id).length<qty)||
+  [...saleResources].some(([key,qty])=>state[key]<qty))return toast('Inventory changed. Adjust the sale and try again.');
+ const earned=totalSale();
+ if(earned<=0)return;
+ for(const [id,qty] of saleItems)for(let i=0;i<qty;i++)takeItem(id);
+ for(const [key,qty] of saleResources)state[key]=roundResource(state[key]-qty);
+ state.gold=roundResource(state.gold+earned);
+ saleItems.clear();saleResources.clear();
+ note('Merchant paid '+fmt(earned)+' gold.');
+ save();render();renderMerchantShop();
+}
+function renderMerchantSale(target){
+ const backpack=tradeButton('Open backpack to sell',()=>openPack(true));
+ backpack.disabled=!state.pack.items.length;
+ target.append(backpack);
+ const resources=document.createElement('div');resources.className='shop-list';
+ for(const [key,rate] of Object.entries(RESOURCE_SALE_RATES)){
+  const left=roundResource(state[key]-(saleResources.get(key)||0));
+  const row=document.createElement('div');row.className='shop-row';
+  const name=document.createElement('span');
+  name.textContent=RESOURCE_INFO[key].name+' · '+fmt(rate)+' gold each';
+  const add=tradeButton('Add',()=>tradeQuantity(RESOURCE_INFO[key].name,left,.000001,value=>{
+   saleResources.set(key,roundResource((saleResources.get(key)||0)+value));renderMerchantShop();
+  }));
+  add.disabled=left<=0;row.append(name,add);resources.append(row);
+ }
+ target.append(resources);
+ const heading=document.createElement('h3');heading.textContent='Sale list';target.append(heading);
+ for(const [cart,display] of [[saleItems,id=>ITEMS[id].name],[saleResources,key=>RESOURCE_INFO[key].name]]){
+  for(const [id,qty] of cart){
+   const row=document.createElement('div');row.className='shop-row';
+   const text=document.createElement('span');text.textContent=display(id)+' × '+fmt(qty);
+   row.append(text,tradeButton('Remove',()=>{cart.delete(id);renderMerchantShop()}));
+   target.append(row);
+  }
+ }
+ const total=totalSale(),confirm=tradeButton('Confirm Sale · '+fmt(total)+' gold',completeMerchantSale);
+ confirm.disabled=total<=0;confirm.className='primary';target.append(confirm);
+}
+function renderMerchantShop(){
+ const target=$('merchant-text');target.replaceChildren();
+ const tabs=document.createElement('div');tabs.className='merchant-tabs';tabs.setAttribute('aria-label','Trade mode');
+ for(const tab of ['buy','sell']){
+  const button=tradeButton(tab==='buy'?'Buy':'Sell',()=>{merchantTab=tab;renderMerchantShop()});
+  button.setAttribute('aria-pressed',String(merchantTab===tab));tabs.append(button);
+ }
+ target.append(tabs);
+ const gold=document.createElement('p');gold.textContent=`Your gold: ${fmt(state.gold)} · Backpack spots free: ${packFree()}`;target.append(gold);
+ if(merchantTab==='sell'){renderMerchantSale(target);return}
+ const list=document.createElement('div');list.className='shop-list';
+ for(const id of merchantStock){
+  const it=ITEMS[id],row=document.createElement('div'),info=document.createElement('span');
+  row.className='shop-row';info.innerHTML=`<b>${it.icon} ${it.name}</b><br><small>${it.text}</small>`;
+  const button=tradeButton(it.price+'g',()=>{const error=buyItem(id);if(error)toast(error);renderMerchantShop()});
+  button.disabled=state.gold<it.price||it.kind==='pack'&&packFree()<1;
+  row.append(info,button);list.append(row);
+ }
+ target.append(list);
+}
