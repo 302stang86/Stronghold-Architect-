@@ -93,7 +93,7 @@ function renderBuildPopup(){
 function buildAt(type,x,y,rot){if(state.invasion.active){toast('Finish the invasion before changing the castle layout.');return false}
  if(state.over||!inField(x,y)||at(x,y)||!unlocked(type)||[0,17].includes(type)||!Number.isInteger(rot)||rot<0||rot>3||!prereqsMet(type))return false;
  const nt={x,y,type,rot},t=TYPES[type];if(type===1&&state.tiles.some(r=>r.type===1)){toast('Only one Barracks can be built.');return false}if(!placement(nt))return false;if(state.gold<t[1]||state.stone<t[2])return false;
- state.gold-=t[1];state.stone-=t[2];state.tiles.push(nt);note(t[0]+' constructed.');gainXp('mc',10);buildTarget=null;blueprint=null;selected=null;if($('builddialog').open)$('builddialog').close();save();render();return true;
+ state.gold-=t[1];state.stone-=t[2];state.tiles.push(nt);StrongholdAudio.play('build');note(t[0]+' constructed.');gainXp('mc',10);buildTarget=null;blueprint=null;selected=null;if($('builddialog').open)$('builddialog').close();save();render();return true;
 }
 function rotationAllowed(tile,rot,tiles=state.tiles){
  const candidate={...tile,rot},layout=tiles.map(t=>t===tile?candidate:t);
@@ -237,6 +237,10 @@ for(const button of speedButtons)button.onclick=()=>{
 renderGameSpeed();
 
 function renderClock(){
+ const scene=awaitingResume?'menu':state.expedition?.mode==='dungeon'?'dungeon':
+  state.expedition?'expedition':$('mapdialog').open?'map':'keep';
+ StrongholdAudio.setScene(scene);
+
  const remaining=Math.max(0,DAY_MS-state.dayElapsedMs),seconds=Math.ceil(remaining/(1000*gameSpeed)),minutes=Math.floor(seconds/60);
  $('daytimer').textContent=state.over?'Clock stopped':`${String(minutes).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')} until Day ${state.day+1}`;
  $('dayclockfill').style.width=(state.dayElapsedMs/DAY_MS*100)+'%';$('chip-text').textContent=state.over?'The keep has fallen':`Day ${state.day} · ${String(minutes).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;$('chip-fill').style.width=(state.dayElapsedMs/DAY_MS*100)+'%';
@@ -283,7 +287,7 @@ function setMainMenu(visible){
  $('main-menu').hidden=!visible;
  document.body.classList.toggle('at-main-menu',visible);
  for(const panel of document.querySelectorAll('.game-topbar, body > main'))panel.inert=visible;
- if(visible){updateMainMenu();CitadelMenuScene.draw()}
+ if(visible){StrongholdAudio.setScene('menu');updateMainMenu();CitadelMenuScene.draw()}
 }
 function showMainMenu(){
  pauseForBackground();

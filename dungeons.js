@@ -127,9 +127,11 @@ function openDungeonChest(key){
  const layout=expCastle(),chest=layout?.chests?.[key];
  if(!chest||exp.openedChests?.includes(key)||(layout.defenders[key]&&!exp.cleared.includes(key)))return;
  if(chest.locked&&!takeItem(LOCKPICK_ID)){
+  window.StrongholdAudio?.play('locked');
   toast('A Lockpick Set is required. The merchant sells one for '+ITEMS[LOCKPICK_ID].price+' gold.');
   return;
  }
+ window.StrongholdAudio?.play(chest.locked?'unlock':'chest');
  (exp.openedChests??=[]).push(key);
  exp.loot.gold+=chest.gold;
  exp.log.push((chest.locked?'Unlocked the treasure chest and found ':'Opened the treasure chest and found ')+chest.gold+' gold.');

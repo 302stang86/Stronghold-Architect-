@@ -38,6 +38,7 @@ function checkScheduledInvasion(ms){
  if(state.over||r.active||r.combat||$('merchantdialog').open||invasionClock()<r.nextAt)return;
  if(r.alarmMs==null){
   r.alarmMs=ALARM_MS;
+  window.StrongholdAudio?.play('alarm');
   toast('Alarm! Intruders are approaching the castle gate.');
   shakeScreen();save();return;
  }
@@ -48,7 +49,7 @@ function planInvaderRoute(startKey){const throne=state.tiles.find(t=>t.type===0)
 function spawnInvader(){const r=state.invasion;if(state.over||state.day<2||r.active||r.combat)return false;const variant=Math.floor(Math.random()*(state.day<=3?2:INVADER_TYPES.length)),template=INVADER_TYPES[variant],entrance=state.tiles.find(t=>t.type===17);const level=Math.max(1,Math.min(MAX_LEVEL,state.prince.level+Math.floor(Math.random()*7)-3)),maxHp=hpForLevel(level);r.active={...template,maxHp,hp:maxHp,level,variant,room:roomKey(entrance),from:roomKey(entrance),target:null,travelMs:0,waitMs:1200,knocked:[],route:planInvaderRoute(roomKey(entrance))};r.merchantCredit=Math.min(3,(r.merchantCredit||0)+MERCHANT_RATIO);r.alarmMs=null;shakeScreen();for(const n of state.collectors)if(n.home===null)fleeToThrone(n);note(`${template.name} (level ${level}) entered the castle gate!`);toast(template.name+' has entered your stronghold!');save();render();return true}
 function chooseInvaderNext(inv){const throneKey=roomKey(state.tiles.find(t=>t.type===0));while(inv.route.length){const goal=inv.route[0];if(goal===inv.room){inv.route.shift();continue}const path=raidPath(inv.room,goal,goal!==throneKey);if(path&&path.length)return path[0];inv.route.shift()}return null}
 function enterInvaderRoom(){const inv=state.invasion.active,room=roomFromKey(inv.room);if(!room)return finishInvasion('escape','The invader withdrew.');if(inv.route[0]===inv.room)inv.route.shift();
- if(room.trap){const floor=Math.ceil(inv.maxHp*TRAP_FLOOR_RATIO),before=inv.hp,damage=Math.round(trapStrength(room));inv.hp=before>floor?Math.max(floor,before-damage):before;note(`${inv.name} triggered ${TRAPS[room.trap].name} and lost ${fmt(before-inv.hp)} health.`);fxAt(room,'flash','');if(before-inv.hp>0)fxAt(room,'fx-dmg','−'+fmt(before-inv.hp));else fxAt(room,'fx-dmg','Resisted')}
+ if(room.trap){window.StrongholdAudio?.play(room.trap);const floor=Math.ceil(inv.maxHp*TRAP_FLOOR_RATIO),before=inv.hp,damage=Math.round(trapStrength(room));inv.hp=before>floor?Math.max(floor,before-damage):before;note(`${inv.name} triggered ${TRAPS[room.trap].name} and lost ${fmt(before-inv.hp)} health.`);fxAt(room,'flash','');if(before-inv.hp>0)fxAt(room,'fx-dmg','−'+fmt(before-inv.hp));else fxAt(room,'fx-dmg','Resisted')}
  if(startRoomCombat(inv))return;
  save();refreshEconomyUI();
 }
@@ -144,6 +145,7 @@ function tickCombat(ms){const c=state.invasion.combat;if(!c)return;for(const k o
 function skipBattle(){const c=state.invasion.combat;if(!c||!c.auto||c.winner)return;let guard=0;while(!c.winner&&guard++<800){const actor=c[c.turn];if(c.noMoves){endCombatTurn();continue}const i=aiChoose(actor,c[c.turn==='ally'?'enemy':'ally']);if(i<0){endCombatTurn();continue}playCard(i)}if(!c.winner)c.winner=c.ally.hp/c.ally.maxHp>=c.enemy.hp/c.enemy.maxHp?'ally':'enemy';c.waitMs=0;resolveCombat()}
 function resolveCombat(){
  const c=state.invasion.combat,inv=state.invasion.active;
+ if(c?.winner)window.StrongholdAudio?.play(c.winner==='ally'?'victory':'defeat');
  if(c?.exp)return resolveExpeditionCombat(c);
  if(!c||!inv)return;
  const allies=c.allies||[Object.assign(c.ally,{id:c.defenderId,player:c.kind==='mc'})];

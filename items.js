@@ -31,7 +31,7 @@ function packUpgradeCost(){const n=PACK_LEVELS[state.pack.level+1];return n?{gol
 function upgradePack(){const c=packUpgradeCost();if(!c)return;if(state.over||state.gold<c.gold||state.stone<c.stone){toast(`The upgrade needs ${c.gold} gold and ${c.stone} stone.`);return}state.gold-=c.gold;state.stone-=c.stone;state.pack.level++;note(`Backpack upgraded to level ${state.pack.level}: ${c.spots} spots.`);toast(`Backpack level ${state.pack.level}: ${c.spots} spots`);save();render()}
 function addItem(id){if(packFree()<1)return false;state.pack.items.push(id);return true}
 function takeItem(id){const i=state.pack.items.indexOf(id);if(i<0)return false;state.pack.items.splice(i,1);return true}
-function buyItem(id){const it=ITEMS[id];if(!it||state.over)return 'Not available.';if(state.gold<it.price)return `You need ${it.price} gold.`;if(it.kind==='pack'&&packFree()<1)return 'Your backpack is full.';state.gold-=it.price;if(it.kind==='store'){for(const k in it.give)state[k]+=it.give[k];note(`Bought ${it.name} for ${it.price} gold.`)}else{addItem(id);note(`Bought ${it.name} for ${it.price} gold. It is in your backpack.`)}save();render();return ''}
+function buyItem(id){const it=ITEMS[id];if(!it||state.over)return 'Not available.';if(state.gold<it.price)return `You need ${it.price} gold.`;if(it.kind==='pack'&&packFree()<1)return 'Your backpack is full.';state.gold-=it.price;window.StrongholdAudio?.play('trade');if(it.kind==='store'){for(const k in it.give)state[k]+=it.give[k];note(`Bought ${it.name} for ${it.price} gold.`)}else{addItem(id);note(`Bought ${it.name} for ${it.price} gold. It is in your backpack.`)}save();render();return ''}
 /* Use rules. Returns an empty string when used, or the reason it could not be used. */
 function itemContext(){const c=state.invasion?.combat;if(c&&!c.exp&&c.kind==='mc'||c&&c.exp&&c.kind==='mc')return c.turn==='ally'&&!c.winner&&!c.noMoves&&!(c.lockMs>0)&&!c.auto?'battle':'wait';if(c)return 'wait';if(state.expedition)return 'march';return 'home'}
 function useItem(id){const it=ITEMS[id];if(!it||!state.pack.items.includes(id))return 'You do not have that.';const ctx=itemContext(),c=state.invasion?.combat;
@@ -137,6 +137,7 @@ function completeMerchantSale(){
  for(const [key,qty] of saleResources)state[key]=roundResource(state[key]-qty);
  state.gold=roundResource(state.gold+earned);
  saleItems.clear();saleResources.clear();
+ window.StrongholdAudio?.play('trade');
  note('Merchant paid '+fmt(earned)+' gold.');
  save();render();renderMerchantShop();
 }
