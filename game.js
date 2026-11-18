@@ -346,7 +346,7 @@ async function startNewStronghold(){
  if(!needsSetup&&!await askConfirm('Start a New Stronghold?',
   'Your current stronghold on this device'+(window.cloudSignedIn?.()?' and your cloud save':'')+
   ' will be replaced. This cannot be undone. Use Export save first if you want to keep it.',
-  'Hold to start new','Keep playing',true))return;
+  'Start New','Keep playing'))return;
  const ident=await openSetup({canCancel:true});
  if(!ident){if(awaitingResume)$('menu-new').focus();return}
  state=fresh();
