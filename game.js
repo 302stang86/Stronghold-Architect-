@@ -55,7 +55,7 @@ function placement(t,tiles=state.tiles){if(entranceBlocked(t.x,t.y,tiles))return
 function connected(tiles){const root=tiles.find(t=>t.type===0);if(!root)return false;const seen=new Set([root]),q=[root];while(q.length){const a=q.shift();DIRS.forEach(([dx,dy],d)=>{const b=at(a.x+dx,a.y+dy,tiles);if(b&&!seen.has(b)&&compatible(a,b,d)){seen.add(b);q.push(b)}})}return seen.size===tiles.length}
 function unlocked(i){return START_UNLOCKED.includes(i)||state.researched.includes(i)}
 function blueprintRoom(i){return [7,8,9].includes(i)?5:19}
-function research(i){if(state.over||unlocked(i)||!RESEARCH_COST[i])return;if(!state.tiles.some(t=>t.type===blueprintRoom(i)))return toast('Build a '+TYPES[blueprintRoom(i)][0]+' first.');if(state.rp<RESEARCH_COST[i])return toast('Not enough research points. Research Rooms add points as time passes.');state.rp-=RESEARCH_COST[i];state.researched.push(i);note(TYPES[i][0]+' blueprint researched.');gainXp('mc',15);save();render();toast(TYPES[i][0]+' unlocked!')}
+function research(i){if(state.over||unlocked(i)||!RESEARCH_COST[i])return;if(!state.tiles.some(t=>t.type===blueprintRoom(i)))return toast('Build a '+TYPES[blueprintRoom(i)][0]+' first.');if(state.rp<RESEARCH_COST[i])return toast('Not enough research points. Research Rooms add points as time passes.');state.rp-=RESEARCH_COST[i];state.researched.push(i);note(TYPES[i][0]+' blueprint researched.');gainXp('mc',15);save();render();renderResearchDialog();toast(TYPES[i][0]+' unlocked!')}
 // The ×3 setting gives gold-producing rooms a fourfold production rate.
 function goldProductionFactor(speed){return speed===3?4/3:1}
 function income(){const total={gold:0,stone:0,rp:0,food:0};for(const room of state.tiles)for(const [k,v]of Object.entries(roomRates(room)))total[k]+=v*(k==='gold'&&state.day<=3?2:k==='food'?1/gameSpeed:1)*(roomRates(room).gold>0?goldProductionFactor(gameSpeed):1);return total}
@@ -133,21 +133,26 @@ function openResearchGallery(roomType=19){
 function renderResearchList(list,roomType){
  list.replaceChildren();
  for(const [i,t] of TYPES.entries()){
+  const cost=RESEARCH_COST[i];
+  if(!cost||unlocked(i))continue;
   const row=document.createElement('div');row.className='research-row';
   const image=document.createElement('img');image.src=art(i);image.alt='';image.loading='lazy';
   const info=document.createElement('div'),name=document.createElement('strong'),status=document.createElement('p');
   name.textContent=t[0];
-  const cost=RESEARCH_COST[i],source=blueprintRoom(i);
-  status.textContent=cost?cost+' RP · '+(source!==roomType?TYPES[source][0]:researchStatus(i)):'Available from the start';
-  if(cost&&unlocked(i))status.textContent=cost+' RP · Unlocked';
+  const source=blueprintRoom(i);
+  status.textContent=cost+' RP · '+(source!==roomType?TYPES[source][0]:researchStatus(i));
   if(t[4].length)status.textContent+=' · Build requires '+prereqNames(i);
   info.append(name,status);row.append(image,info);
-  if(cost&&source===roomType&&!unlocked(i)){
+  if(source===roomType){
    const button=document.createElement('button');button.textContent='Unlock · '+cost+' RP';
    button.disabled=state.over||state.rp<cost||!state.tiles.some(room=>room.type===source);
    button.onclick=()=>research(i);row.append(button);
   }
   list.append(row);
+ }
+ if(!list.childElementCount){
+  const empty=document.createElement('p');empty.className='muted';
+  empty.textContent='All room blueprints are unlocked.';list.append(empty);
  }
 }
 function renderResearchDialog(){const dlg=$('researchdialog');if(!dlg||!dlg.open)return;$('research-summary').textContent=`${fmt(state.rp)} research points · +${fmt(income().rp)} per day. Research Rooms make the points. Unlocks are permanent.`;renderResearchList($('research-list'),researchSource)}
