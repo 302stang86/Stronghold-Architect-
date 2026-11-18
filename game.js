@@ -7,12 +7,12 @@ function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(set
 function motionOK(){return !settings.reduceMotion&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)}
 
 const START_UNLOCKED=[0,12,13,14,15,16,17,18,19], RESEARCH_COST={1:10,2:10,3:20,4:20,5:15,6:20,7:30,8:30,9:40,10:35,11:15};
-const FIELD_SIZE=24,DAY_MS=10*60*1000,ROTATION_COST=10,DEMOLISH_COST=50,START_FOOD=30;
+const FIELD_SIZE=24,DAY_MS=10*60*1000,DEMOLISH_COST=50,START_FOOD=30;
 let lastClockTick=Date.now(),lastClockSave=Date.now(),clockSuspended=true,awaitingResume=true;
 const BATCH_MS=60000,RESOURCE_KEYS=['gold','stone','food','rp'];
 const RESOURCE_INFO={gold:{name:'Gold',icon:'🪙'},stone:{name:'Stone',icon:'🪨'},food:{name:'Food',icon:'🍞'},rp:{name:'Research',icon:'🔬'}};
 let relocating=false,buildTarget=null,viewedRoom=null,suppressClickUntil=0,resourceIconSignature='';
-let state,blueprint=null,selected=null,rotation=0,size=innerWidth<620?144:168,toastTimer;
+let state,blueprint=null,selected=null,rotation=0,hallToPlace=null,size=innerWidth<620?144:168,toastTimer;
 function fresh(){
  const column=8+Math.floor(Math.random()*8),hallCount=1+Math.floor(Math.random()*2),emptyCount=1+Math.floor(Math.random()*2),tiles=[{x:column,y:FIELD_SIZE-1,type:17,rot:0}];
  let y=FIELD_SIZE-2;for(let i=0;i<hallCount;i++)tiles.push({x:column,y:y--,type:12,rot:0});for(let i=0;i<emptyCount;i++)tiles.push({x:column,y:y--,type:16,rot:0});tiles.push({x:column,y,type:0,rot:0});
@@ -68,7 +68,7 @@ function renderResources(){const need=foodNeed(),days=Math.floor(state.food/need
 function render(){renderIdentity();renderPack();
 const inc=income();renderResources();renderPrince();
 renderBuildPopup();
-renderResearch();$('rotate').disabled=!!state.invasion.active;$('rotate').title=state.invasion.active?'Locked during an invasion':'';
+renderResearch();
 $('grid').style.setProperty('--size',size+'px');$('grid').innerHTML='';for(let y=0;y<FIELD_SIZE;y++)for(let x=0;x<FIELD_SIZE;x++){
  const t=at(x,y),b=document.createElement('button');const valid=!state.over&&!state.invasion.active&&(relocating?canRelocate(x,y):!t&&hasBuildOption(x,y));
  const reserved=!t&&!state.over&&entranceBlocked(x,y);b.className='cell'+(t?' occupied':'')+(selected===t&&t?' selected':'')+(valid?' valid':'')+(reserved?' reserved':'')+(!t&&!valid&&!reserved?' blank':'');
@@ -81,43 +81,54 @@ $('day').textContent=state.over?'The keep has fallen':`Day ${state.day}`;$('fore
 $('hint').textContent=relocating?'Relocate throne · 50 gold + 25 stone · Choose a green + or an Empty Room':'Tap + to build · Drag to move the map · Pinch or Ctrl + scroll to zoom · Double-tap a room for details.';
 renderSelection();renderRoomViewer();renderCollectorRoster();renderRoster();renderServantDialog();renderWorldEconomy();renderCompanions();}
 function inField(x,y){return Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<FIELD_SIZE&&y<FIELD_SIZE}
-function hasBuildOption(x,y){if(!inField(x,y)||at(x,y)||entranceBlocked(x,y))return false;return TYPES.some((_,i)=>i!==0&&i!==17&&unlocked(i)&&!phaseRoomFull(i)&&[0,1,2,3].some(rot=>placement({x,y,type:i,rot})))}
-function clickCell(x,y){if(!inField(x,y))return;if(relocating){moveThrone(x,y);return}const t=at(x,y);if(t){selected=t;blueprint=null;renderSelection();syncRoomSelection();showTab('keep');openSheetOnPhone();return}if(state.over)return toast('This campaign has ended. Start a new keep.');if(!hasBuildOption(x,y))return;if(state.invasion.active)return toast('Invasion in progress: building is locked until it ends.');buildTarget={x,y};selected=null;blueprint=null;rotation=0;render();$('builddialog').showModal()}
+function isHallBlueprint(type){return type>=12&&type<=15}
+function hasBuildOption(x,y){if(!inField(x,y)||at(x,y)||entranceBlocked(x,y))return false;return TYPES.some((_,i)=>i!==0&&i!==17&&unlocked(i)&&!phaseRoomFull(i)&&(isHallBlueprint(i)?[0,1,2,3]:[0]).some(rot=>placement({x,y,type:i,rot})))}
+function clickCell(x,y){if(!inField(x,y))return;if(relocating){moveThrone(x,y);return}const t=at(x,y);if(t){selected=t;blueprint=null;renderSelection();syncRoomSelection();showTab('keep');openSheetOnPhone();return}if(state.over)return toast('This campaign has ended. Start a new keep.');if(!hasBuildOption(x,y))return;if(state.invasion.active)return toast('Invasion in progress: building is locked until it ends.');buildTarget={x,y};selected=null;blueprint=null;hallToPlace=null;rotation=0;render();$('builddialog').showModal()}
 function renderBuildPopup(){
- $('palette').replaceChildren();if(!buildTarget)return;
- $('build-location').textContent=`Build at ${buildTarget.x+1}, ${buildTarget.y+1} · Choose a blueprint below.`;
- const choices=[16,18,19,12,13,14,15,1,2,3,4,5,6,7,8,9,10,11].filter(i=>unlocked(i));
- $('unlock').textContent=choices.length+' unlocked blueprints';$('popuprotate').textContent=`Rotate previews · ${rotation*90}° ↻`;
- choices.forEach(i=>{const t=TYPES[i],fit=placement({...buildTarget,type:i,rot:rotation}),afford=state.gold>=t[1]&&state.stone>=t[2],prereq=prereqsMet(i),b=document.createElement('button');b.className='blueprint';b.disabled=state.over||!fit||!afford||!prereq||phaseRoomFull(i)||!!state.invasion.active;
- const im=document.createElement('img');im.src=art(i);im.alt='';im.style.transform=`rotate(${rotation*90}deg)`;
- const desc=document.createElement('div'),name=document.createElement('strong'),cost=document.createElement('span'),status=document.createElement('span');name.textContent=t[0];cost.textContent=`${t[1]} gold · ${t[2]} stone`;status.textContent=state.invasion.active?'Locked during an invasion':!prereq?'Requires '+prereqNames(i):!fit?'Rotate to match doorways':!afford?'Insufficient resources':'Build room';desc.append(name,cost,status);const thumb=document.createElement('div');thumb.className='thumb';thumb.append(im);if(i>=12&&i<=15)thumb.append(doorPips({type:i,rot:rotation}));b.append(thumb,desc);b.onclick=()=>buildAt(i,buildTarget.x,buildTarget.y,rotation);$('palette').append(b)
- })
+ const palette=$('palette');palette.replaceChildren();
+ const rotate=$('popuprotate'), back=$('back-to-blueprints');
+ const placingHall=hallToPlace!==null;
+ rotate.hidden=back.hidden=!placingHall;
+ rotate.disabled=!!state.invasion.active||state.over;
+ if(!buildTarget)return;
+ $('build-location').textContent=`Build at ${buildTarget.x+1}, ${buildTarget.y+1} · ${placingHall?'Set the hall orientation, then build.':'Choose a blueprint below.'}`;
+ const choices=placingHall?[hallToPlace]:[16,18,19,12,13,14,15,1,2,3,4,5,6,7,8,9,10,11].filter(i=>unlocked(i));
+ $('unlock').textContent=placingHall?TYPES[hallToPlace][0]:choices.length+' unlocked blueprints';
+ rotate.textContent=`Rotate hall · ${rotation*90}° ↻`;
+ for(const i of choices){
+  const t=TYPES[i],hall=isHallBlueprint(i),rot=placingHall?rotation:0;
+  const fit=hall&&!placingHall?[0,1,2,3].some(angle=>placement({...buildTarget,type:i,rot:angle})):placement({...buildTarget,type:i,rot});
+  const afford=state.gold>=t[1]&&state.stone>=t[2],prereq=prereqsMet(i),b=document.createElement('button');
+  b.className='blueprint';b.disabled=state.over||!fit||!afford||!prereq||phaseRoomFull(i)||!!state.invasion.active;
+  const im=document.createElement('img');im.src=art(i);im.alt='';im.style.transform=`rotate(${rot*90}deg)`;
+  const desc=document.createElement('div'),name=document.createElement('strong'),cost=document.createElement('span'),status=document.createElement('span');
+  name.textContent=t[0];cost.textContent=`${t[1]} gold · ${t[2]} stone`;
+  status.textContent=state.invasion.active?'Locked during an invasion':!prereq?'Requires '+prereqNames(i):!fit?(placingHall?'Rotate to match doorways':'No matching doorway'):!afford?'Insufficient resources':hall?(placingHall?'Build hall':'Choose hall orientation'):'Build room';
+  desc.append(name,cost,status);
+  const thumb=document.createElement('div');thumb.className='thumb';thumb.append(im);
+  if(hall)thumb.append(doorPips({type:i,rot}));
+  b.append(thumb,desc);
+  b.onclick=()=>{
+   if(b.disabled||!buildTarget)return;
+   if(hall&&!placingHall){hallToPlace=i;rotation=0;renderBuildPopup();rotate.focus();return}
+   buildAt(i,buildTarget.x,buildTarget.y,rot);
+  };
+  palette.append(b);
+ }
 }
 function buildAt(type,x,y,rot){if(state.invasion.active){toast('Finish the invasion before changing the castle layout.');return false}
- if(state.over||!inField(x,y)||at(x,y)||!unlocked(type)||[0,17].includes(type)||!Number.isInteger(rot)||rot<0||rot>3||!prereqsMet(type))return false;
+ if(state.over||!inField(x,y)||at(x,y)||!unlocked(type)||[0,17].includes(type)||!Number.isInteger(rot)||rot<0||rot>3||(!isHallBlueprint(type)&&rot!==0)||!prereqsMet(type))return false;
  if(phaseRoomFull(type)){toast('Build limit reached for '+TYPES[type][0]+'.');return false}
  const nt={x,y,type,rot},t=TYPES[type];if(type===1&&state.tiles.some(r=>r.type===1)){toast('Only one Barracks can be built.');return false}if(!placement(nt))return false;if(state.gold<t[1]||state.stone<t[2])return false;
- state.gold-=t[1];state.stone-=t[2];state.tiles.push(nt);StrongholdAudio.play('build');note(t[0]+' constructed.');gainXp('mc',10);buildTarget=null;blueprint=null;selected=null;if($('builddialog').open)$('builddialog').close();save();render();return true;
-}
-function rotationAllowed(tile,rot,tiles=state.tiles){
- const candidate={...tile,rot},layout=tiles.map(t=>t===tile?candidate:t);
- if(!connected(layout))return false;
- for(let d=0;d<4;d++){const neighbor=at(candidate.x+DIRS[d][0],candidate.y+DIRS[d][1],layout);if(neighbor&&blocksHallDoor(candidate,neighbor,d))return false}
- return true;
-}
-function rotateSelected(){if(state.invasion.active){toast('Finish the invasion before changing the castle layout.');return false}
- if(state.over||!selected)return false;if(selected.type===17){toast('The castle entrance orientation is fixed.');return false}
- const old=selected.rot;
- for(let step=1;step<4;step++){const next=(old+step)%4;if(rotationAllowed(selected,next)){if(state.gold<ROTATION_COST){toast('Rotation after placement costs 10 gold.');return false}state.gold-=ROTATION_COST;selected.rot=next;repathServants();note(`Room rotated to ${next*90}° for ${ROTATION_COST} gold.`);save();render();toast(`Rotated to ${next*90}° · 10 gold paid.`);return true}}
- toast('No other rotation fits without blocking a doorway or disconnecting the keep.');return false;
+ state.gold-=t[1];state.stone-=t[2];state.tiles.push(nt);StrongholdAudio.play('build');note(t[0]+' constructed.');gainXp('mc',10);buildTarget=null;hallToPlace=null;blueprint=null;selected=null;if($('builddialog').open)$('builddialog').close();save();render();return true;
 }
 function demolish(){if(state.invasion.active){toast('Finish the invasion before changing the castle layout.');return false}if(state.over||!selected||[0,17].includes(selected.type))return;if(selected.type===7&&ownedCompanions().length&&state.tiles.filter(t=>t.type===7&&t!==selected).every(t=>(t.level||1)<2))return toast('Keep a Level 2 or higher Monster Lair for your companions.');if(selected.type===6&&state.guards.some(u=>u.paladin&&u.chapel===roomKey(selected)))return toast('This Chapel still has a Paladin.');if(selected.trap)return toast('Demolish the installed trap at its listed cost before removing this room.');if(roomCollector(selected)){toast('Unassign the servant before demolishing this room.');return}if(state.gold<DEMOLISH_COST){toast(`Demolition costs ${DEMOLISH_COST} gold.`);return}if(Object.values(selected.stock||{}).some(v=>v>0)){toast('Collect this room’s ready resources before demolition.');return}const tiles=state.tiles.filter(t=>t!==selected);if(!connected(tiles))return toast('Removing this tile would disconnect your keep.');const name=TYPES[selected.type][0];state.gold-=DEMOLISH_COST;state.tiles=tiles;selected=null;repathServants();note(`${name} demolished for ${DEMOLISH_COST} gold.`);save();render()}
 function completeDay(){if(state.over)return;const need=foodNeed();if(state.food>=need){state.food=roundResource(state.food-need);if(state.hungryDays>0)note('The keep is fed again. Hunger penalties are lifted.');state.hungryDays=0}else{state.food=0;state.hungryDays++;applyHunger()}if(!state.over){if(state.world){const tr={};WorldGen.dayTick(state.world,{day:state.day,cap:state.prince.level+3,tribute:(k,v)=>{tr[k]=(tr[k]||0)+v;state[k]=roundResource(state[k]+v)},notify:(t,imp)=>{note(t);if(imp)toast(t)}});const parts=Object.keys(tr).filter(k=>tr[k]>=.5).map(k=>Math.round(tr[k])+' '+RESOURCE_INFO[k].name.toLowerCase());if(parts.length)note('Your outposts sent tribute: '+parts.join(', ')+'.');if(window.checkConquest)checkConquest()}state.day++;note('A new day begins.');foodWarning();if(window.cloudPushSoon)cloudPushSoon();if(state.day%5===0)toast(`Day ${state.day} reached. Open Settings to export a backup copy of your save.`)}save();render()}
 function applyHunger(){const d=state.hungryDays;if(d===1)note('Hunger: servants fight 30% weaker until the keep is fed.');if(d===2)note('Hunger: the prince fights 25% weaker until the keep is fed.');if(d>=3&&state.collectors.length){const dying=state.collectors.reduce((a,b)=>b.id>a.id?b:a);state.collectors=state.collectors.filter(n=>n!==dying);if(state.invasion.active)state.invasion.active.knocked=state.invasion.active.knocked.filter(id=>id!==dying.id);note(`${dying.name} starved to death. Hire a replacement.`);toast(`${dying.name} starved to death.`)}if(d===5)note('The prince is starving: he has 20% less health in battle.');if(d>=7){state.over=true;state.invasion.active=null;state.invasion.combat=null;const modal=$('battle-dialog');if(modal?.open)modal.close();note('The prince starved. The keep has fallen.')}}
 function foodWarning(){if(state.hungryDays>0)return;const days=Math.floor(state.food/foodNeed());if(days===0){note('Warning: not enough food for tomorrow.');toast('Not enough food for tomorrow. Hunger starts at day end.')}else if(days===1){note('Warning: food lasts only one more day.');toast('Food lasts only one more day.')}}
 
-$('rotate').onclick=()=>{if(selected)rotateSelected();else toast('Select a placed tile to rotate it. Rotate new tiles in the build popup.');};$('deselect').onclick=()=>{selected=null;blueprint=null;relocating=false;render()};$('zoomin').onclick=()=>changeZoom(10);$('zoomout').onclick=()=>changeZoom(-10);$('reset').onclick=startNewStronghold;$('closeroster').onclick=()=>$('rosterdialog').close();$('closeservant').onclick=()=>$('servantdialog').close();$('closehelp').onclick=()=>$('helpdialog').close();$('export').onclick=()=>{const u=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='stronghold-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};$('import').onclick=()=>$('importfile').click();$('importfile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const next=validate(JSON.parse(await file.text()));if(await askConfirm('Replace your campaign?','Your current campaign will be replaced with this save.','Replace','Cancel')){state=next;needsSetup=false;updateMainMenu();resetDayClock();selected=null;blueprint=null;relocating=false;buildTarget=null;save();render();scheduleThroneCenter();toast('Campaign restored.')}}catch{toast('That file is not a valid Stronghold save.')}e.target.value=''};$('popuprotate').onclick=()=>{rotation=(rotation+1)%4;renderBuildPopup()};$('closebuild').onclick=()=>$('builddialog').close();$('builddialog').addEventListener('close',()=>{buildTarget=null;rotation=0});$('builddialog').addEventListener('cancel',()=>{buildTarget=null;rotation=0});$('center').onclick=centerThrone;
-document.addEventListener('keydown',e=>{if(awaitingResume||state.expedition)return;if(e.key.toLowerCase()==='r'&&!$('helpdialog').open&&!$('roomdialog').open&&!$('rosterdialog').open&&!$('servantdialog').open&&!$('confirm-dialog').open&&!$('settingsdialog').open&&!$('researchdialog').open&&!$('keepdialog').open&&!$('princedialog').open){if($('builddialog').open)$('popuprotate').click();else $('rotate').click()}if(e.key==='Escape'&&!$('builddialog').open&&!$('roomdialog').open&&!$('rosterdialog').open&&!$('servantdialog').open&&!$('confirm-dialog').open&&!$('settingsdialog').open&&!$('researchdialog').open&&!$('keepdialog').open&&!$('princedialog').open)$('deselect').click()});render();scheduleThroneCenter();
+$('deselect').onclick=()=>{selected=null;blueprint=null;relocating=false;render()};$('zoomin').onclick=()=>changeZoom(10);$('zoomout').onclick=()=>changeZoom(-10);$('reset').onclick=startNewStronghold;$('closeroster').onclick=()=>$('rosterdialog').close();$('closeservant').onclick=()=>$('servantdialog').close();$('closehelp').onclick=()=>$('helpdialog').close();$('export').onclick=()=>{const u=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='stronghold-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};$('import').onclick=()=>$('importfile').click();$('importfile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const next=validate(JSON.parse(await file.text()));if(await askConfirm('Replace your campaign?','Your current campaign will be replaced with this save.','Replace','Cancel')){state=next;needsSetup=false;updateMainMenu();resetDayClock();selected=null;blueprint=null;relocating=false;buildTarget=null;save();render();scheduleThroneCenter();toast('Campaign restored.')}}catch{toast('That file is not a valid Stronghold save.')}e.target.value=''};$('popuprotate').onclick=()=>{if(!$('builddialog').open||!buildTarget||hallToPlace===null||state.over||state.invasion.active)return;rotation=(rotation+1)%4;renderBuildPopup()};$('back-to-blueprints').onclick=()=>{hallToPlace=null;rotation=0;renderBuildPopup()};$('closebuild').onclick=()=>$('builddialog').close();$('builddialog').addEventListener('close',()=>{buildTarget=null;hallToPlace=null;rotation=0});$('builddialog').addEventListener('cancel',()=>{buildTarget=null;hallToPlace=null;rotation=0});$('center').onclick=centerThrone;
+document.addEventListener('keydown',e=>{if(awaitingResume||state.expedition)return;if(e.key.toLowerCase()==='r'&&!$('helpdialog').open&&!$('roomdialog').open&&!$('rosterdialog').open&&!$('servantdialog').open&&!$('confirm-dialog').open&&!$('settingsdialog').open&&!$('researchdialog').open&&!$('keepdialog').open&&!$('princedialog').open){if($('builddialog').open&&hallToPlace!==null)$('popuprotate').click()}if(e.key==='Escape'&&!$('builddialog').open&&!$('roomdialog').open&&!$('rosterdialog').open&&!$('servantdialog').open&&!$('confirm-dialog').open&&!$('settingsdialog').open&&!$('researchdialog').open&&!$('keepdialog').open&&!$('princedialog').open)$('deselect').click()});render();scheduleThroneCenter();
 
 function relocationTiles(x,y){const throne=state.tiles.find(t=>t.type===0);return state.tiles.filter(t=>t.x!==x||t.y!==y).map(t=>t===throne?{...t,type:16}:t).concat({x,y,type:0,rot:throne.rot,level:throne.level||1})}
 function canRelocate(x,y){if(state.invasion.active)return false;const dest=at(x,y);if(!inField(x,y)||entranceBlocked(x,y)||dest&&(dest.type!==16||dest.trap)||false)return false;const tiles=relocationTiles(x,y);if(!connected(tiles))return false;for(const a of tiles)for(let d=0;d<4;d++){const b=at(a.x+DIRS[d][0],a.y+DIRS[d][1],tiles);if(b&&blocksHallDoor(a,b,d))return false}return true}
@@ -198,7 +209,7 @@ function renderTrapOptions(target=$('selection')){
  target.append(panel);
 }
 
-function renderSelection(){$('rotate').disabled=state.over||!selected||selected.type===17||state.gold<ROTATION_COST;$('selection').innerHTML='';if(selected){const t=TYPES[selected.type];const h=document.createElement('h2');h.textContent=t[0];$('selection').append(h);const p=document.createElement('p');p.textContent=t[5];$('selection').append(p);const rot=document.createElement('button');rot.textContent='Rotate · 10 gold ↻';rot.onclick=rotateSelected;rot.disabled=selected.type===17||state.over||state.gold<ROTATION_COST;$('selection').append(rot);if(selected.type===0){const move=document.createElement('button');move.textContent='Relocate throne · 50 gold + 25 stone';move.disabled=state.over;move.onclick=()=>{relocating=true;blueprint=null;render()};$('selection').append(move)}if(![0,17].includes(selected.type)){const del=document.createElement('button');del.textContent=selected.trap?'Remove trap before demolishing room':`Demolish · ${DEMOLISH_COST} gold`;del.disabled=state.over||!!selected.trap||state.gold<DEMOLISH_COST;del.onclick=demolish;$('selection').append(del)}}else $('selection').textContent='Select any placed tile to inspect its room name and details.';
+function renderSelection(){$('selection').innerHTML='';if(selected){const t=TYPES[selected.type];const h=document.createElement('h2');h.textContent=t[0];$('selection').append(h);const p=document.createElement('p');p.textContent=t[5];$('selection').append(p);if(selected.type===0){const move=document.createElement('button');move.textContent='Relocate throne · 50 gold + 25 stone';move.disabled=state.over;move.onclick=()=>{relocating=true;blueprint=null;render()};$('selection').append(move)}if(![0,17].includes(selected.type)){const del=document.createElement('button');del.textContent=selected.trap?'Remove trap before demolishing room':`Demolish · ${DEMOLISH_COST} gold`;del.disabled=state.over||!!selected.trap||state.gold<DEMOLISH_COST;del.onclick=demolish;$('selection').append(del)}}else $('selection').textContent='Select any placed tile to inspect its room name and details.';
 if(selected&&selected.type===16)renderTrapOptions();
 if(selected){renderRoomEconomy(selected,$('selection'));renderResourceUpgrade(selected,$('selection'));}
 }
@@ -221,7 +232,6 @@ function renderRoomViewer(){
  if(room.type===0){const sv=document.createElement('button');const assigned=state.collectors.filter(n=>n.home!==null).length;sv.textContent=`Manage servants · ${state.collectors.length} of ${servantCap()} · ${assigned} assigned`;sv.onclick=openRoster;tools.append(sv)}
 
  if([1,6].includes(room.type)&&window.renderBarracks)renderBarracks(actions,room);
- const rotate=document.createElement('button');rotate.textContent='Rotate room · 10 gold ↻';rotate.disabled=state.over||room.type===17||state.gold<ROTATION_COST||!!state.invasion.active;if(state.invasion.active){rotate.textContent='Rotate locked during invasion';rotate.title='Finish the invasion first'}rotate.onclick=()=>{selected=room;rotateSelected()};tools.append(rotate);
  if(![0,17].includes(room.type)){const del=document.createElement('button');del.textContent=room.trap?'Remove trap before demolishing room':`Demolish room · ${DEMOLISH_COST} gold`;del.disabled=state.over||!!room.trap||state.gold<DEMOLISH_COST||!!state.invasion.active;if(state.invasion.active){del.textContent='Demolish locked during invasion';del.title='Finish the invasion first'}del.onclick=()=>{selected=room;demolish()};tools.append(del)}actions.append(tools);
 }
 
@@ -428,7 +438,7 @@ $('settings').onclick=()=>{$('opt-motion').checked=!!settings.reduceMotion;$('se
 $('menu-restore').onclick=$('settings').onclick;
 $('closesettings').onclick=()=>$('settingsdialog').close();$('closeresearch').onclick=()=>$('researchdialog').close();
 $('opt-motion').onchange=e=>{settings.reduceMotion=e.target.checked;saveSettings()};
-const GLOSSARY={Gold:'Gold pays for building, upgrading, rotating and demolishing rooms. Gold Mines and the throne room make it.',Stone:'Stone is the building material for rooms, upgrades and moving the throne.',Food:'Food: the prince and each servant eat 1 per day. Without it fighters weaken, then starve.',Research:'Research points come from Research Rooms and unlock new room blueprints.'};
+const GLOSSARY={Gold:'Gold pays for building, upgrading and demolishing rooms. Gold Mines and the throne room make it.',Stone:'Stone is the building material for rooms, upgrades and moving the throne.',Food:'Food: the prince and each servant eat 1 per day. Without it fighters weaken, then starve.',Research:'Research points come from Research Rooms and unlock new room blueprints.'};
 $('resources').onclick=e=>{const d=e.target.closest('#resources>div');if(!d)return;toast(GLOSSARY[d.querySelector('span').textContent]||'')};
 showTab('keep');renderAlarm();
 
