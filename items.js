@@ -48,19 +48,29 @@ function healWeakest(id,pct){const exp=state.expedition;if(!exp||state.invasion.
 /* Shows use buttons for the items that work right now. mode is 'battle' or 'march'. */
 function renderPackBar(el,mode){if(!el)return;const ctx=itemContext(),usable=[...new Set(state.pack.items)].filter(id=>{const u=ITEMS[id].use;if(mode==='battle')return ['heal','energy','strength','ironhide','regen'].includes(u);return ['heal','bandage','manual'].includes(u)});const sig=mode+'|'+ctx+'|'+usable.map(id=>id+'x'+state.pack.items.filter(x=>x===id).length).join(',');if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.replaceChildren();if(!usable.length){el.hidden=true;return}el.hidden=false;const h=document.createElement('span');h.textContent='Backpack:';el.append(h);for(const id of usable){const it=ITEMS[id],n=state.pack.items.filter(x=>x===id).length,b=document.createElement('button');b.type='button';b.textContent=`${it.icon} ${it.name}${n>1?' ×'+n:''}`;b.title=it.text;b.disabled=mode==='battle'&&ctx!=='battle';b.onclick=()=>{const r=useItem(id);if(r)toast(r);el.dataset.sig=''};el.append(b)}}
 let packSel=null;
-function renderPack(){const el=$('pack');if(!el)return;const p=state.pack,spots=packSpots(),open=p.open,up=packUpgradeCost();
- let h=`<button id="pack-toggle" aria-expanded="${open}" aria-label="Backpack, ${p.items.length} of ${spots} spots used" title="Backpack level ${p.level}"><img src="assets/backpack-${p.level}.png" alt=""><span class="pack-count">${p.items.length}/${spots}</span></button>`;
- if(open){h+='<div class="pack-body"><div class="pack-grid">';for(let i=0;i<spots;i++){const id=p.items[i];h+=id?`<button class="pack-slot full${packSel===i?' sel':''}" data-i="${i}" title="${ITEMS[id].name}">${ITEMS[id].icon}</button>`:'<span class="pack-slot"></span>'}h+='</div>';
-  const sid=packSel!==null?p.items[packSel]:null;if(sid){const it=ITEMS[sid];h+=`<p class="pack-info"><b>${it.name}</b><br>${it.text}</p><div class="pack-btns">${it.use!=='none'?'<button id="pack-use">Use</button>':''}<button id="pack-drop">Discard</button></div>`}else h+='<p class="pack-info">Tap an item to see what it does.</p>';
-  h+='<div class="pack-levels">'+[1,2,3].map(n=>`<span class="${n===p.level?'cur':n<p.level?'done':'lock'}" title="Level ${n}: ${PACK_LEVELS[n].spots} spots"><img src="assets/backpack-${n}.png" alt="Level ${n}"><small>${PACK_LEVELS[n].spots}</small></span>`).join('')+'</div>';h+=`<p class="pack-info">Level ${p.level} of 3 · ${spots} spots</p>`;
-  h+=up?`<button id="pack-up">Upgrade to ${up.spots} spots · ${up.gold}g ${up.stone}s</button>`:'<p class="pack-info">Fully upgraded.</p>';h+='</div>'}
- if(el.dataset.html!==h){el.dataset.html=h;el.innerHTML=h;
-  $('pack-toggle').onclick=()=>{state.pack.open=!state.pack.open;save();renderPack()};
-  el.querySelectorAll('.pack-slot.full').forEach(b=>b.onclick=()=>{packSel=packSel===+b.dataset.i?null:+b.dataset.i;el.dataset.html='';renderPack()});
-  const u=$('pack-use');if(u)u.onclick=()=>{const r=useItem(state.pack.items[packSel]);if(r)toast(r);packSel=null;el.dataset.html='';renderPack()};
-  const d=$('pack-drop');if(d)d.onclick=()=>{state.pack.items.splice(packSel,1);packSel=null;save();el.dataset.html='';render()};
-  const g=$('pack-up');if(g){g.onclick=upgradePack;g.disabled=state.gold<up.gold||state.stone<up.stone}}
- else{const g=$('pack-up');if(g)g.disabled=state.gold<up.gold||state.stone<up.stone}}
+/* Open-backpack pictures. box is [left, top, width, height] of the picture in the source sheet; slots are [centreX, centreY, width, height] of each drawn pocket, in reading order. */
+const PACK_ART={
+ 1:{box:[80,50,360,480],slots:[[234,175,44,45],[287,175,44,45],[234,228,44,45],[287,228,44,45],[233,391,45,47],[288,391,45,47],[233,446,45,47],[288,446,45,47]]},
+ 2:{box:[490,30,390,520],slots:[340,395,451].flatMap(y=>[625,679,733].map(x=>[x,y,45,46]))},
+ 3:{box:[920,40,420,520],slots:[339,387,436,484].flatMap(y=>[1050,1093,1138,1181].map(x=>[x,y,38,40]))}
+};
+function renderPack(){const p=state.pack,spots=packSpots(),el=$('pack');if(el){const h=`<button id="pack-toggle" aria-label="Open backpack, ${p.items.length} of ${spots} spots used" title="Backpack level ${p.level}"><img src="assets/backpack-${p.level}.png" alt=""><span class="pack-count">${p.items.length}/${spots}</span></button>`;if(el.dataset.html!==h){el.dataset.html=h;el.innerHTML=h;$('pack-toggle').onclick=openPack}}
+ const d=$('packdialog');if(d&&d.open)renderPackDialog()}
+function openPack(){const d=$('packdialog');if(!d)return;if(document.querySelector('dialog[open]'))return;packSel=null;renderPackDialog();d.showModal()}
+function renderPackDialog(){const p=state.pack,spots=packSpots(),art=PACK_ART[p.level],[bx,by,bw,bh]=art.box,up=packUpgradeCost(),body=$('pack-body');
+ let h=`<div class="pack-stage" style="aspect-ratio:${bw}/${bh}"><img src="assets/backpack-open-${p.level}.png" alt="Open level ${p.level} backpack">`;
+ art.slots.forEach(([cx,cy,w,hh],i)=>{const st=`left:${(cx-w/2-bx)/bw*100}%;top:${(cy-hh/2-by)/bh*100}%;width:${w/bw*100}%;height:${hh/bh*100}%`;if(i>=spots)h+=`<span class="pslot sealed" style="${st}" title="Sealed pocket. Not part of this backpack's ${spots} spots."></span>`;else{const id=p.items[i];h+=id?`<button class="pslot full${packSel===i?' sel':''}" style="${st}" data-i="${i}" title="${ITEMS[id].name}">${ITEMS[id].icon}</button>`:`<span class="pslot" style="${st}"></span>`}});
+ h+='</div><div class="pack-side">';
+ const sid=packSel!==null?p.items[packSel]:null;
+ if(sid){const it=ITEMS[sid];h+=`<h3>${it.icon} ${it.name}</h3><p>${it.text}</p><div class="pack-btns">${it.use!=='none'?'<button id="pack-use">Use</button>':''}<button id="pack-drop">Discard</button></div>`}else h+=`<h3>Level ${p.level} backpack</h3><p>${p.items.length} of ${spots} spots used. Tap an item to read it, use it or discard it.</p>`;
+ h+='<div class="pack-levels">'+[1,2,3].map(n=>`<span class="${n===p.level?'cur':n<p.level?'done':'lock'}" title="Level ${n}: ${PACK_LEVELS[n].spots} spots"><img src="assets/backpack-${n}.png" alt="Level ${n}"><small>${PACK_LEVELS[n].spots} spots</small></span>`).join('')+'</div>';
+ h+=up?`<button id="pack-up">Upgrade to ${up.spots} spots<br><small>${up.gold} gold · ${up.stone} stone</small></button>`:'<p class="muted">Fully upgraded.</p>';
+ h+='</div>';
+ if(body.dataset.html===h)return;body.dataset.html=h;body.innerHTML=h;
+ body.querySelectorAll('.pslot.full').forEach(b=>b.onclick=()=>{packSel=packSel===+b.dataset.i?null:+b.dataset.i;renderPackDialog()});
+ const u=$('pack-use');if(u)u.onclick=()=>{const r=useItem(state.pack.items[packSel]);if(r)toast(r);packSel=null;renderPackDialog()};
+ const dr=$('pack-drop');if(dr)dr.onclick=()=>{state.pack.items.splice(packSel,1);packSel=null;save();render();renderPackDialog()};
+ const g=$('pack-up');if(g){g.onclick=()=>{upgradePack();packSel=null;renderPackDialog()};g.disabled=state.gold<up.gold||state.stone<up.stone}}
 /* Merchant trade window. Stock is picked when the merchant arrives. */
 let merchantStock=[];
 function pickMerchantStock(){const ids=Object.keys(ITEMS).map(Number);for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]]}merchantStock=ids.slice(0,MERCHANT_STOCK_SIZE).sort((a,b)=>a-b)}

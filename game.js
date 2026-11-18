@@ -218,7 +218,7 @@ function setupFieldGestures(){
  const finish=(e,cancelled=false)=>{const p=pointers.get(e.pointerId);if(!p)return;clearTimeout(p.holdTimer);pointers.delete(e.pointerId);if(pointers.size<2)gesture=null;vp.classList.remove('is-map-dragging');try{vp.releasePointerCapture(e.pointerId)}catch{}if(cancelled||p.dragging||p.wasPinch){lastTap=null;suppressClickUntil=Date.now()+700;return}const cell=cellAt(e.clientX,e.clientY),key=cellKey(cell),now=Date.now(),short=now-p.time<240;if(p.second&&short){e.preventDefault();lastTap=null;suppressClickUntil=now+700;if(cell&&key===p.firstKey&&!relocating){const x=Number(cell.getAttribute('data-x')),y=Number(cell.getAttribute('data-y'));if(at(x,y))openRoomViewer(x,y)}return}lastTap={time:now,px:e.clientX,py:e.clientY,key};if(p.type==='touch'&&cell){e.preventDefault();suppressClickUntil=now+500;clickCell(Number(cell.getAttribute('data-x')),Number(cell.getAttribute('data-y')))}};
  vp.addEventListener('pointerup',e=>finish(e));vp.addEventListener('pointercancel',e=>finish(e,true));vp.addEventListener('lostpointercapture',e=>{if(pointers.has(e.pointerId))finish(e,true)});vp.addEventListener('dblclick',e=>{if(Date.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation()}},true);
 }
-$('closeroom').onclick=()=>$('roomdialog').close();$('roomdialog').addEventListener('close',()=>{viewedRoom=null});setupFieldGestures();
+$('closepack').onclick=()=>$('packdialog').close();$('closeroom').onclick=()=>$('roomdialog').close();$('roomdialog').addEventListener('close',()=>{viewedRoom=null});setupFieldGestures();
 
 function renderClock(){
  const remaining=Math.max(0,DAY_MS-state.dayElapsedMs),seconds=Math.ceil(remaining/1000),minutes=Math.floor(seconds/60);
