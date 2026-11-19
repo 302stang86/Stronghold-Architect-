@@ -115,8 +115,7 @@ function expReason(mode,id){
  if(mode==='dungeon'){
   const dungeon=dungeonMapInfo().find(d=>d.id===id);
   if(!dungeon)return 'That dungeon is not part of this campaign.';
-  return dungeon.blocked||(dungeon.remaining>0?'The Boss Vault is still sealed.':'')||
-   (state.guards.length?'':'A dungeon needs your prince and one guard. Hire a guard at your Barracks.');
+  return dungeon.blocked||(dungeon.remaining>0?'The Boss Vault is still sealed.':'');
  }
  const c=castleById(id);if(!state.world||!c)return'That stronghold is not part of this game.';
  if(c.ownerId==='player')return'This stronghold already belongs to you.';if(state.over)return'Your keep has fallen.';if(state.expedition)return'An expedition is already under way.';
