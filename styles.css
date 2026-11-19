@@ -505,8 +505,8 @@ main{grid-template-columns:minmax(0,1fr)!important}
 #menu-title{
  width:100%;margin:0 0 .4em;color:#f4d68e;
  font-family:Georgia,"Times New Roman",serif;
- font-size:clamp(1.5rem,5vw,2.9rem);
- font-size:clamp(1.5rem,12.5cqi,3.15rem);
+ font-size:clamp(1.75rem,7vw,4.75rem);
+ font-size:min(17.25cqi,4.75rem);
  font-weight:500;line-height:1;letter-spacing:-.04em;
 }
 .menu-title-line{display:flex;align-items:center;gap:.065em}
@@ -524,7 +524,7 @@ main{grid-template-columns:minmax(0,1fr)!important}
  }
 }
 #menu-campaign{font-size:14px;color:#e8d0ae;margin:16px 0 0}
-.menu-content nav{display:grid;gap:8px;margin-top:28px;width:min(100%,310px)}
+.menu-content nav{display:grid;gap:8px;margin-top:28px;width:100%}
 .menu-content button{min-height:46px;padding:10px 16px;text-align:left;font-weight:650}
 .menu-content button:disabled{opacity:.5;cursor:default}
 #main-menu :focus-visible,#sound-dialog :focus-visible{outline:2px solid #ffe1ac;outline-offset:3px}
