@@ -744,3 +744,14 @@ dialog#mapdialog{
  dialog#mapdialog,#expdialog .exp-top{border-width:8px 12px}
  :is(#packdialog,#settingsdialog,#sound-dialog,#builddialog,#researchdialog,#rosterdialog,#servantdialog,#keepdialog,#princedialog,#helpdialog,#partydialog){border-width:7px 11px}
 }
+
+/* Connected doors in illustrated dungeon rooms follow the generated floor plan. */
+.dungeon-threshold{
+ position:absolute;pointer-events:none;width:25%;height:5%;z-index:1;
+ border:1px solid #a49775;border-radius:2px;
+ background:linear-gradient(#453e36,#211d1c);box-shadow:0 0 4px #000c;
+}
+.dungeon-threshold.d0,.dungeon-threshold.d2{left:37.5%}
+.dungeon-threshold.d0{top:0}.dungeon-threshold.d2{bottom:0}
+.dungeon-threshold.d1,.dungeon-threshold.d3{top:37.5%;width:5%;height:25%}
+.dungeon-threshold.d1{right:0}.dungeon-threshold.d3{left:0}

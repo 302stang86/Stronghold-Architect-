@@ -327,8 +327,10 @@ function renderExpedition(){
  const busy=exp.status!=='exploring';
  for(const t of tiles){
   const key=roomKey(t),cell=document.createElement('div');cell.className='exp-cell'+(key===exp.current?' here':'')+(exp.looted.includes(key)?' looted':'');cell.style.gridColumn=t.x-minX+1;cell.style.gridRow=t.y-minY+1;
-  const im=document.createElement('img');im.src=art(t.type);im.alt=TYPES[t.type][0];im.style.transform=`rotate(${t.rot*90}deg)`;cell.append(im);
-  const lab=document.createElement('span');lab.className='exp-label';lab.textContent=key===c.bossKey?'Boss Vault':TYPES[t.type][0];cell.append(lab);
+  const artwork=exp.mode==='dungeon'?dungeonRoomArtwork(t):null;
+  const roomName=artwork?.name||TYPES[t.type][0];
+  const im=document.createElement('img');im.src=artwork?.src||art(t.type);im.alt=roomName;im.style.transform=`rotate(${t.rot*90}deg)`;cell.append(im);
+  const lab=document.createElement('span');lab.className='exp-label';lab.textContent=key===c.bossKey?'Boss Vault':roomName;cell.append(lab);
   if(exp.mode==='dungeon'&&t.dungeonTrap){const marker=document.createElement('span');marker.className='exp-flag';marker.textContent=exp.spentTraps?.includes(key)?'Trap spent':'Trap';cell.append(marker)}
   else if(exp.cleared.includes(key)&&t.type!==0){const k=document.createElement('span');k.className='exp-flag';k.textContent='✔ cleared';cell.append(k)}
   const chestHere=exp.sideDoors?.find(d=>d.to===key&&d.gold)||(exp.mode==='dungeon'?c.chests?.[key]:null);
@@ -357,7 +359,10 @@ function renderExpedition(){
   }
   if(key===exp.current){const who=document.createElement('div');who.className='exp-party-token';for(const m of exp.party.slice(0,3)){const f=document.createElement('span');f.style.backgroundImage=`url("${combatSprite(m)}")`;f.style.backgroundSize='200% 400%';who.append(f)}cell.append(who)}
   if(!busy&&key!==exp.current){cell.classList.add('go');cell.onclick=()=>moveTo(key)}
-  for(const n of expNeighbors(t,c.tiles)){const nk=roomKey(n.room);const door=lockedSideDoor(exp,key,nk);if(door?.secret&&!exp.revealedDoors?.includes(nk)||exp.discovered.includes(nk))continue;if(n.room.type===0&&exp.mode!=='attack')continue;const a=document.createElement('button');a.className='exp-arrow d'+n.d;a.textContent=EXP_ARROW[n.d];a.setAttribute('aria-label','Explore an unseen room '+['north','east','south','west'][n.d]);if(door){a.style.color=door.secret?'#ddaaff':'#ff7272';a.textContent=door.secret?'✦':'🔒'+EXP_ARROW[n.d];a.title=(door.secret?'Hidden':'Locked')+' door · Puzzle Room level '+door.level;a.setAttribute('aria-label',a.title)}a.disabled=busy;a.onclick=e=>{e.stopPropagation();if(door){if(moveTo(key))openSideDoor(exp,door)}else arrowClick(key,nk)};cell.append(a)}
+  for(const n of expNeighbors(t,c.tiles)){const nk=roomKey(n.room);const door=lockedSideDoor(exp,key,nk);if(artwork&&!door?.secret){
+   const threshold=document.createElement('span');threshold.className='dungeon-threshold d'+n.d;
+   threshold.setAttribute('aria-hidden','true');cell.append(threshold);
+  }if(door?.secret&&!exp.revealedDoors?.includes(nk)||exp.discovered.includes(nk))continue;if(n.room.type===0&&exp.mode!=='attack')continue;const a=document.createElement('button');a.className='exp-arrow d'+n.d;a.textContent=EXP_ARROW[n.d];a.setAttribute('aria-label','Explore an unseen room '+['north','east','south','west'][n.d]);if(door){a.style.color=door.secret?'#ddaaff':'#ff7272';a.textContent=door.secret?'✦':'🔒'+EXP_ARROW[n.d];a.title=(door.secret?'Hidden':'Locked')+' door · Puzzle Room level '+door.level;a.setAttribute('aria-label',a.title)}a.disabled=busy;a.onclick=e=>{e.stopPropagation();if(door){if(moveTo(key))openSideDoor(exp,door)}else arrowClick(key,nk)};cell.append(a)}
   grid.append(cell)}
  $('exp-status').textContent=exp.status==='battle'?'Battle in progress. You cannot leave until it ends.':exp.status==='victoryChoice'?'The resident prince is beaten. Choose what to do with the stronghold.':exp.log[exp.log.length-1]||'';
  $('exp-leave').disabled=exp.status!=='exploring';$('exp-choice').hidden=exp.status!=='victoryChoice';
