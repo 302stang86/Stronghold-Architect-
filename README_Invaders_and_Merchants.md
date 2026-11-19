@@ -1,22 +1,20 @@
 # Stronghold Architect: Invaders, Merchants, Guards and Parties
 
-This file records the current rules and is meant to be added to later. Sections marked TESTING are not final.
+This guide covers invasion, merchant, and conquest rules.
 
 ## 1. Invaders (visitors who attack)
 
-- Invaders are thieves, assassins, rogue soldiers and similar fighters. They are not tied to any stronghold on the world map.
-- Current types: Guild Thief, Rogue Soldier, Hired Assassin, Bandit Marauder. (Art and stats are unchanged from the old invader types.)
-- Schedule, level range (prince level -3 to +3), alarm, route through the keep, trap damage and loot are unchanged from the earlier invasion rules.
-- Invaders only begin from day 3, up to two per day.
+- Normal invaders are independent. Warbands are sent by rival strongholds.
+- Normal invaders include Guild Thief, Rogue Soldier, Hired Assassin, Bandit Marauder, Roadside Cutthroat, Rogue Pikeman, Black Banner Mercenary, and Ashcloak Scout.
+- Normal invasion parties have up to one fighter at prince levels 1–7, two at levels 8–15, and three at level 16 and above. Invader levels are based on the prince’s level and rise as you capture more castles.
 
-## 2. Merchants (TESTING)
+## 2. Merchants
 
 - Merchants never attack and never enter the keep.
 - Frequency is one quarter of the invaders. Every invader that arrives adds 0.25 merchant credit; at 1.0 a merchant arrives (one merchant for about every four invaders).
 - A merchant waits until no invasion, expedition, battle or other window is open, then a window asks: "Would you like to trade?" with Yes and No.
-- Yes currently opens a placeholder window: "Trading is being tested. There is nothing to buy yet."
+- Yes opens the merchant shop.
 - No sends the merchant away.
-- Open items to decide later: what merchants sell or buy, prices, stock, whether merchants can be robbed or protected, merchant levels or reputation.
 
 ## 3. Guards
 
@@ -50,7 +48,6 @@ Double-click the Entrance. The window shows the prince, servants and guards who 
 
 ## Ideas parking lot
 
-- Merchant trade offers and a trade window.
 - Guard levels that differ from the prince.
 - Guard orders such as patrol routes.
 
@@ -61,9 +58,9 @@ Double-click the Entrance. The window shows the prince, servants and guards who 
 - One item per spot. Tap an item to read it, use it or discard it. Discarding gives nothing back.
 - Resource bundles (Food, Stone, Mixed Crate) go straight to your stores and never take a spot.
 
-## Merchant trading (Phase 2, still testing)
+## Merchant trading
 
-- Saying Yes at the gate opens a shop with 6 random items from the catalogue. You buy with gold. Stock is fresh for each merchant. There is no selling yet.
+- Each merchant offers six items, including a Lockpick Set. Buy items with gold. Use the Sell tab to trade backpack items and resources for gold.
 - Items that need a free spot cannot be bought when the backpack is full.
 
 ## Item catalogue
@@ -73,12 +70,12 @@ Numbers 5, 8, 9, 18, 19 and 29 are reserved.
 | # | Item | Price (gold) | Effect |
 |---|---|---|---|
 | 1 | Food Bundle | 40 | +25 food |
-| 2 | Timber Bundle | 35 | Backpack only, no use yet |
+| 2 | Siege Timber | 35 | Use at home to halve the next assault’s gold muster cost |
 | 3 | Stone Shipment | 50 | +30 stone |
-| 4 | Iron Ingot Crate | 70 | Backpack only, no use yet |
-| 6 | Medicinal Herb Bundle | 30 | Backpack only, no use yet |
-| 7 | Alchemical Ingredient Satchel | 60 | Backpack only, no use yet |
-| 10 | Mixed Provision Crate | 60 | +15 food, +15 stone (wood share when wood exists) |
+| 4 | Iron Ingot Crate | 70 | Use at home to boost the party’s damage by 10% for the next assault |
+| 6 | Medicinal Herb Bundle | 30 | On a march: heals the weakest party member 15% |
+| 7 | Alchemist's Fire | 60 | In battle: burns the enemy for 18% of its maximum health (bosses are immune) |
+| 10 | Mixed Provision Crate | 60 | +15 food, +15 stone |
 | 11 | Minor Health Potion | 30 | Heals 25% of maximum health |
 | 12 | Greater Health Potion | 70 | Heals 50% |
 | 13 | Royal Health Potion | 140 | Heals to full |
@@ -95,4 +92,16 @@ Where items work: potions, elixirs and the draught in manual prince battles, on 
 
 ## Planned items (merchants do not offer them yet)
 
-23 Sharpening Stone, 24 Armor Repair Kit, 25 Reinforced Shield, 26 Steel Sword (need equipment), 27 Lockpick Set (needs locked chests), 28 Trap Disarming Kit (needs traps in rival rooms).
+23 Sharpening Stone, 24 Armor Repair Kit, 25 Reinforced Shield, 26 Steel Sword (need equipment), 28 Trap Disarming Kit (needs traps in rival rooms).
+
+## Conquest rules (strongholds)
+
+- Fortification: every rival castle has a fortification rating from one (1) to five (5), higher the farther it is from your keep. Fortification raises defender and throne health, damage and skill.
+- Siegecraft: an attack needs Siegecraft research at or above the target's fortification. Siegecraft also adds 4% damage per level. Royal Scholarship (up to ten (10) tiers) adds 2% damage per tier and unlocks after Siegecraft V.
+- Muster cost: each attack costs gold and food that rise with fortification. Siege Timber halves the gold.
+- Conquest cooldown: after you take a castle, the next attack waits one (1) day plus one (1) day per castle you own.
+- Alert: a castle you march on goes on alert, which raises its level and remembers the grudge.
+- Rival temperaments: Warlord, Steward and Turtle. They differ in growth, raiding, building and guard count.
+- Rival armies hire guards first, then build, then fortify. A rival can invade another rival after day eight (8). When a capital falls, its vassals become independent.
+- Warbands: from day ten (10), a rival may send a warband against you, stronger than a normal invader and worth 1.5 times the reward. A warband can send up to three fighters independently of the normal invasion party cap. Defeating a warband fighter removes a guard from its rival.
+- Smarter enemies: enemy fighters plan their card order, block against expected damage, heal and finish weak targets. Mistakes become less likely as their skill rises.
