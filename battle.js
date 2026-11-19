@@ -17,7 +17,7 @@ function battleBuild(c){
  }
  const slots=[[28,78,1],[14,75,.82],[40,74,.8],[7,81,.86]];
  const order=party.map((p,i)=>({p,s:slots[i]||[12+((i-4)%5)*9,65-Math.floor((i-4)/5)*5,.65]})).sort((a,b)=>a.s[1]-b.s[1]);
- const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div></div>';if(p.companion&&Object.hasOwn(COMPANIONS,p.companion)){const pet=document.createElement('img');pet.src='assets/companion-'+p.companion+'-v2.webp';pet.alt=COMPANIONS[p.companion].name;const size=28*COMPANIONS[p.companion].size;pet.style.cssText='position:absolute;left:2%;bottom:6%;object-fit:contain;pointer-events:none;width:'+size+'%;height:'+size+'%';el.querySelector('.bf-move').append(pet)}stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.id=p.id;f.base={x,y};BATTLE_FX.figs.push(f);return f};
+ const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-motion"><div class="bf-art"></div></div></div>';if(p.companion&&Object.hasOwn(COMPANIONS,p.companion)){const pet=document.createElement('img');pet.src='assets/companion-'+p.companion+'-v2.webp';pet.alt=COMPANIONS[p.companion].name;const size=28*COMPANIONS[p.companion].size;pet.style.cssText='position:absolute;left:2%;bottom:6%;object-fit:contain;pointer-events:none;width:'+size+'%;height:'+size+'%';el.querySelector('.bf-move').append(pet)}stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.id=p.id;f.base={x,y};BATTLE_FX.figs.push(f);return f};
  for(const o of order){const f=mk(o.p,o.s[0],o.s[1],o.s[2],false);if(o.p.role==='lead')BATTLE_FX.lead=f}
  BATTLE_FX.enemy=mk({kind:'invader',idx:inv.variant,name:inv.name,role:'lead'},74,77,1.05,true);BATTLE_FX.enemy.atlas=COMBAT_ART.invader[inv.variant]||COMBAT_ART.invader[0];
  for(const f of BATTLE_FX.figs){f.art.style.backgroundImage='url("'+f.atlas+'")';f.art.style.backgroundSize=f.portrait?'100% 100%':'200% 400%';}
@@ -28,22 +28,39 @@ function battleBurst(f,count,color,rise){const p=battleCenter(f),st=$('bs-stage'
 function battleShake(){if(!motionOK())return;const st=$('battle-scene');st.animate([{transform:'translate(0,0)'},{transform:'translate(-9px,5px)'},{transform:'translate(8px,-6px)'},{transform:'translate(-5px,3px)'},{transform:'translate(0,0)'}],{duration:320,easing:'ease-out'})}
 function battleLunge(f,target,scale,delay){const a=battleCenter(f),b=battleCenter(target),dx=(b.x-a.x)*(f.enemy?.62:.7)*scale,dy=(b.y-a.y)*.5*scale;f.until=performance.now()+delay+800;f.row=1;f.start=performance.now()+delay;if(!motionOK())return;f.mover.animate([{transform:'translate(0,0)'},{transform:'translate(0,0)',offset:.001},{transform:`translate(${dx}px,${dy}px)`,offset:.32},{transform:`translate(${dx}px,${dy}px)`,offset:.5},{transform:'translate(0,0)'}],{duration:800,delay,easing:'ease-in-out'})}
 function battleHit(f,delay){setTimeout(()=>{f.hitUntil=performance.now()+420;f.el.classList.add('bf-hit');setTimeout(()=>f.el.classList.remove('bf-hit'),420);if(motionOK())f.mover.animate([{transform:'translateX(0)'},{transform:'translateX(-14px)'},{transform:'translateX(10px)'},{transform:'translateX(-6px)'},{transform:'translateX(0)'}],{duration:360})},delay)}
+const CARD_IMPACT_MS={"A01":175,"A02":358,"A03":248,"A04":360,"A05":275,"A06":420,"A07":360,"A08":225,"A09":390,"A10":420,"A11":390,"A12":420,"A13":420,"A14":420,"A15":420,"A16":420,"A17":420,"A18":420,"A19":420,"A20":420};
+const CARD_MOTION_MS={"A01":350,"A02":550,"A03":450,"A04":600,"A05":500,"A06":646,"A07":600,"A08":450,"A09":650,"A10":600,"A11":600,"A12":600,"A13":600,"A14":700,"A15":618,"A16":700,"A17":700,"A18":646,"A19":646,"A20":583};
+function cardMotionId(card){
+ if(!card.artId)return card.id;
+ return card.type==='attack'&&!card.artId.startsWith('A')?'A07':card.artId;
+}
+function playCardMotion(fig,id){
+ const layer=fig.el.querySelector('.bf-motion');
+ if(!layer||!motionOK())return;
+ if(fig.motionClass)layer.classList.remove(fig.motionClass);
+ layer.style.animationDuration=CARD_MOTION_MS[id]?CARD_MOTION_MS[id]+'ms':'';
+ void layer.offsetWidth;
+ fig.motionClass='motion-'+id;
+ layer.classList.add(fig.motionClass);
+}
 function battleEffect(c){
  const card=CARD_BY_ID[c.lastCard],by=c.lastBy,P=BATTLE_FX.prev,en=BATTLE_FX.enemy;
  const lead=c.allies?BATTLE_FX.figs.find(f=>!f.enemy&&f.id===c.lastAllyId):BATTLE_FX.lead;
  if(!card||!P||!lead)return;
  if(c.allies&&P.allyId!==c.lastAllyId)return;
  window.StrongholdAudio?.play('card');
+ const motion=cardMotionId(card);
+ playCardMotion(by==='ally'?lead:en,motion);
  if(card.type!=='attack')window.StrongholdAudio?.play(card.type);
  const A=c.ally,E=c.enemy;
  if(card.type==='attack'){
   const actor=by==='ally'?lead:en,target=by==='ally'?en:lead,sideAfter=by==='ally'?E:A,sideBefore=by==='ally'?P.enemy:P.ally;
-  battleLunge(actor,target,1,0);
+  battleLunge(actor,target,['A02','A04','A08','A19'].includes(motion)?0:.65,0);
   const dmg=Math.round(sideBefore.hp-sideAfter.hp),blk=Math.round(sideBefore.block-sideAfter.block);
-  setTimeout(()=>{if(state.invasion.combat!==c||!target.el.isConnected)return;window.StrongholdAudio?.play(dmg>0?'hit':'block');battleHit(target,0);battleShake();battleBurst(target,26,'#ffd36b');battleFloat(target,dmg>0?'-'+dmg:'Blocked',dmg>0?'#ff7b7b':'#9cc8ff');if(blk>0&&dmg>0)setTimeout(()=>battleFloat(target,blk+' blocked','#9cc8ff'),250)},300)}
+  setTimeout(()=>{if(state.invasion.combat!==c||!target.el.isConnected)return;window.StrongholdAudio?.play(dmg>0?'hit':'block');battleHit(target,0);battleShake();battleBurst(target,26,'#ffd36b');battleFloat(target,dmg>0?'-'+dmg:'Blocked',dmg>0?'#ff7b7b':'#9cc8ff');if(blk>0&&dmg>0)setTimeout(()=>battleFloat(target,blk+' blocked','#9cc8ff'),250)},CARD_IMPACT_MS[motion]||300)}
  else if(card.type==='defense'){const g=(by==='ally'?[lead]:[en]);g.forEach(f=>{f.el.classList.add('bf-shield');setTimeout(()=>f.el.classList.remove('bf-shield'),1100);battleBurst(f,10,'#9cc8ff')});battleFloat(by==='ally'?lead:en,'+'+Math.round((by==='ally'?A:E).block-(by==='ally'?P.ally:P.enemy).block)+' block','#9cc8ff')}
  else if(card.type==='healing'){const g=(by==='ally'?[lead]:[en]);g.forEach(f=>{f.healUntil=performance.now()+900;battleBurst(f,12,'#7be6a1',true)});const h=Math.round((by==='ally'?A:E).hp-(by==='ally'?P.ally:P.enemy).hp);battleFloat(by==='ally'?lead:en,'+'+h,'#7be6a1')}
- else{const f=by==='ally'?lead:en;if(motionOK())f.mover.animate([{transform:'translateY(0)'},{transform:'translateY(-22px)'},{transform:'translateY(-22px)'},{transform:'translateY(0)'}],{duration:900,easing:'ease-in-out'});battleBurst(f,24,'#ffcc55');battleFloat(f,'+'+Math.round((by==='ally'?A:E).energy-(by==='ally'?P.ally:P.enemy).energy)+' energy','#ffcc55')}
+ else{const f=by==='ally'?lead:en;battleBurst(f,24,'#ffcc55');battleFloat(f,'+'+Math.round((by==='ally'?A:E).energy-(by==='ally'?P.ally:P.enemy).energy)+' energy','#ffcc55')}
 }
 function renderCombatMeter(group,fighter,active){
  group.classList.toggle('is-turn',active);
