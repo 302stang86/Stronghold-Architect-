@@ -512,11 +512,8 @@ main{grid-template-columns:minmax(0,1fr)!important}
 .menu-title-line{display:flex;align-items:center;gap:.065em}
 .menu-title-line+.menu-title-line{margin-top:.08em}
 .menu-title-initial{
- display:grid;place-items:center;flex:0 0 1.1em;height:1.15em;
- padding-bottom:.05em;border:3px double #bd975e;border-radius:5px 2px;
- background:radial-gradient(ellipse at 50% 30%,#644276,#2d163a 70%);
- box-shadow:inset 0 0 0 1px #d6b47464,0 2px 5px #09060d;
- color:#ffe5a5;line-height:1;letter-spacing:0;text-shadow:0 2px #4d2d18;
+ display:block;flex:0 0 1.18em;width:1.18em;height:1.35em;
+ object-fit:contain;filter:drop-shadow(0 2px 4px #09060d);
 }
 .menu-title-word{text-shadow:0 1px #8f602e,0 3px 5px #09060d}
 @supports (background-clip:text){
