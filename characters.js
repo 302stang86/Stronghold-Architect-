@@ -50,6 +50,8 @@ function initInvasion(s){
  if(!Number.isFinite(r.nextAt)||r.nextAt<DAY_MS)r.nextAt=s.day<=3&&!r.active?firstInvasionAt():
   Math.max(invasionClock(s),((r.nextDay||s.day)-1)*DAY_MS);
  if(r.alarmMs===undefined)r.alarmMs=null;
+ if(!Array.isArray(r.warbands))r.warbands=[];
+ r.warbands=r.warbands.filter(x=>x&&typeof x.house==='string'&&Number.isFinite(x.level)).slice(0,2).map(x=>({house:x.house.slice(0,40),houseId:String(x.houseId||'').slice(0,24),level:Math.max(1,Math.min(MAX_LEVEL,Math.round(x.level))),count:Math.max(1,Math.min(3,x.count|0||1))}));
  if(!Number.isFinite(r.merchantCredit)||r.merchantCredit<0)r.merchantCredit=0;
  if(r.active&&r.active.level===undefined)r.active.level=1;
  if(r.combat&&!Array.isArray(r.combat.ally?.hand))r.combat=null;
@@ -74,26 +76,36 @@ function checkScheduledInvasion(ms){
 }
 function planInvaderRoute(startKey){const throne=state.tiles.find(t=>t.type===0),eligible=state.tiles.filter(t=>![0,12,13,14,15,17].includes(t.type)),maxRooms=Math.max(1,Math.floor(eligible.length*.5)),count=Math.min(eligible.length,1+Math.floor(Math.random()*maxRooms));const shuffled=eligible.slice().sort(()=>Math.random()-.5),served=shuffled.filter(t=>state.collectors.some(n=>n.home===roomKey(t))),rest=shuffled.filter(t=>!served.includes(t));let picks=[...served,...rest].slice(0,count).filter(t=>raidPath(startKey,roomKey(t),true));const route=[];let cur=startKey;while(picks.length){let bi=0,bl=Infinity;picks.forEach((t,i)=>{const p=raidPath(cur,roomKey(t),true);if(p&&p.length<bl){bl=p.length;bi=i}});const t=picks.splice(bi,1)[0];route.push(roomKey(t));cur=roomKey(t)}route.push(roomKey(throne));return route}
 function invasionPartyLimit(level){return level>=16?3:level>=8?2:1}
-function rollInvader(variants){
+function ownedCastleCount(){return state.world?state.world.castles.filter(c=>c.ownerId==='player').length:0}
+function rollInvader(variants,band){
  const [variant]=variants.splice(Math.floor(Math.random()*variants.length),1);
- const level=Math.max(1,Math.min(MAX_LEVEL,state.prince.level+Math.floor(Math.random()*7)-3));
- return {variant,level};
+ const pressure=Math.floor(Math.min(6,ownedCastleCount())/2);          // every conquest draws harder fighters to your gate
+ const raw=band?band.level+Math.floor(Math.random()*3)-1:state.prince.level+Math.floor(Math.random()*7)-3+pressure;
+ return {variant,level:Math.max(1,Math.min(MAX_LEVEL,raw)),house:band?band.house:null,houseId:band?band.houseId:null};
 }
 function readyInvader(profile,remaining,knocked){
- const {variant,level}=profile,template=INVADER_TYPES[variant],maxHp=hpForLevel(level);
- const gate=roomKey(state.tiles.find(t=>t.type===17));
- state.invasion.active={...template,maxHp,hp:maxHp,level,variant,room:gate,from:gate,target:null,travelMs:0,waitMs:1200,knocked,route:planInvaderRoute(gate),remaining};
+ const {variant,level,house,houseId}=profile,template=INVADER_TYPES[variant],maxHp=Math.round(hpForLevel(level)*(house?1.15:1));
+ const gate=roomKey(state.tiles.find(t=>t.type===17)),bonus=Math.min(.2,Math.max(0,state.day-3)*.004);   // invaders learn the game as the days pass
+ state.invasion.active={...template,skill:Math.min(.95,template.skill+bonus),name:house?template.name+' of '+house:template.name,house:house||null,houseId:houseId||null,dmg:Math.round((1+Math.min(.35,Math.max(0,state.day-3)*.005)+(house?.1:0))*100)/100,maxHp,hp:maxHp,level,variant,room:gate,from:gate,target:null,travelMs:0,waitMs:1200,knocked,route:planInvaderRoute(gate),remaining};
 }
+/* A rival house sends a warband: it joins the next invasion at your gate. Called by the world simulation. */
+function queueWarband(w){
+ const r=state.invasion;if(!r||state.over||!w||typeof w.house!=='string')return;
+ if(!Array.isArray(r.warbands))r.warbands=[];
+ if(r.warbands.length>=2||r.warbands.some(x=>x.houseId===w.houseId))return;
+ r.warbands.push({house:w.house.slice(0,40),houseId:String(w.houseId||'').slice(0,24),level:Math.max(1,Math.min(MAX_LEVEL,Math.round(w.level)||1)),count:Math.max(1,Math.min(3,w.count|0||1))});
+ note(`Scouts report that ${w.house} is sending a warband against your keep.`)}
 function spawnInvader(){
  const r=state.invasion;if(state.over||state.day<2||r.active||r.combat)return false;
- const count=1+Math.floor(Math.random()*invasionPartyLimit(state.prince.level));
+ const band=Array.isArray(r.warbands)&&r.warbands.length&&state.day>=6?r.warbands.shift():null;
+ const count=band?band.count:1+Math.floor(Math.random()*invasionPartyLimit(state.prince.level));
  const variants=INVADER_TYPES.map((_,index)=>index).filter(index=>state.day>3||index<2||index===4||index===5);
- const party=Array.from({length:count},()=>rollInvader(variants));
+ const party=Array.from({length:count},()=>rollInvader(variants,band));
  readyInvader(party.shift(),party,[]);
  r.merchantCredit=Math.min(3,(r.merchantCredit||0)+MERCHANT_RATIO);r.alarmMs=null;
  shakeScreen();for(const n of state.collectors)if(n.home===null)fleeToThrone(n);
  const inv=r.active;
- const message=count===1?inv.name+' has entered your stronghold!':count+' invaders at the gate. '+inv.name+' enters first.';
+ const message=band?`A warband from ${band.house} is at your gate. ${inv.name} enters first.`:count===1?inv.name+' has entered your stronghold!':count+' invaders at the gate. '+inv.name+' enters first.';
  note(message);toast(message);save();render();return true;
 }
 function chooseInvaderNext(inv){const throneKey=roomKey(state.tiles.find(t=>t.type===0));while(inv.route.length){const goal=inv.route[0];if(goal===inv.room){inv.route.shift();continue}const path=raidPath(inv.room,goal,goal!==throneKey);if(path&&path.length)return path[0];inv.route.shift()}return null}
@@ -117,10 +129,11 @@ function tickInvasion(ms){
  if(inv.travelMs>=3200){inv.room=inv.target;inv.target=null;inv.waitMs=600;enterInvaderRoom()}
 }
 function listText(parts){return parts.length<2?parts.join(''):parts.slice(0,-1).join(', ')+' and '+parts[parts.length-1]}
-function rollReward(inv){const scale=inv.atk/12*Math.min(2,1+.04*Math.max(0,state.day-3))*(1+.02*(inv.level-1)),reward={gold:Math.max(1,Math.round((10+Math.random()*15)*scale))};if(Math.random()<.7)reward.stone=Math.max(1,Math.round((5+Math.random()*10)*scale));if(Math.random()<.4)reward.food=Math.max(1,Math.round((3+Math.random()*5)*scale));return reward}
+function rollReward(inv){const scale=inv.atk/12*Math.min(2,1+.04*Math.max(0,state.day-3))*(1+.02*(inv.level-1))*(inv.house?1.5:1),reward={gold:Math.max(1,Math.round((10+Math.random()*15)*scale))};if(Math.random()<.7)reward.stone=Math.max(1,Math.round((5+Math.random()*10)*scale));if(Math.random()<.4)reward.food=Math.max(1,Math.round((3+Math.random()*5)*scale));return reward}
 function finishInvasion(result,message){const r=state.invasion,inv=r.active;if(!inv)return;let text=message;
- if(result==='win'){const reward=rollReward(inv);for(const [k,v]of Object.entries(reward))state[k]=roundResource(state[k]+v);const found=`Found ${listText(Object.entries(reward).map(([k,v])=>v+' '+RESOURCE_INFO[k].name.toLowerCase()))} on the invader’s body.`;text+=' '+found;toast(found)}
- else if(result==='loss'){const taken={};for(const [k,rate]of Object.entries(LOSS_RATES)){const amount=Math.floor(state[k]*rate);if(amount>0){taken[k]=amount;state[k]=roundResource(state[k]-amount)}}const parts=Object.entries(taken).map(([k,v])=>v+' '+(k==='rp'?'research points':RESOURCE_INFO[k].name.toLowerCase()));text+=parts.length?` The invader stole ${listText(parts)}.`:' The invader found nothing to steal.';toast('The prince was defeated. Resources were stolen.')}
+ const rivalHouse=inv.houseId&&state.world?state.world.castles.find(c=>c.id===inv.houseId):null;
+ if(result==='win'){if(rivalHouse){rivalHouse.guards=Math.max(0,(rivalHouse.guards||0)-1);text+=` ${rivalHouse.rulingName} loses a warrior.`}const reward=rollReward(inv);for(const [k,v]of Object.entries(reward))state[k]=roundResource(state[k]+v);const found=`Found ${listText(Object.entries(reward).map(([k,v])=>v+' '+RESOURCE_INFO[k].name.toLowerCase()))} on the invader’s body.`;text+=' '+found;toast(found)}
+ else if(result==='loss'){const taken={};for(const [k,rate]of Object.entries(LOSS_RATES)){const amount=Math.floor(state[k]*rate);if(amount>0){taken[k]=amount;state[k]=roundResource(state[k]-amount)}}const parts=Object.entries(taken).map(([k,v])=>v+' '+(k==='rp'?'research points':RESOURCE_INFO[k].name.toLowerCase()));text+=parts.length?` The invader stole ${listText(parts)}.`:' The invader found nothing to steal.';if(rivalHouse)for(const [k,v]of Object.entries(taken))rivalHouse.treasury[k]=roundResource(rivalHouse.treasury[k]+v);toast('The prince was defeated. Resources were stolen.')}
  if(result!=='loss'&&inv.remaining?.length){
   const [next,...remaining]=inv.remaining;
   const modal=$('battle-dialog');if(modal?.open)modal.close();
@@ -141,7 +154,7 @@ function roomCombatant(n){
  const prince=n==null,level=prince?state.prince.level:n.guard?guardLevel():n.level||1;
  const hp=Math.round(hpForLevel(level)*(prince&&state.hungryDays>=5?.8:1)*(n?.paladin?1.05:1));
  const hunger=prince?state.hungryDays>=2?MC_HUNGER_PENALTY:0:state.hungryDays?SERVANT_HUNGER_PENALTY:0;
- const actor=combatant(prince?'Young Prince':n.name,level,hp,1-hunger,prince||n.guard ? .65 : servantRole(n).skill);
+ const actor=combatant(prince?'Young Prince':n.name,level,hp,(1-hunger)*scholarBonus(),prince||n.guard ? .65 : servantRole(n).skill);
  return Object.assign(applyGuardBuffs(actor,prince||n.guard,n?.paladin),{id:prince?'mc':n.id,look:n?.look||0,guard:!!n?.guard,player:prince});
 }
 function selectCombatAlly(combat,index){
@@ -157,7 +170,7 @@ function startRoomCombat(inv){
  if(!allies.length)return false;
  attachCompanion(allies,state.homeCompanion);
  for(const id of ['roomdialog','builddialog','helpdialog','servantdialog','rosterdialog','settingsdialog','researchdialog','mapdialog','packdialog'])if($(id)?.open)$(id).close();
- const enemy=combatant(inv.name,inv.level,inv.maxHp,1,inv.skill);
+ const enemy=combatant(inv.name,inv.level,inv.maxHp,inv.dmg||1,inv.skill);
  enemy.hp=inv.hp;
  const combat={allies,enemy,auto:!allies.some(a=>a.player),turn:'ally',turnNumber:1,waitMs:700,noMoves:false,winner:null,
   log:['Each fighter takes a turn with five cards and 10 energy.'],lastAction:'',lastCard:null,lastBy:null,lastCount:0,lastMs:0,lockMs:0};
@@ -194,13 +207,48 @@ function playCard(index){const c=state.invasion.combat;if(!c||c.winner)return fa
  else if(side==='enemy'&&c.ally.hp<=0){c.noMoves=true;c.waitMs=450;save();return true}
  if(c.winner){c.waitMs=motionOK()?2400:1550;save();return true}
  c.noMoves=!actor.hand.some(h=>CARD_BY_ID[h].cost<=actor.energy);if(c.noMoves)c.waitMs=900;save();return true}
-function aiChoose(actor,target){const opts=actor.hand.map((id,i)=>({i,card:CARD_BY_ID[id]})).filter(o=>o.card.cost<=actor.energy);if(!opts.length)return -1;if(Math.random()>actor.skill)return opts[Math.floor(Math.random()*opts.length)].i;const amt=o=>cardAmount(o.card,actor.level),atk=opts.filter(o=>o.card.type==='attack');
+function aiGreedy(actor,target){const opts=actor.hand.map((id,i)=>({i,card:CARD_BY_ID[id]})).filter(o=>o.card.cost<=actor.energy);if(!opts.length)return -1;const amt=o=>cardAmount(o.card,actor.level),atk=opts.filter(o=>o.card.type==='attack');
  const kill=atk.filter(o=>target.activeRune!==32&&Math.round(amt(o)*actor.dmgMod*companionAttack(actor))>=target.hp+target.block).sort((a,b)=>a.card.cost-b.card.cost);if(kill.length)return kill[0].i;
  if(actor.hp<=actor.maxHp*.45){const heals=opts.filter(o=>o.card.type==='healing').sort((a,b)=>b.card.value-a.card.value);if(heals.length)return heals[0].i}
  const en=opts.find(o=>o.card.type==='energy'&&actor.hand.some(id=>{const k=CARD_BY_ID[id];return k.cost>actor.energy-1&&k.cost<=Math.min(10,actor.energy-1+o.card.value)}));if(en)return en.i;
  if(atk.length)return atk.sort((a,b)=>b.card.value-a.card.value)[0].i;
  const def=opts.filter(o=>o.card.type==='defense').sort((a,b)=>b.card.value-a.card.value);if(def.length)return def[0].i;
  const heals=opts.filter(o=>o.card.type==='healing'&&actor.hp<actor.maxHp);if(heals.length)return heals[0].i;return opts[0].i}
+
+/* Smarter play: look through every order of the cards in hand and choose the line that scores best (damage, block against the
+   expected hit, healing when hurt, and a clean kill). Lower skill means more slips. */
+const TURN_DAMAGE=42;
+function aiThreat(foe){return TURN_DAMAGE*powerForLevel(foe.level)*(foe.dmgMod||1)*(foe.activeRune===33?1.35:1)}
+function aiPlan(actor,target){
+ const hand=actor.hand.map((id,i)=>({i,card:CARD_BY_ID[id]})),used=hand.map(()=>false);
+ const mul=actor.dmgMod*companionAttack(actor)*(actor.activeRune===33?1.35:1),threat=aiThreat(target),blockMul=(actor.paladin?1.05:1)*(COMPANIONS[actor.companion]?.block||1);
+ let best={score:-1e9,first:-1};
+ function walk(energy,first,dealt,hp,block,tHp,tBlock,ward,n,healed){
+  let score;
+  if(tHp<=0)score=1e6-n;
+  else{
+   const incoming=Math.max(0,threat-block),left=hp-incoming;
+   score=dealt+Math.min(block,threat)*.85+Math.max(0,block-threat)*.1+healed*(hp<actor.maxHp*.55?1.1:.6);
+   if(left<=0)score-=400;else if(left<actor.maxHp*.2)score-=60;
+   score-=n*.01}
+  if(first>=0&&score>best.score)best={score,first};
+  if(tHp<=0)return;
+  for(let k=0;k<hand.length;k++){
+   if(used[k])continue;const card=hand[k].card;if(card.cost>energy)continue;
+   used[k]=true;let e=energy-card.cost,d=dealt,b=block,h=hp,th=tHp,tb=tBlock,w=ward,hl=healed;
+   if(card.type==='attack'){const raw=Math.max(1,Math.round(cardAmount(card,actor.level)*mul));if(w)w=false;else{const ab=Math.min(tb,raw);tb-=ab;th-=raw-ab;d+=raw-ab+ab*.3}}
+   else if(card.type==='defense')b+=Math.round(cardAmount(card,actor.level)*blockMul);
+   else if(card.type==='healing'){const real=Math.min(Math.round(cardAmount(card,actor.level)),actor.maxHp-h);h+=real;hl+=real}
+   else e=Math.min(10,e+cardAmount(card,actor.level));
+   walk(e,first<0?hand[k].i:first,d,h,b,th,tb,w,n+1,hl);used[k]=false}
+ }
+ walk(actor.energy,-1,0,actor.hp,actor.block,target.hp,target.block,target.activeRune===32,0,0);
+ return best.first}
+function aiChoose(actor,target){
+ const opts=actor.hand.map((id,i)=>({i,card:CARD_BY_ID[id]})).filter(o=>o.card.cost<=actor.energy);
+ if(!opts.length)return -1;
+ if(Math.random()>actor.skill)return Math.random()<.5?opts[Math.floor(Math.random()*opts.length)].i:aiGreedy(actor,target);
+ const pick=aiPlan(actor,target);return pick>=0?pick:aiGreedy(actor,target)}
 function choosePlayerCard(index){if(awaitingResume)return false;const c=state.invasion.combat;if(!c||c.kind!=='mc'||c.turn!=='ally'||c.winner||c.noMoves||(c.lockMs||0)>0)return false;const ok=playCard(index);if(ok&&state.invasion.combat===c)c.lockMs=450;renderBattle();return ok}
 function tickCombat(ms){const c=state.invasion.combat;if(!c)return;for(const k of ['flashMs','lastMs','lockMs'])c[k]=Math.max(0,(c[k]||0)-ms);
  if(c.winner){c.waitMs-=ms;if(c.waitMs<=0)resolveCombat();else renderBattle();return}

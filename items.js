@@ -4,12 +4,12 @@ const PACK_LEVELS=[null,{spots:6},{spots:9,gold:600,stone:150},{spots:15,gold:20
 const LOCKPICK_ID=31;
 const ITEMS={
  1:{id:1,name:'Food Bundle',icon:'🍞',kind:'store',price:40,give:{food:25},text:'Adds 25 food to your stores.'},
- 2:{id:2,name:'Timber Bundle',icon:'🪵',kind:'pack',price:35,use:'none',text:'Wood for future building. Nothing uses it yet.'},
+ 2:{id:2,name:'Siege Timber',icon:'🪵',kind:'pack',price:35,use:'supply',supply:'timber',text:'Use at home before an assault: the next assault costs half the gold to muster.'},
  3:{id:3,name:'Stone Shipment',icon:'🪨',kind:'store',price:50,give:{stone:30},text:'Adds 30 stone to your stores.'},
- 4:{id:4,name:'Iron Ingot Crate',icon:'⛓️',kind:'pack',price:70,use:'none',text:'Iron for future crafting. Nothing uses it yet.'},
- 6:{id:6,name:'Medicinal Herb Bundle',icon:'🌿',kind:'pack',price:30,use:'none',text:'Herbs for future potions. Nothing uses it yet.'},
- 7:{id:7,name:'Alchemical Ingredient Satchel',icon:'⚗️',kind:'pack',price:60,use:'none',text:'Ingredients for future alchemy. Nothing uses it yet.'},
- 10:{id:10,name:'Mixed Provision Crate',icon:'📦',kind:'store',price:60,give:{food:15,stone:15},text:'Adds 15 food and 15 stone. The wood share comes when wood exists.'},
+ 4:{id:4,name:'Iron Ingot Crate',icon:'⛓️',kind:'pack',price:70,use:'supply',supply:'iron',text:'Use at home before an assault: your party’s weapons hit 10% harder for that whole assault.'},
+ 6:{id:6,name:'Medicinal Herb Bundle',icon:'🌿',kind:'pack',price:30,use:'heal',amount:.15,text:'A poultice that heals 15% of maximum health in a prince battle or on a march. Cheaper and weaker than a potion.'},
+ 7:{id:7,name:'Alchemist’s Fire',icon:'⚗️',kind:'pack',price:60,use:'fire',amount:.18,text:'Prince battle: burns the enemy for 18% of its maximum health, ignoring block. Bosses shrug it off.'},
+ 10:{id:10,name:'Mixed Provision Crate',icon:'📦',kind:'store',price:60,give:{food:15,stone:15},text:'Adds 15 food and 15 stone to your stores.'},
  11:{id:11,name:'Minor Health Potion',icon:'🧪',kind:'pack',price:30,use:'heal',amount:.25,text:'Heals 25% of maximum health in a prince battle or on a march.'},
  12:{id:12,name:'Greater Health Potion',icon:'🧪',kind:'pack',price:70,use:'heal',amount:.5,text:'Heals 50% of maximum health.'},
  13:{id:13,name:'Royal Health Potion',icon:'🧪',kind:'pack',price:140,use:'heal',amount:1,text:'Heals to full health.'},
@@ -75,6 +75,7 @@ function itemContext(){const c=state.invasion?.combat;if(c&&!c.exp&&c.kind==='mc
 function useItem(id){const it=ITEMS[id];if(!it||!state.pack.items.includes(id))return 'You do not have that.';const ctx=itemContext(),c=state.invasion?.combat;
  if(it.use==='none')return 'Nothing uses this yet.';
  if(ctx==='wait')return 'Wait for your turn.';
+ if(it.use==='supply'){if(c||ctx!=='home')return 'Use it at home, before an assault.';state.supplies=state.supplies||{};if(state.supplies[it.supply])return 'Already prepared for the next assault.';state.supplies[it.supply]=true;takeItem(id);note(`${it.name} is loaded for the next assault.`);save();render();return ''}
  if(it.use==='manual'){if(c)return 'Use it outside battle.';if(state.prince.level>=MAX_LEVEL)return 'The prince is at the top level.';takeItem(id);gainXp('mc',Math.max(1,Math.round(xpNeed(state.prince.level)/2)));note("The prince studied the Training Manual.");save();render();return ''}
  if(it.use==='bandage'){if(ctx!=='march')return 'Bandages work between room battles on a raid or attack.';return healWeakest(id,it.amount)}
  if(it.use==='heal'){if(ctx==='march')return healWeakest(id,it.amount);if(ctx!=='battle')return 'Use health potions in a prince battle or on a march.';const a=c.ally;if(a.hp>=a.maxHp)return 'The prince is at full health.';a.hp=Math.min(a.maxHp,Math.round(a.hp+a.maxHp*it.amount));takeItem(id);combatLog(`${a.name} drinks a ${it.name}.`);save();renderBattle();render();return ''}
@@ -85,6 +86,7 @@ function useItem(id){const it=ITEMS[id];if(!it||!state.pack.items.includes(id))r
   c.runeUsed=true;
   if(id===34){const count=Math.min(2,a.hand.length);a.hand.splice(-count,count,...drawHand(count))}else a.activeRune=id;
  }
+ else if(it.use==='fire'){if(c.enemyInfo?.boss)return 'A boss shrugs off alchemist’s fire.';const e=c.enemy,dmg=Math.max(1,Math.round(e.maxHp*it.amount));e.hp=Math.max(0,e.hp-dmg);if(!c.exp&&state.invasion.active)state.invasion.active.hp=e.hp;if(e.hp<=0){c.winner='ally';c.waitMs=motionOK()?2400:1550}}
  else if(it.use==='energy'){if(a.energy>=10)return 'Energy is already full.';a.energy=Math.min(10,a.energy+it.amount)}
  else if(it.use==='strength'){if(c.strength)return 'Already in effect.';c.strength=true;a.dmgMod=Math.round(a.dmgMod*it.amount*100)/100}
  else if(it.use==='ironhide'){if(a.ironhide)return 'Already in effect.';a.ironhide=it.amount;a.block+=it.amount}
@@ -92,7 +94,7 @@ function useItem(id){const it=ITEMS[id];if(!it||!state.pack.items.includes(id))r
  takeItem(id);combatLog(`${a.name} uses ${it.name}.`);save();renderBattle();render();return ''}
 function healWeakest(id,pct){const exp=state.expedition;if(!exp||state.invasion.combat)return 'Use this between room battles.';const live=exp.party.filter(m=>m.hp>0&&m.hp<m.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];if(!live)return 'Everyone in the party is at full health.';live.hp=Math.min(live.maxHp,Math.round(live.hp+live.maxHp*pct));takeItem(id);exp.log.push(`${live.name} is treated with ${ITEMS[id].name}.`);save();render();if(window.renderExpedition)renderExpedition();return ''}
 /* Shows use buttons for the items that work right now. mode is 'battle' or 'march'. */
-function renderPackBar(el,mode){if(!el)return;const ctx=itemContext(),usable=[...new Set(state.pack.items)].filter(id=>{const u=ITEMS[id].use;if(mode==='battle')return ['heal','energy','strength','ironhide','regen','rune'].includes(u);return ['heal','bandage','manual'].includes(u)});const runeUsed=!!state.invasion?.combat?.runeUsed;const sig=mode+'|'+ctx+'|'+runeUsed+'|'+usable.map(id=>id+'x'+state.pack.items.filter(x=>x===id).length).join(',');if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.replaceChildren();if(!usable.length){el.hidden=true;return}el.hidden=false;const h=document.createElement('span');h.textContent='Backpack:';el.append(h);for(const id of usable){const it=ITEMS[id],n=state.pack.items.filter(x=>x===id).length,b=document.createElement('button');b.type='button';b.textContent=`${it.icon} ${it.name}${n>1?' ×'+n:''}`;b.title=it.text;b.disabled=mode==='battle'&&(ctx!=='battle'||it.use==='rune'&&runeUsed);b.onclick=()=>{const r=useItem(id);if(r)toast(r);el.dataset.sig=''};el.append(b)}}
+function renderPackBar(el,mode){if(!el)return;const ctx=itemContext(),usable=[...new Set(state.pack.items)].filter(id=>{const u=ITEMS[id].use;if(mode==='battle')return ['heal','energy','strength','ironhide','regen','rune','fire'].includes(u);return ['heal','bandage','manual'].includes(u)});const runeUsed=!!state.invasion?.combat?.runeUsed;const sig=mode+'|'+ctx+'|'+runeUsed+'|'+usable.map(id=>id+'x'+state.pack.items.filter(x=>x===id).length).join(',');if(el.dataset.sig===sig)return;el.dataset.sig=sig;el.replaceChildren();if(!usable.length){el.hidden=true;return}el.hidden=false;const h=document.createElement('span');h.textContent='Backpack:';el.append(h);for(const id of usable){const it=ITEMS[id],n=state.pack.items.filter(x=>x===id).length,b=document.createElement('button');b.type='button';b.textContent=`${it.icon} ${it.name}${n>1?' ×'+n:''}`;b.title=it.text;b.disabled=mode==='battle'&&(ctx!=='battle'||it.use==='rune'&&runeUsed);b.onclick=()=>{const r=useItem(id);if(r)toast(r);el.dataset.sig=''};el.append(b)}}
 let packSel=null,packForSale=false;
 /* Open-backpack pictures. box is [left, top, width, height] of the picture in the source sheet; slots are [centreX, centreY, width, height] of each drawn pocket, in reading order. */
 const PACK_ART={
