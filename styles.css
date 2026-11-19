@@ -506,7 +506,7 @@ main{grid-template-columns:minmax(0,1fr)!important}
  width:100%;margin:0 0 .4em;color:#f4d68e;
  font-family:Georgia,"Times New Roman",serif;
  font-size:clamp(1.75rem,7vw,4.75rem);
- font-size:min(17.25cqi,4.75rem);
+ font-size:min(17.65cqi,4.875rem);
  font-weight:500;line-height:1;letter-spacing:-.04em;
 }
 .menu-title-line{display:flex;align-items:center;gap:.065em}
@@ -515,7 +515,7 @@ main{grid-template-columns:minmax(0,1fr)!important}
  display:block;flex:0 0 1.18em;width:1.18em;height:1.35em;
  object-fit:contain;filter:drop-shadow(0 2px 4px #09060d);
 }
-.menu-title-word{text-shadow:0 1px #8f602e,0 3px 5px #09060d}
+.menu-title-word{line-height:1.08;padding-block:.05em .14em;text-shadow:0 1px #8f602e,0 3px 5px #09060d}
 @supports (background-clip:text){
  .menu-title-word{
   background:linear-gradient(#fff0b7 10%,#eaca7e 52%,#bd8c42 84%,#f1cf81);
