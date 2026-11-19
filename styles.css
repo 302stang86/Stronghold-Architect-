@@ -501,8 +501,31 @@ main{grid-template-columns:minmax(0,1fr)!important}
 #main-menu::after{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #main-menu::after{content:"";z-index:-1;background:linear-gradient(90deg,#110b1bf5 0%,#160e21e0 25%,#160e2140 58%,transparent 100%),linear-gradient(0deg,#110b1b 0%,transparent 28%)}
 .menu-content{width:min(590px,100%);padding:clamp(26px,6vw,96px);padding-right:24px}
-#menu-title{width:max-content;max-width:100%;margin:0 0 .24em;font-size:clamp(3.2rem,7vw,6.2rem);line-height:.89;font-weight:500;letter-spacing:-.045em;text-shadow:0 3px 26px #130c1c}
-#menu-title em{display:block;color:#e2b980;font-weight:400}
+#main-menu .menu-content{container-type:inline-size}
+#menu-title{
+ width:100%;margin:0 0 .4em;color:#f4d68e;
+ font-family:Georgia,"Times New Roman",serif;
+ font-size:clamp(1.5rem,5vw,2.9rem);
+ font-size:clamp(1.5rem,12.5cqi,3.15rem);
+ font-weight:500;line-height:1;letter-spacing:-.04em;
+}
+.menu-title-line{display:flex;align-items:center;gap:.065em}
+.menu-title-line+.menu-title-line{margin-top:.08em}
+.menu-title-initial{
+ display:grid;place-items:center;flex:0 0 1.1em;height:1.15em;
+ padding-bottom:.05em;border:3px double #bd975e;border-radius:5px 2px;
+ background:radial-gradient(ellipse at 50% 30%,#644276,#2d163a 70%);
+ box-shadow:inset 0 0 0 1px #d6b47464,0 2px 5px #09060d;
+ color:#ffe5a5;line-height:1;letter-spacing:0;text-shadow:0 2px #4d2d18;
+}
+.menu-title-word{text-shadow:0 1px #8f602e,0 3px 5px #09060d}
+@supports (background-clip:text){
+ .menu-title-word{
+  background:linear-gradient(#fff0b7 10%,#eaca7e 52%,#bd8c42 84%,#f1cf81);
+  background-clip:text;color:transparent;text-shadow:none;
+  filter:drop-shadow(0 2px 2px #150a10);
+ }
+}
 #menu-campaign{font-size:14px;color:#e8d0ae;margin:16px 0 0}
 .menu-content nav{display:grid;gap:8px;margin-top:28px;width:min(100%,310px)}
 .menu-content button{min-height:46px;padding:10px 16px;text-align:left;font-weight:650}
