@@ -760,3 +760,28 @@ dialog#mapdialog{
 .dungeon-threshold.d0{top:0}.dungeon-threshold.d2{bottom:0}
 .dungeon-threshold.d1,.dungeon-threshold.d3{top:37.5%;width:5%;height:25%}
 .dungeon-threshold.d1{right:0}.dungeon-threshold.d3{left:0}
+
+/* Room inspection keeps actions together and pages only when space runs out. */
+#roomdialog{padding:clamp(10px,2vw,20px);overflow:hidden}
+#roomdialog .popup-heading{margin-bottom:8px}
+#roomdialog .room-view-layout{grid-template-columns:minmax(0,28%) minmax(0,1fr);gap:16px;margin-top:8px}
+#roomdialog .room-art{max-width:min(300px,36dvh);margin:0 auto}
+#roomdialog.wide .room-art{max-width:min(500px,78dvh)}
+#roomdialog .room-info{max-height:none;overflow:visible;min-width:0;line-height:1.35}
+#roomdialog .room-info>p{margin:0 0 7px}
+#room-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px 14px}
+#room-actions>section{flex:1 1 190px;min-width:0}
+#room-actions>*{margin:0;min-width:0}
+#room-actions :is(h3,p){margin:3px 0 6px}
+#room-actions button{max-width:100%;margin:2px 4px 3px 0;white-space:normal}
+#room-actions .room-tools{position:static;width:100%;padding:6px 0 0;background:none}
+#roomdialog.is-paged .room-art{display:none}
+#roomdialog.is-paged .room-view-layout{grid-template-columns:minmax(0,1fr)}
+.room-pages{display:flex;align-items:center;justify-content:center;gap:10px;padding-top:8px}
+.room-pages[hidden]{display:none}
+@media(max-width:620px){
+ #roomdialog .room-view-layout{grid-template-columns:minmax(0,1fr);gap:8px}
+ #roomdialog .room-art{max-width:min(132px,20dvh)}
+ #roomdialog.wide .room-art{max-width:min(340px,56dvh)}
+ #room-actions>section{flex-basis:150px}
+}
