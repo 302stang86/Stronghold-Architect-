@@ -303,7 +303,7 @@ function resetDayClock(){lastClockTick=Date.now();lastClockSave=lastClockTick;cl
 function applyElapsedTime(elapsed,speed=1){
  if(awaitingResume||state.over||!Number.isFinite(elapsed)||elapsed<=0)return;
  const goldFactor=goldProductionFactor(speed);
- while(elapsed>0&&!state.over){const step=Math.min(elapsed,250,DAY_MS-state.dayElapsedMs);if(state.invasion.combat){tickCombat(state.invasion.combat.winner?step/speed:step);elapsed-=step;continue}if(state.expedition){elapsed-=step;continue}simulateEconomy(step,step/speed,step*goldFactor);state.dayElapsedMs+=step;tickInvasion(step);elapsed-=step;if(state.dayElapsedMs>=DAY_MS){state.dayElapsedMs=0;completeDay()}}
+ while(elapsed>0&&!state.over){const step=Math.min(elapsed,250,DAY_MS-state.dayElapsedMs);if(state.invasion.combat&&!invasionPausedForMap()){tickCombat(state.invasion.combat.winner?step/speed:step);elapsed-=step;continue}if(state.expedition){elapsed-=step;continue}simulateEconomy(step,step/speed,step*goldFactor);state.dayElapsedMs+=step;tickInvasion(step);elapsed-=step;if(state.dayElapsedMs>=DAY_MS){state.dayElapsedMs=0;completeDay()}}
  if(state.over)state.dayElapsedMs=0;
 }
 
@@ -433,7 +433,7 @@ function fxAt(room,cls,text,life=1500){if(!room||!$('grid'))return;if(cls==='fla
 function shakeScreen(){if(!motionOK())return;document.body.classList.add('shake');clearTimeout(shakeTimer);shakeTimer=setTimeout(()=>document.body.classList.remove('shake'),700)}
 function doorPips(tile){const w=document.createElement('span');w.className='doors';w.setAttribute('aria-hidden','true');for(const d of exits(tile)){const s=document.createElement('i');s.className='door d'+d;w.append(s)}return w}
 let alarmShown='';
-function renderAlarm(){const b=$('alarm-banner');if(!b)return;const r=state.invasion,inv=r.active;let text='';if(!awaitingResume&&!state.over){if(inv)text=`${inv.name} inside the keep · Health ${Math.ceil(inv.hp)}/${inv.maxHp}${inv.remaining?.length?' · '+inv.remaining.length+' waiting at the gate':''} · tap to locate`;else if(r.alarmMs!=null)text=`Alarm! Intruders at the gate in ${Math.ceil(r.alarmMs/1000)} seconds · tap to look`}b.hidden=!text;if(text!==alarmShown){$('alarm-text').textContent=text;alarmShown=text}b.classList.toggle('inside',!!inv);const first=!!text&&!settings.seenAlarm;$('alarm-help').hidden=!first;$('alarm-ok').hidden=!first}
+function renderAlarm(){const b=$('alarm-banner');if(!b)return;const r=state.invasion,inv=r.active;let text='';if(!awaitingResume&&!state.over&&!invasionPausedForMap()){if(inv)text=`${inv.name} inside the keep · Health ${Math.ceil(inv.hp)}/${inv.maxHp}${inv.remaining?.length?' · '+inv.remaining.length+' waiting at the gate':''} · tap to locate`;else if(r.alarmMs!=null)text=`Alarm! Intruders at the gate in ${Math.ceil(r.alarmMs/1000)} seconds · tap to look`}b.hidden=!text;if(text!==alarmShown){$('alarm-text').textContent=text;alarmShown=text}b.classList.toggle('inside',!!inv);const first=!!text&&!settings.seenAlarm;$('alarm-help').hidden=!first;$('alarm-ok').hidden=!first}
 $('alarm-banner').onclick=e=>{if(e.target.id==='alarm-ok')return;const inv=state.invasion.active;if(inv)centerInvader();else{const gate=state.tiles.find(t=>t.type===17);if(gate)centerTile(gate.x,gate.y)}};
 $('alarm-ok').onclick=e=>{e.stopPropagation();settings.seenAlarm=true;saveSettings();renderAlarm()};
 $('settings').onclick=()=>{$('opt-motion').checked=!!settings.reduceMotion;$('settingsdialog').showModal()};
@@ -446,7 +446,11 @@ showTab('keep');renderAlarm();
 
 $('world-map-toggle').onclick=openWorldMap;
 function openWorldMap(){save();const dlg=$('mapdialog'),fr=$('mapframe');if($('roomdialog')?.open)$('roomdialog').close();fr.src='worldmap/index.html?embed=1&v='+Date.now();if(!dlg.open)dlg.showModal()}
-window.addEventListener('message',e=>{if(e.data&&e.data.type==='closeWorldMap'&&$('mapdialog').open)$('mapdialog').close()});
+$('mapdialog').addEventListener('close',()=>{if(!$('mapdialog').open)resumeInvasionAfterMap()});
+window.addEventListener('message',e=>{
+ const map=$('mapdialog');
+ if(e.source===$('mapframe').contentWindow&&e.origin===location.origin&&e.data?.type==='closeWorldMap'&&map.open)map.close();
+});
 
 
 function applyIdentity(id){state.strongholdName=id.name;state.motto=id.motto;state.banner=id.banner;try{localStorage.removeItem('medieval-world-castles-v1')}catch{}$('mapframe').removeAttribute('src')}

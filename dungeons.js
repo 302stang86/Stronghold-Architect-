@@ -69,7 +69,7 @@ function dungeonMapInfo(){
   const tier=dungeonTier(d.id);
   return {id:d.id,x:d.x,y:d.y,name:tier.name,tier:tier.tier,boss:tier.boss,
    warning:tier.warning,recommended:tier.recommended,remaining:Math.max(0,d.readyAt-dungeonClock(state)),
-   dayMs:DAY_MS,hasProgress:!!d.layout?.progress,
+   dayMs:DAY_MS,hasProgress:!!d.layout?.progress,hasReset:d.readyAt>0,
    blocked:state.over?'Your keep has fallen.':state.expedition?'An expedition is already underway.':
     state.invasion.active||state.invasion.combat?'Finish the invasion at your gate first.':
     !state.guards.length?'A dungeon needs your prince and one guard. Hire a guard at your Barracks.':''};
@@ -278,9 +278,10 @@ function snuffDungeonCandle(){
  renderBattle();
 }
 
-function startDungeonVisit(id,party){
+function startDungeonVisit(id,party,companion=null){
  const landmark=dungeonLandmark(id),tier=dungeonTier(id);
- if(!landmark.layout?.progress&&landmark.layout?.version!==DUNGEON_LAYOUT_VERSION){
+ if(!landmark||!tier||dungeonClock(state)<landmark.readyAt)return false;
+ if(!landmark.layout||(!landmark.layout.progress&&landmark.layout.version!==DUNGEON_LAYOUT_VERSION)){
   landmark.layout=generateDungeon(tier);
  }
  const layout=landmark.layout;
@@ -288,7 +289,7 @@ function startDungeonVisit(id,party){
  const entrance=roomKey(layout.tiles.find(t=>t.type===17));
  const progress=layout.progress?structuredClone(layout.progress):
   {current:entrance,discovered:[entrance],cleared:[],looted:[],vaultKey:false};
- state.expedition={id:'x'+Date.now().toString(36),mode:'dungeon',castleId:id,party,partySize:party.length,...progress,sideDoors:progress.sideDoors||sideDoors(layout).filter(door=>!progress.discovered.includes(door.to)),
+ state.expedition={id:'x'+Date.now().toString(36),mode:'dungeon',castleId:id,party,partySize:party.length,companion,...progress,sideDoors:progress.sideDoors||sideDoors(layout).filter(door=>!progress.discovered.includes(door.to)),
   packAtEntry:[...state.pack.items],princeAtEntry:{...state.prince},
   loot:{gold:0,stone:0,food:0,rp:0},status:'exploring',encounter:null,
   log:[layout.progress?'You return to where you left off.':'You enter '+tier.name+'.']};

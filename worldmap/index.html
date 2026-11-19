@@ -187,7 +187,7 @@ function showDungeonDetails(d){
  const status=document.createElement('p'),warning=document.createElement('p'),enter=document.createElement('button');
  status.className='relation';
  warning.className='foe-note';
- warning.textContent=`Recommended prince level ${d.recommended}+. ${d.warning} Bring the prince and one guard. One servant may also join.`;
+ warning.textContent=`Recommended prince level ${d.recommended}+. ${d.warning} Bring the prince and one guard. One servant and one monster companion may also join.`;
  enter.className='btn';
  enter.type='button';
  enter.onclick=()=>{
@@ -198,12 +198,12 @@ function showDungeonDetails(d){
  function update(){
   const live=mapDungeons().find(entry=>entry.id===d.id);
   if(!live)return;
-  const {remaining,blocked,dayMs,hasProgress}=live;
+  const {remaining,blocked,dayMs,hasProgress,hasReset}=live;
  tiles.get(d.x+','+d.y).querySelector('.dungeon-marker')?.classList.toggle('sealed',remaining>0);
   if(remaining>0){
-   const days=Math.floor(remaining/dayMs),seconds=Math.ceil((remaining%dayMs)/1000);
-   status.textContent=`Sealed for ${days?days+'d ':''}${Math.floor(seconds/60)}m ${seconds%60}s of game time`;
-  }else status.textContent=blocked||(hasProgress?'Progress saved':'Open from day one');
+   const minutes=Math.ceil(remaining/dayMs*1440),days=Math.floor(minutes/1440),hours=Math.floor(minutes/60)%24;
+   status.textContent=`Dungeon resets in ${days}d ${hours}h ${minutes%60}m (in-game)`;
+  }else status.textContent=blocked||(hasProgress?'Progress saved':hasReset?'Reset complete · New layout ready':'Open from day one');
   enter.disabled=remaining>0||!!blocked;
   enter.textContent=hasProgress?'Resume expedition':'Enter dungeon';
  }
@@ -247,7 +247,7 @@ function showDetails(c,home){
   const mh=(()=>{try{return parent.mapHelpers||null}catch(e){return null}})(),di=live&&mh?mh.describe(c.id):null;if(live&&mh&&!why.attack)why.attack=mh.reason('attack',c.id);if(live&&mh&&!why.raid)why.raid=mh.reason('raid',c.id);
   for(const [mode,label] of [['raid','Raid for loot'],['attack','Attack stronghold']]){const b=document.createElement('button');b.className='btn';b.type='button';b.disabled=!!why[mode];b.textContent=label;if(!why[mode])b.addEventListener('click',()=>{try{parent.postMessage({type:'startExpedition',mode,castleId:c.id},'*')}catch(e){}});box.append(b)}
   if(di){const st=document.createElement('p');st.className='foe-note';st.textContent=`Fortification ${'★'.repeat(di.fort)}${'☆'.repeat(5-di.fort)} · ${di.temper} · ${di.defenders} defender${di.defenders===1?'':'s'}${di.defenders?` (levels ${di.minLevel}–${di.maxLevel})`:''}${di.empire>1?` · ruler of ${di.empire} strongholds`:''}${di.alert?` · on alert for ${di.alert} more day${di.alert===1?'':'s'}`:''}. Your Siegecraft: ${di.siege} of ${di.fort} needed to assault. An assault costs ${di.muster.gold} gold and ${di.muster.food} food.`;extra.append(r,st,box)}else extra.append(r,box);
-  const n=document.createElement('p');n.className='foe-note';n.textContent=[why.raid,why.attack].filter((v,i,a)=>v&&a.indexOf(v)===i).join(' ')||(live?'Raid: choose one to three guards or servants; the prince stays home and the throne room is closed. Attack: your prince, one guard and up to one servant; the throne room is open.':'');extra.append(n)}
+  const n=document.createElement('p');n.className='foe-note';n.textContent=[why.raid,why.attack].filter((v,i,a)=>v&&a.indexOf(v)===i).join(' ')||(live?'Raid: choose one to three guards or servants; the prince stays home and the throne room is closed. Attack: the prince and up to two others, including at least one guard. One monster companion may join either expedition.':'');extra.append(n)}
  if(!detailDialog.open)detailDialog.showModal();
 }
 function selectTile(tile,x,y){
