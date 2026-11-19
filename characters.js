@@ -111,7 +111,7 @@ function spawnInvader(){
 }
 function chooseInvaderNext(inv){const throneKey=roomKey(state.tiles.find(t=>t.type===0));while(inv.route.length){const goal=inv.route[0];if(goal===inv.room){inv.route.shift();continue}const path=raidPath(inv.room,goal,goal!==throneKey);if(path&&path.length)return path[0];inv.route.shift()}return null}
 function enterInvaderRoom(){const inv=state.invasion.active,room=roomFromKey(inv.room);if(!room)return finishInvasion('escape','The invader withdrew.');if(inv.route[0]===inv.room)inv.route.shift();
- if(room.trap){window.StrongholdAudio?.play(room.trap);const floor=Math.ceil(inv.maxHp*TRAP_FLOOR_RATIO),before=inv.hp,damage=Math.round(trapStrength(room));inv.hp=before>floor?Math.max(floor,before-damage):before;note(`${inv.name} triggered ${TRAPS[room.trap].name} and lost ${fmt(before-inv.hp)} health.`);fxAt(room,'flash','');if(before-inv.hp>0)fxAt(room,'fx-dmg','−'+fmt(before-inv.hp));else fxAt(room,'fx-dmg','Resisted')}
+ if(room.trap){showTriggeredTrap(room);window.StrongholdAudio?.play(room.trap);const floor=Math.ceil(inv.maxHp*TRAP_FLOOR_RATIO),before=inv.hp,damage=Math.round(trapStrength(room));inv.hp=before>floor?Math.max(floor,before-damage):before;note(`${inv.name} triggered ${TRAPS[room.trap].name} and lost ${fmt(before-inv.hp)} health.`);fxAt(room,'flash','');if(before-inv.hp>0)fxAt(room,'fx-dmg','−'+fmt(before-inv.hp));else fxAt(room,'fx-dmg','Resisted')}
  triggerBasementTrap(inv,room);
  if(startRoomCombat(inv))return;
  save();refreshEconomyUI();

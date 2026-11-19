@@ -28,34 +28,50 @@ const TRAPS={
  flame:{name:'Flame Traps',price:175,strength:35,color:'#ff9c5b'},
  acid:{name:'Acid Rain Traps',price:275,strength:55,color:'#d5e874'}
 };
-const TRAP_ART={
- spikes:`<ellipse cx="50" cy="73" rx="31" ry="11" fill="#08060a" opacity=".7"/>
- <path d="m21 63 23-11 35 8v10L54 82 21 74Z" fill="#2d272d" stroke="#16131b" stroke-width="2"/>
- <path d="m21 63 23-11 35 8-25 13Z" fill="#66636b" stroke="#98949a" stroke-width="1.3"/>
- <path d="M28 64 35 39 40 65Zm14-4 7-29 6 31Zm14 6 8-28 5 26Zm-12 4 5-21 8 20Z" fill="#c0c2ca" stroke="#454653" stroke-width="1.4"/>
- <path d="m35 39 1 22 4 4Zm14-8 1 26 5 5Zm15 7-2 22 7 4Z" fill="#7b8994"/>`,
- gas:`<ellipse cx="51" cy="75" rx="31" ry="10" fill="#08060a" opacity=".7"/>
- <path d="m22 67 27-13 31 9v8L54 83l-32-9Z" fill="#443e3d" stroke="#211c20" stroke-width="2"/>
- <path d="m22 67 27-13 31 9-26 13Z" fill="#686258" stroke="#a69b82" stroke-width="1.3"/>
- <path d="m32 65 19-8m-10 12 20-9m-10 12 20-9" stroke="#201b1d" stroke-width="3"/>
- <path d="M40 58c-11-4-7-11 1-11-9-6-4-13 4-15-3-7 5-12 12-8 5 4 3 9 0 13 10-2 16 6 11 11-3 4-10 6-15 7Z" fill="#80ba65" opacity=".6"/>
- <path d="M50 55c-5-4-2-7 3-10s8-7 5-11" fill="none" stroke="#b9e099" stroke-width="2.5" opacity=".7"/>`,
- flame:`<ellipse cx="51" cy="76" rx="28" ry="8" fill="#08060a" opacity=".7"/>
- <path d="M26 66h47l-7 11H32Z" fill="#562e24" stroke="#291917" stroke-width="2"/>
- <path d="M34 69v7m16-7v9m15-9v7" stroke="#b47243" stroke-width="2"/>
- <ellipse cx="50" cy="64" rx="25" ry="8" fill="#262027" stroke="#aa7650" stroke-width="2"/>
- <path d="M39 64c-12-11 6-18 4-31 8 4 11 9 10 15 7-4 9-10 8-15 13 15 14 27 1 32Z" fill="#c64e25"/>
- <path d="M46 65c-6-7 2-12 5-20 3 5 5 7 4 11 4-3 7-4 8-8 5 10 0 15-4 18Z" fill="#ffac43"/>
- <path d="M51 65c-2-3 2-7 4-10 4 5 5 7 2 10Z" fill="#ffe0a2"/>`,
- acid:`<ellipse cx="49" cy="77" rx="31" ry="9" fill="#08060a" opacity=".72"/>
- <path d="M25 71 61 61l18 10-32 12Z" fill="#719331" opacity=".73"/>
- <path d="M32 69V41l12-6h20l8 6v19l-9 9Z" fill="#62644a" stroke="#272b1b" stroke-width="2"/>
- <path d="m32 41 14-7h18l-10 7Z" fill="#a0a471" stroke="#3b3f29" stroke-width="1.5"/>
- <path d="M39 41v26m7-26v24m7-24v26m8-27v23" stroke="#393f2d" stroke-width="1.4"/>
- <path d="m31 49 32-1 9-6m-41 15 32-1 9-6" fill="none" stroke="#9a9871" stroke-width="2"/>
- <path d="M72 52h7v3l-4 2h-3Z" fill="#bcc36c" stroke="#474c29"/>
- <path d="M78 59c0 4 4 6 2 9-2 2-5 1-5-1 0-2 2-4 3-8Z" fill="#c3eb71"/>`,
-};
+const KEEP_ROOM_ART_DIR='assets/keep-rooms/';
+const KEEP_ROOM_ART={prison:'room_prisoner_poles.webp',stairs:'room_dungeon_stairs.webp'};
+const triggeredTrapArt=new WeakMap();
+const trapImageRooms=new WeakMap();
+const preloadedTrapArt=new Map();
+
+function trapRoomArt(id,active){
+ const variant=active?(id==='acid'?'_1':''):'_inactive';
+ return KEEP_ROOM_ART_DIR+'room_trap_'+id+variant+'.webp';
+}
+
+function setRoomImage(image,room,fallback){
+ const trap=room.trap;
+ if(!Object.hasOwn(TRAPS,trap)){
+  trapImageRooms.delete(image);
+  delete image.dataset.trapArt;
+  image.src=KEEP_ROOM_ART[room.keepUse]?KEEP_ROOM_ART_DIR+KEEP_ROOM_ART[room.keepUse]:fallback;
+  return;
+ }
+ const activeSrc=trapRoomArt(trap,true);
+ if(!preloadedTrapArt.has(trap)){
+  const preload=new Image();
+  preload.src=activeSrc;
+  preloadedTrapArt.set(trap,preload);
+ }
+ trapImageRooms.set(image,room);
+ image.dataset.trapArt=trap;
+ image.src=trapRoomArt(trap,triggeredTrapArt.has(room));
+}
+
+function showTriggeredTrap(room){
+ const update=active=>{
+  for(const image of document.querySelectorAll('img[data-trap-art]')){
+   if(trapImageRooms.get(image)===room)image.src=trapRoomArt(image.dataset.trapArt,active);
+  }
+ };
+ clearTimeout(triggeredTrapArt.get(room));
+ const timer=setTimeout(()=>{
+  triggeredTrapArt.delete(room);
+  update(false);
+ },1400);
+ triggeredTrapArt.set(room,timer);
+ update(true);
+}
 
 function baseRoomRates(room){switch(room.type){case 0:return {gold:20,stone:12};case 2:return {food:5};case 3:return {stone:10};case 5:return {rp:5};case 10:return {gold:35};case 18:return {gold:25};case 19:return {rp:10};default:return {}}}
 

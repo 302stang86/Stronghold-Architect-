@@ -4,7 +4,6 @@ const KEEP_CONVERSIONS={
  stairs:{name:'Stairs',gold:50,stone:25}
 };
 // These use the home keep's art. Custom basement artwork can be assigned here.
-const BASEMENT_ART={};
 const capturePrompts=new WeakSet();
 function keepRoomName(room){return KEEP_CONVERSIONS[room.keepUse]?.name||TYPES[room.type][0]}
 function basementRoot(){return {x:3,y:6,type:0,rot:0,keepUse:'stairs'}}
@@ -108,7 +107,7 @@ function renderKeepBasement(){
   cell.className='basement-cell';cell.setAttribute('aria-label',label);cell.title=label;
   cell.setAttribute('aria-pressed',String(basementCursor===key));
   if(tile){
-   const image=document.createElement('img');image.src=BASEMENT_ART[tile.keepUse||tile.type]||art(tile.type===0?16:tile.type);image.alt='';
+   const image=document.createElement('img');setRoomImage(image,tile,art(tile.type===0?16:tile.type));image.alt='';
    image.style.transform='rotate('+(tile.rot*90)+'deg)';
    const caption=document.createElement('span');caption.textContent=tile.trap?TRAPS[tile.trap].name:label;
    cell.append(image,caption);
@@ -156,6 +155,7 @@ function triggerBasementTrap(invader,room){
  invader.basementTrapTriggered=true;
  const floor=Math.ceil(invader.maxHp*TRAP_FLOOR_RATIO),before=invader.hp;
  if(before>floor)invader.hp=Math.max(floor,before-Math.round(trapStrength(trap)));
+ showTriggeredTrap(trap);
  window.StrongholdAudio?.play(trap.trap);
  note(invader.name+' triggered '+TRAPS[trap.trap].name+' below the stairs and lost '+fmt(before-invader.hp)+' health.');
 }
