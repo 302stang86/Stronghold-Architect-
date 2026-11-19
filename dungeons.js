@@ -1,6 +1,24 @@
 /* Dungeon landmarks live in the campaign save, outside rival stronghold simulation. */
 const DUNGEON_GRID_SIZE=10;
-const DUNGEON_LAYOUT_VERSION=4;
+const DUNGEON_LAYOUT_VERSION=5;
+const DUNGEON_ROOM_ART={
+ 'ruined-storage':'Ruined Storage','dark-cell':'Dark Cell','cave-room':'Cave Room',
+ 'old-throne-room':'Old Throne Room','old-vault':'Old Vault','old-kitchen':'Old Kitchen',
+ 'ruined-library':'Ruined Library','armory':'Dungeon Armory','crypt':'Crypt',
+ 'flooded-chamber':'Flooded Chamber','alchemy-lab':'Alchemy Lab','torture-chamber':'Torture Chamber',
+ 'chapel':'Dungeon Chapel','barracks':'Dungeon Barracks','collapsed-hall':'Collapsed Hall',
+ 'straight-hall':'Straight Hall','turn-hall':'Turn Hall','crossroads-1':'Crossroads',
+ 'crossroads-2':'Crossroads','rune-sanctum':'Rune Sanctum'
+};
+const DUNGEON_INTERIOR_ART=[
+ 'ruined-storage','dark-cell','cave-room','old-throne-room','old-kitchen','ruined-library','armory',
+ 'crypt','flooded-chamber','alchemy-lab','chapel','barracks','collapsed-hall','rune-sanctum'
+];
+function dungeonRoomArtwork(room){
+ const id=room.dungeonArt;
+ if(!Object.hasOwn(DUNGEON_ROOM_ART,id))return null;
+ return {name:DUNGEON_ROOM_ART[id],src:`assets/dungeon/${id}.webp`};
+}
 const DUNGEON_TIERS = [
  {id:'dungeon-low', name:'Forgotten Cellar', tier:'Low', chestCount:3, occupancy:.3, recommended:1, boss:'The Fallen Captain',
   warning:'Light resistance. The Captain alternates shield and counterattack turns.',
@@ -120,7 +138,17 @@ function generateDungeon(tier){
   room.type=11;
   room.dungeonTrap=dungeonTraps[roll(index<2?index+2:4)];
  }
- for(const room of rooms)delete room.depth;
+ for(const room of rooms){
+  delete room.depth;
+  // The generator tracks world-facing connections. Tile ports are stored before rotation.
+  room.ports=room.ports.map(port=>(port-room.rot+4)%4);
+  if(room===vault)room.dungeonArt='old-vault';
+  else if(room.type===11)room.dungeonArt='torture-chamber';
+  else if(room.type===12)room.dungeonArt='straight-hall';
+  else if(room.type===13)room.dungeonArt='turn-hall';
+  else if(room.type===15)room.dungeonArt=pick(['crossroads-1','crossroads-2']);
+  else if(room.type!==14)room.dungeonArt=pick(DUNGEON_INTERIOR_ART);
+ }
  defenders[bossKey]={name:tier.boss,level:tier.recommended,variant:tier.variant,
   health:tier.health,skill:tier.skill,damage:[.72,.9,1][index],boss:tier.id};
  const layout={version:DUNGEON_LAYOUT_VERSION,rulingName:tier.name,tiles,defenders,caches,bossKey,keyRoom,progress:null};
