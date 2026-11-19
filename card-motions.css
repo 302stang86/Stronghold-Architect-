@@ -1,0 +1,339 @@
+/* ==========================================================================
+   STRONGHOLD ARCHITECT - BATTLE CHARACTER MOTION STYLESHEET
+   The game applies `.motion-[ID]` (e.g., `.motion-A01`) to the .bf-motion wrapper inside each fighter.
+   --dir is 1 for the player side (facing right) and -1 for the enemy side (facing left).
+   ========================================================================== */
+
+.bf-motion {
+  position: absolute;
+  inset: 0;
+  --dir: 1;
+  transform-origin: bottom center;
+  will-change: transform, filter;
+}
+.bf.enemy .bf-motion { --dir: -1; }
+@media (prefers-reduced-motion: reduce) { .bf-motion { animation: none !important; } }
+
+/* ==========================================================================
+   ATTACK CARDS (A01 - A20)
+   ========================================================================== */
+
+/* A01: Dagger Jab - Quick short forward dart */
+.motion-A01 { animation: anim-A01 0.35s cubic-bezier(0.2, 0.9, 0.3, 1); }
+@keyframes anim-A01 {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(calc(var(--dir) * -6px)); }
+  50% { transform: translateX(calc(var(--dir) * 28px)) skewX(calc(var(--dir) * -8deg)); }
+}
+
+/* A02: Sling Stone - Wind-up lean back and snap throw */
+.motion-A02 { animation: anim-A02 0.55s ease-in-out; }
+@keyframes anim-A02 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  35% { transform: translate(calc(var(--dir) * -14px), -4px) rotate(calc(var(--dir) * -12deg)); }
+  65% { transform: translate(calc(var(--dir) * 16px), 2px) rotate(calc(var(--dir) * 14deg)); }
+}
+
+/* A03: Shortsword Cut - Diagonal forward slash */
+.motion-A03 { animation: anim-A03 0.45s ease-out; }
+@keyframes anim-A03 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translateX(calc(var(--dir) * -10px)) rotate(calc(var(--dir) * -8deg)); }
+  55% { transform: translate(calc(var(--dir) * 36px), -6px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* A04: Hunting Arrow - Draw back tension and crisp release recoil */
+.motion-A04 { animation: anim-A04 0.6s ease-out; }
+@keyframes anim-A04 {
+  0%, 100% { transform: translateX(0); }
+  45% { transform: translateX(calc(var(--dir) * -16px)) scaleX(0.95); }
+  60% { transform: translateX(calc(var(--dir) * 8px)) scaleX(1.04); }
+}
+
+/* A05: Spear Thrust - Long linear lunge */
+.motion-A05 { animation: anim-A05 0.5s cubic-bezier(0.15, 0.85, 0.35, 1); }
+@keyframes anim-A05 {
+  0%, 100% { transform: translateX(0) skewX(0deg); }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 52px)) skewX(calc(var(--dir) * -14deg)); }
+}
+
+/* A06: Axe Cleave - Hop up and heavy downward chop */
+.motion-A06 { animation: anim-A06 0.65s cubic-bezier(0.3, 0.7, 0.4, 1); }
+@keyframes anim-A06 {
+  0%, 100% { transform: translate(0, 0) scaleY(1); }
+  35% { transform: translate(calc(var(--dir) * 12px), -26px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 34px), 4px) scaleY(0.88) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* A07: Mace Strike - Heavy forward step with impact squash */
+.motion-A07 { animation: anim-A07 0.6s ease-in-out; }
+@keyframes anim-A07 {
+  0%, 100% { transform: translate(0, 0) scale(1, 1); }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 32px), 3px) scale(1.08, 0.9); }
+}
+
+/* A08: Crossbow Bolt - Steady brace and sharp kickback */
+.motion-A08 { animation: anim-A08 0.45s ease-out; }
+@keyframes anim-A08 {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(calc(var(--dir) * 6px)); }
+  50% { transform: translateX(calc(var(--dir) * -14px)) rotate(calc(var(--dir) * -5deg)); }
+}
+
+/* A09: Saber Sweep - Wide spinning dash through */
+.motion-A09 { animation: anim-A09 0.65s ease-in-out; }
+@keyframes anim-A09 {
+  0%, 100% { transform: translateX(0) scaleX(1); }
+  30% { transform: translateX(calc(var(--dir) * 20px)) scaleX(0.3); }
+  60% { transform: translateX(calc(var(--dir) * 48px)) scaleX(1.1); }
+}
+
+/* A10: Halberd Chop - High polearm vault and slam */
+.motion-A10 { animation: anim-A10 0.75s cubic-bezier(0.25, 0.8, 0.3, 1); }
+@keyframes anim-A10 {
+  0%, 100% { transform: translate(0, 0); }
+  40% { transform: translate(calc(var(--dir) * 18px), -38px) rotate(calc(var(--dir) * -15deg)); }
+  70% { transform: translate(calc(var(--dir) * 46px), 5px) scaleY(0.86) rotate(calc(var(--dir) * 15deg)); }
+}
+
+/* A11: War Pick - Concentrated overhead pierce */
+.motion-A11 { animation: anim-A11 0.6s ease-in; }
+@keyframes anim-A11 {
+  0%, 100% { transform: translate(0, 0); }
+  35% { transform: translate(calc(var(--dir) * -8px), -18px); }
+  65% { transform: translate(calc(var(--dir) * 38px), 4px) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* A12: Flail Crush - Momentum whirl into heavy smash */
+.motion-A12 { animation: anim-A12 0.75s ease-in-out; }
+@keyframes anim-A12 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translateX(calc(var(--dir) * -10px)) rotate(calc(var(--dir) * -12deg)); }
+  40% { transform: translateX(calc(var(--dir) * 8px)) rotate(calc(var(--dir) * 10deg)); }
+  70% { transform: translate(calc(var(--dir) * 42px), 4px) scale(1.1, 0.88); }
+}
+
+/* A13: Greatsword Arc - Slow wind-up and massive wide cleave */
+.motion-A13 { animation: anim-A13 0.85s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes anim-A13 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  40% { transform: translate(calc(var(--dir) * -18px), -10px) rotate(calc(var(--dir) * -18deg)); }
+  70% { transform: translate(calc(var(--dir) * 56px), 4px) rotate(calc(var(--dir) * 16deg)); }
+}
+
+/* A14: Lance Charge - Full-speed cavalry-style dash across arena */
+.motion-A14 { animation: anim-A14 0.7s cubic-bezier(0.1, 0.9, 0.2, 1); }
+@keyframes anim-A14 {
+  0%, 100% { transform: translateX(0) skewX(0deg); }
+  20% { transform: translateX(calc(var(--dir) * -16px)) scaleY(0.92); }
+  60% { transform: translateX(calc(var(--dir) * 75px)) skewX(calc(var(--dir) * -18deg)); }
+}
+
+/* A15: Warhammer Blow - Earthquake leap and ground-shaking slam */
+.motion-A15 { animation: anim-A15 0.85s ease-in-out; }
+@keyframes anim-A15 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40% { transform: translate(calc(var(--dir) * 20px), -44px); }
+  68% { transform: translate(calc(var(--dir) * 48px), 6px) scale(1.15, 0.82); }
+  78% { transform: translate(calc(var(--dir) * 46px), -3px); }
+  88% { transform: translate(calc(var(--dir) * 48px), 2px); }
+}
+
+/* A16: Flaming Blade - Fiery aura dash slash */
+.motion-A16 { animation: anim-A16 0.7s ease-out; }
+@keyframes anim-A16 {
+  0%, 100% { transform: translateX(0); filter: drop-shadow(0 0 0 transparent); }
+  30% { transform: translateX(calc(var(--dir) * -12px)); filter: drop-shadow(0 0 12px #ff6a00) brightness(1.2); }
+  60% { transform: translateX(calc(var(--dir) * 54px)) skewX(calc(var(--dir) * -12deg)); filter: drop-shadow(0 0 20px #ff3300) brightness(1.35); }
+}
+
+/* A17: Frost Spear - Glacial chill aura and piercing lunge */
+.motion-A17 { animation: anim-A17 0.7s ease-out; }
+@keyframes anim-A17 {
+  0%, 100% { transform: translateX(0); filter: drop-shadow(0 0 0 transparent); }
+  30% { transform: translateX(calc(var(--dir) * -12px)); filter: drop-shadow(0 0 12px #7ce8ff) brightness(1.2); }
+  60% { transform: translateX(calc(var(--dir) * 58px)) skewX(calc(var(--dir) * -14deg)); filter: drop-shadow(0 0 20px #00bfff) brightness(1.3); }
+}
+
+/* A18: Thunder Axe - Electric airborne strike with flash */
+.motion-A18 { animation: anim-A18 0.75s ease-in-out; }
+@keyframes anim-A18 {
+  0%, 100% { transform: translate(0, 0); filter: brightness(1); }
+  35% { transform: translate(calc(var(--dir) * 16px), -36px); filter: drop-shadow(0 0 14px #fff066) brightness(1.4); }
+  65% { transform: translate(calc(var(--dir) * 50px), 4px) scaleY(0.88); filter: drop-shadow(0 0 24px #ffd700) brightness(1.8); }
+}
+
+/* A19: Dragonfire - Levitate and unleash searing blast */
+.motion-A19 { animation: anim-A19 0.9s ease-in-out; }
+@keyframes anim-A19 {
+  0%, 100% { transform: translate(0, 0) scale(1); filter: brightness(1); }
+  35% { transform: translate(calc(var(--dir) * -8px), -28px) scale(1.06); filter: drop-shadow(0 0 18px #ff4500) brightness(1.35); }
+  65% { transform: translate(calc(var(--dir) * 18px), -24px) scale(1.1); filter: drop-shadow(0 0 28px #ff8c00) brightness(1.6); }
+}
+
+/* A20: Royal Judgment - Ascend in golden radiance and execute */
+.motion-A20 { animation: anim-A20 1s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes anim-A20 {
+  0%, 100% { transform: translate(0, 0) scale(1); filter: brightness(1); }
+  40% { transform: translate(calc(var(--dir) * 10px), -48px) scale(1.1); filter: drop-shadow(0 0 24px #ffd700) brightness(1.5); }
+  72% { transform: translate(calc(var(--dir) * 62px), 4px) scale(1.05, 0.9); filter: drop-shadow(0 0 32px #fff4a3) brightness(1.8); }
+}
+
+/* ==========================================================================
+   DEFENSE CARDS (D01 - D10)
+   ========================================================================== */
+
+/* D01: Wooden Buckler - Quick defensive brace */
+.motion-D01 { animation: anim-D01 0.4s ease-out; }
+@keyframes anim-D01 {
+  0%, 100% { transform: translateX(0) scale(1); }
+  40% { transform: translateX(calc(var(--dir) * -6px)) scale(0.96, 1.02); }
+}
+
+/* D02: Iron Shield - Solid metallic plant */
+.motion-D02 { animation: anim-D02 0.45s ease-out; }
+@keyframes anim-D02 {
+  0%, 100% { transform: translate(0, 0) scale(1); filter: brightness(1); }
+  45% { transform: translate(calc(var(--dir) * -8px), 2px) scale(1.03, 0.96); filter: brightness(1.15); }
+}
+
+/* D03: Tower Guard - Heavy crouch behind shield wall */
+.motion-D03 { animation: anim-D03 0.55s ease-in-out; }
+@keyframes anim-D03 {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(4px) scale(1.06, 0.92); filter: drop-shadow(0 0 8px #4a77d4); }
+}
+
+/* D04: Chainmail - Armor clink shake and firm stance */
+.motion-D04 { animation: anim-D04 0.5s ease-in-out; }
+@keyframes anim-D04 {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px) scale(1.04); filter: brightness(1.2); }
+  75% { transform: translateX(-2px); }
+}
+
+/* D05: Steel Plate - Heavy armored fortify pulse */
+.motion-D05 { animation: anim-D05 0.6s ease-out; }
+@keyframes anim-D05 {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  45% { transform: scale(1.08, 0.94); filter: drop-shadow(0 0 12px #c0c8d8) brightness(1.3); }
+}
+
+/* D06: Stone Barrier - Ground stomp raising earthen defense */
+.motion-D06 { animation: anim-D06 0.65s ease-out; }
+@keyframes anim-D06 {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-10px); }
+  50% { transform: translateY(4px) scaleY(0.92); filter: drop-shadow(0 6px 10px #8c857b); }
+}
+
+/* D07: Frost Ward - Crystalline ice shell expansion */
+.motion-D07 { animation: anim-D07 0.7s ease-in-out; }
+@keyframes anim-D07 {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 18px #8be9fd) brightness(1.35); }
+}
+
+/* D08: Runic Aegis - Arcane sigil pulse */
+.motion-D08 { animation: anim-D08 0.75s ease-in-out; }
+@keyframes anim-D08 {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  50% { transform: translateY(-6px) scale(1.09); filter: drop-shadow(0 0 22px #50fa7b) brightness(1.4); }
+}
+
+/* D09: Royal Bulwark - Noble royal banner aura */
+.motion-D09 { animation: anim-D09 0.8s ease-in-out; }
+@keyframes anim-D09 {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.1); filter: drop-shadow(0 0 24px #4169e1) drop-shadow(0 0 10px #ffd700) brightness(1.4); }
+}
+
+/* D10: Citadel Wall - Immovable fortress aura */
+.motion-D10 { animation: anim-D10 0.9s ease-out; }
+@keyframes anim-D10 {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  30% { transform: translateY(-12px); }
+  60% { transform: translateY(4px) scale(1.12, 0.92); filter: drop-shadow(0 0 28px #d4af37) brightness(1.5); }
+}
+
+/* ==========================================================================
+   HEALING CARDS (H01 - H05)
+   ========================================================================== */
+
+/* H01: Herbal Poultice - Gentle soothing green glow */
+.motion-H01 { animation: anim-H01 0.6s ease-in-out; }
+@keyframes anim-H01 {
+  0%, 100% { transform: translateY(0); filter: brightness(1); }
+  50% { transform: translateY(-5px); filter: drop-shadow(0 0 12px #68d391) brightness(1.2); }
+}
+
+/* H02: Healing Draught - Quick sip tilt and warm pink/red recovery */
+.motion-H02 { animation: anim-H02 0.65s ease-in-out; }
+@keyframes anim-H02 {
+  0%, 100% { transform: rotate(0deg) translateY(0); filter: brightness(1); }
+  35% { transform: rotate(calc(var(--dir) * -10deg)) translateY(-4px); }
+  65% { transform: rotate(0deg) translateY(-8px); filter: drop-shadow(0 0 16px #f687b3) brightness(1.25); }
+}
+
+/* H03: Cleric Prayer - Reverent hover with golden light */
+.motion-H03 { animation: anim-H03 0.8s ease-in-out; }
+@keyframes anim-H03 {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  50% { transform: translateY(-14px) scale(1.04); filter: drop-shadow(0 0 20px #faf089) brightness(1.35); }
+}
+
+/* H04: Sacred Chalice - Radiant emerald and gold elevation */
+.motion-H04 { animation: anim-H04 0.85s ease-in-out; }
+@keyframes anim-H04 {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  50% { transform: translateY(-18px) scale(1.06); filter: drop-shadow(0 0 24px #48bb78) drop-shadow(0 0 12px #ecc94b) brightness(1.45); }
+}
+
+/* H05: Phoenix Grace - Soaring rebirth flare */
+.motion-H05 { animation: anim-H05 1s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes anim-H05 {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  45% { transform: translateY(-30px) scale(1.12); filter: drop-shadow(0 0 30px #f6ad55) drop-shadow(0 0 16px #fff) brightness(1.7); }
+}
+
+/* ==========================================================================
+   RARE ENERGY CARDS (E01 - E05)
+   ========================================================================== */
+
+/* E01: Quiet Breath - Calm inhale expand and exhale settle */
+.motion-E01 { animation: anim-E01 0.7s ease-in-out; }
+@keyframes anim-E01 {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.05, 1.07); filter: drop-shadow(0 0 12px #cbd5e0) brightness(1.2); }
+}
+
+/* E02: Campfire Rest - Warm amber hearth pulse */
+.motion-E02 { animation: anim-E02 0.75s ease-in-out; }
+@keyframes anim-E02 {
+  0%, 100% { transform: translateY(0); filter: brightness(1); }
+  50% { transform: translateY(-4px) scale(1.04); filter: drop-shadow(0 0 16px #ed8936) brightness(1.25); }
+}
+
+/* E03: Moonlit Refuge - Silver lunar float */
+.motion-E03 { animation: anim-E03 0.8s ease-in-out; }
+@keyframes anim-E03 {
+  0%, 100% { transform: translateY(0); filter: brightness(1); }
+  50% { transform: translateY(-14px); filter: drop-shadow(0 0 20px #e2e8f0) brightness(1.35); }
+}
+
+/* E04: Arcane Spring - Crystalline cyan mana surge */
+.motion-E04 { animation: anim-E04 0.8s ease-in-out; }
+@keyframes anim-E04 {
+  0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  50% { transform: translateY(-12px) scale(1.08); filter: drop-shadow(0 0 24px #63b3ed) brightness(1.45); }
+}
+
+/* E05: Kings Reprieve - Royal purple and gold command surge */
+.motion-E05 { animation: anim-E05 0.9s ease-in-out; }
+@keyframes anim-E05 {
+  0%, 100% { transform: translateY(0); filter: brightness(1); }
+  50% { transform: translateY(-16px) scale(1.1); filter: drop-shadow(0 0 26px #b794f4) drop-shadow(0 0 14px #f6e05e) brightness(1.55); }
+}
