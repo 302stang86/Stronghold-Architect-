@@ -594,6 +594,11 @@ main{grid-template-columns:minmax(0,1fr)!important}
 #research-list .research-row{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:10px}
 #research-list .research-row img{width:48px;height:48px;object-fit:contain;border-radius:4px}
 #research-list .research-row p{margin:4px 0 0}
+#research-list .research-row.research-upgrade{grid-template-columns:minmax(0,1fr) auto}
+@media(max-width:460px){
+ #research-list .research-row.research-upgrade{grid-template-columns:minmax(0,1fr)}
+ #research-list .research-row.research-upgrade button{grid-column:1;justify-self:start}
+}
 @media(max-width:460px){#research-list .research-row{grid-template-columns:40px minmax(0,1fr)}#research-list .research-row button{grid-column:2;justify-self:start}#research-list .research-row img{width:40px;height:40px}}
 
 #roomdialog.room-summary-only{width:min(480px,calc(100% - 24px))}

@@ -25,14 +25,14 @@ function studySiege(){
 /* Called by the research window: adds the Siegecraft row. Returns true when a row was added. */
 function renderSiegeRow(list,roomType){
  if(![5,19].includes(roomType))return false;
- const n=(state.siege||0),row=document.createElement('div');row.className='research-row';
+ const n=(state.siege||0),row=document.createElement('div');row.className='research-row research-upgrade';
  const info=document.createElement('div'),name=document.createElement('strong'),status=document.createElement('p');
  name.textContent='Siegecraft'+(n>=5?' V (complete)':' '+ROMAN[n+1]);
  status.textContent=n>=5?'Every fortification can be assaulted. Your attackers hit 20% harder.':`${SIEGE_COST[n+1]} RP · Lets you assault fortification ${n+1} strongholds. Now: level ${n} of 5 (+${n*4}% attack damage on a march).`;
  info.append(name,status);row.append(info);
  if(n<5){const b=document.createElement('button');b.textContent='Learn · '+SIEGE_COST[n+1]+' RP';b.disabled=state.over||state.rp<SIEGE_COST[n+1];b.onclick=()=>studySiege();row.append(b)}
  list.append(row);
- const m=state.scholar||0,row2=document.createElement('div');row2.className='research-row';
+ const m=state.scholar||0,row2=document.createElement('div');row2.className='research-row research-upgrade';
  const info2=document.createElement('div'),name2=document.createElement('strong'),status2=document.createElement('p');
  name2.textContent='Royal Scholarship'+(m>=SCHOLAR_MAX?' (complete)':' '+(m+1));
  status2.textContent=n<5?'Unlocks after Siegecraft V.':m>=SCHOLAR_MAX?'Your fighters hit 20% harder.':`${scholarCost(m+1)} RP · Your prince, guards and servants hit 2% harder, at home and on a march. Now: tier ${m} of ${SCHOLAR_MAX} (+${m*2}%).`;
@@ -89,20 +89,25 @@ function unitLevel(m){return m.level||guardLevel()}
 function availableUnits(){return [...state.guards.map(g=>({id:g.id,kind:'guard',name:g.name,look:g.look,level:guardLevel(),paladin:g.paladin===true})),...state.collectors.map(n=>({id:n.id,kind:'servant',name:n.name,look:n.look,level:n.level||1}))]}
 function partyIssue(mode,ids){
  const units=availableUnits().filter(u=>ids.includes(u.id)),guards=units.filter(u=>u.kind==='guard').length,servants=units.length-guards;
- if(mode!=='raid'){if(guards!==1)return'Choose exactly one guard to join the prince.';if(servants>1)return'You can bring only one servant.';return''}
+ if(mode==='attack'){
+  if(guards<1)return'Choose at least one guard to join the prince.';
+  if(units.length>2||servants>1)return'Choose two guards, or one guard and one servant, at most.';
+  return'';
+ }
+ if(mode==='dungeon'){if(guards!==1)return'Choose exactly one guard to join the prince.';if(servants>1)return'You can bring only one servant.';return''}
  if(units.length<1)return'Choose at least one guard or servant.';if(units.length>3)return'A raid party has at most three units.';return''}
 function choosePartyDialog(mode,castleId){
  const why=expReason(mode,castleId);if(why){toast(why);return false}
  const target=mode==='dungeon'?dungeonTier(castleId).name:castleById(castleId).rulingName,dlg=$('partydialog'),list=$('party-list'),units=availableUnits(),pick=new Set();
  $('party-title').textContent=(mode==='raid'?'Choose your raid party':mode==='dungeon'?'Choose your dungeon party':'Choose your attack party')+' · '+target;
- $('party-rules').textContent=mode==='raid'?'A raid party is one to three guards or servants. The prince stays home. Fortification 2 and higher can have a warden at the gate.':mode==='dungeon'?'Bring the prince, one guard, and optionally one servant.':(()=>{const m=musterCost('attack',castleById(castleId));return `Bring the prince, one guard, and optionally one servant. Mustering costs ${m.gold} gold and ${m.food} food${state.supplies?.timber?' (Siege Timber halves the gold cost)':''}. Defenders fight one after another and the party is not healed between fights.`})();
+ $('party-rules').textContent=mode==='raid'?'A raid party is one to three guards or servants. The prince stays home. Fortification 2 and higher can have a warden at the gate.':mode==='dungeon'?'Bring the prince, one guard, and optionally one servant.':(()=>{const m=musterCost('attack',castleById(castleId));return `Bring the prince and up to two others: two guards, or one guard and an optional servant. Mustering costs ${m.gold} gold and ${m.food} food${state.supplies?.timber?' (Siege Timber halves the gold cost)':''}. Defenders fight one after another and the party is not healed between fights.`})();
  const start=$('party-start'),msg=$('party-msg');
  const refresh=()=>{const issue=partyIssue(mode,[...pick]);msg.textContent=issue;start.disabled=!!issue;for(const b of list.querySelectorAll('button.party-unit'))b.classList.toggle('on',pick.has(b.dataset.id)||pick.has(Number(b.dataset.id)))};
  list.replaceChildren();
  if(mode!=='raid'){const p=document.createElement('div');p.className='party-unit locked on';p.textContent='Young Prince · Level '+state.prince.level+' (always joins)';list.append(p)}
  for(const u of units){const b=document.createElement('button');b.className='party-unit';b.dataset.id=u.id;const art=document.createElement('span');art.className='portrait';portraitStyle(art,u.look||0,u);const t=document.createElement('span');t.innerHTML='';const nm=document.createElement('strong');nm.textContent=u.name;const sm=document.createElement('small');sm.textContent=(u.paladin?'Paladin':u.kind==='guard'?'Guard':'Servant')+' · Level '+u.level;t.append(nm,sm);b.append(art,t);b.onclick=()=>{if(pick.has(u.id))pick.delete(u.id);else pick.add(u.id);refresh()};list.append(b)}
  const support=document.createElement('select');
- if(mode!=='dungeon'&&ownedCompanions().length){const label=document.createElement('label');label.textContent='Companion support (free slot) ';support.add(new Option('No companion',''));for(const id of ownedCompanions())support.add(new Option(COMPANIONS[id].name,id));label.append(support);list.append(label)}
+ if(ownedCompanions().length){const label=document.createElement('label');label.textContent='Companion support (free slot) ';support.add(new Option('No companion',''));for(const id of ownedCompanions())support.add(new Option(COMPANIONS[id].name,id));label.append(support);list.append(label)}
  start.onclick=()=>{const ids=[...pick];if(partyIssue(mode,ids))return;dlg.close();startExpedition(mode,castleId,ids,support.value)};
  $('party-cancel').onclick=()=>dlg.close();refresh();if(!dlg.open)dlg.showModal();return true}
 function castleById(id){return state.world?.castles.find(c=>c.id===id)||null}
@@ -132,15 +137,16 @@ function expReason(mode,id){
 function startExpedition(mode,castleId,ids,companion){
  const why=expReason(mode,castleId);if(why){toast(why);return false}
  if(!Array.isArray(ids))return choosePartyDialog(mode,castleId);if(partyIssue(mode,ids)){toast(partyIssue(mode,ids));return false}
- const party=availableUnits().filter(u=>ids.includes(u.id)).map(u=>({id:u.id,kind:u.kind,name:u.name,look:u.look,level:u.level,hp:0,maxHp:0}));
+ const party=availableUnits().filter(u=>ids.includes(u.id)).map(u=>({id:u.id,kind:u.kind,name:u.name,look:u.look,level:u.level,paladin:u.paladin===true,hp:0,maxHp:0}));
  if(mode!=='raid')party.push({id:'mc',kind:'prince',name:'Young Prince',look:0,level:state.prince.level,hp:0,maxHp:0});
  for(const m of party){m.maxHp=m.kind==='prince'?Math.round(hpForLevel(m.level)*(state.hungryDays>=5?.8:1)):Math.round(hpForLevel(m.level)*(m.paladin?1.05:1));m.hp=m.maxHp}
- if(mode==='dungeon')return startDungeonVisit(castleId,party);
+ const support=ownedCompanions().includes(companion)?companion:null;
+ if(mode==='dungeon')return startDungeonVisit(castleId,party,support);
  const c=castleById(castleId),entrance=c.tiles.find(t=>t.type===17);if(!entrance)return false;
  const producers={};for(const t of c.tiles)if(t.type!==0)for(const k of Object.keys(roomRates(t)))producers[k]=(producers[k]||0)+1;
  const share={};for(const k of EXP_RES)share[k]=producers[k]?c.treasury[k]/producers[k]:0;
  const key=roomKey(entrance);
- state.expedition={id:'x'+Date.now().toString(36),mode,castleId,party,partySize:party.length,companion:ownedCompanions().includes(companion)?companion:null,sideDoors:sideDoors(c),current:key,discovered:[key],looted:[],cleared:[],loot:{gold:0,stone:0,food:0,rp:0},share,status:'exploring',encounter:null,log:['You arrive at the gate of '+c.rulingName+'.']};
+ state.expedition={id:'x'+Date.now().toString(36),mode,castleId,party,partySize:party.length,companion:support,sideDoors:sideDoors(c),current:key,discovered:[key],looted:[],cleared:[],loot:{gold:0,stone:0,food:0,rp:0},share,status:'exploring',encounter:null,log:['You arrive at the gate of '+c.rulingName+'.']};
  try{$('mapdialog').close()}catch{}
  if(mode==='attack'){const m=musterCost(mode,c);state.gold=roundResource(state.gold-m.gold);state.food=roundResource(state.food-m.food);state.expedition.iron=!!state.supplies?.iron;state.expedition.log.push(`Mustering cost ${m.gold} gold and ${m.food} food.`+(state.supplies?.timber?' Siege timber halved the gold.':'')+(state.expedition.iron?' Iron-shod weapons are ready.':''));state.supplies={}}
  c.alert=Math.max(c.alert||0,6);(c.grudge??={}).player=state.day;                // the house is now on its guard and remembers you

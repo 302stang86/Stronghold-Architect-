@@ -50,6 +50,7 @@ function initInvasion(s){
  if(!Number.isFinite(r.nextAt)||r.nextAt<DAY_MS)r.nextAt=s.day<=3&&!r.active?firstInvasionAt():
   Math.max(invasionClock(s),((r.nextDay||s.day)-1)*DAY_MS);
  if(r.alarmMs===undefined)r.alarmMs=null;
+ if(!Number.isFinite(r.mapResumeAt)||r.mapResumeAt<0)delete r.mapResumeAt;
  if(!Array.isArray(r.warbands))r.warbands=[];
  r.warbands=r.warbands.filter(x=>x&&typeof x.house==='string'&&Number.isFinite(x.level)).slice(0,2).map(x=>({house:x.house.slice(0,40),houseId:String(x.houseId||'').slice(0,24),level:Math.max(1,Math.min(MAX_LEVEL,Math.round(x.level))),count:Math.max(1,Math.min(3,x.count|0||1))}));
  if(!Number.isFinite(r.merchantCredit)||r.merchantCredit<0)r.merchantCredit=0;
@@ -96,7 +97,7 @@ function queueWarband(w){
  r.warbands.push({house:w.house.slice(0,40),houseId:String(w.houseId||'').slice(0,24),level:Math.max(1,Math.min(MAX_LEVEL,Math.round(w.level)||1)),count:Math.max(1,Math.min(3,w.count|0||1))});
  note(`Scouts report that ${w.house} is sending a warband against your keep.`)}
 function spawnInvader(){
- const r=state.invasion;if(state.over||state.day<2||r.active||r.combat)return false;
+ const r=state.invasion;if(state.over||state.day<2||r.active||r.combat||invasionPausedForMap())return false;
  const band=Array.isArray(r.warbands)&&r.warbands.length&&state.day>=6?r.warbands.shift():null;
  const count=band?band.count:1+Math.floor(Math.random()*invasionPartyLimit(state.prince.level));
  const variants=INVADER_TYPES.map((_,index)=>index).filter(index=>state.day>3||index<2||index===4||index===5);
@@ -114,8 +115,19 @@ function enterInvaderRoom(){const inv=state.invasion.active,room=roomFromKey(inv
  if(startRoomCombat(inv))return;
  save();refreshEconomyUI();
 }
+function invasionPausedForMap(){
+ return $('mapdialog').open||invasionClock()<(state.invasion.mapResumeAt||0);
+}
+function resumeInvasionAfterMap(){
+ const r=state.invasion,now=invasionClock();
+ if(!r.active&&!r.combat&&r.alarmMs==null&&now<r.nextAt)return;
+ r.mapResumeAt=now+DAY_MS/12;
+ if(!r.active&&!r.combat){r.nextAt=r.mapResumeAt;r.alarmMs=0}
+ save();
+}
 function tickInvasion(ms){
- const r=state.invasion;if(state.over)return;
+ const r=state.invasion;if(state.over||invasionPausedForMap())return;
+ if(r.mapResumeAt)delete r.mapResumeAt;
  if(r.combat){tickCombat(ms);return}
  checkScheduledInvasion(ms);merchantTick();
  const inv=r.active;if(!inv)return;
