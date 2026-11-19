@@ -216,7 +216,56 @@ if(selected){renderRoomEconomy(selected,$('selection'));renderResourceUpgrade(se
 }
 
 function syncRoomSelection(){const grid=$('grid');for(const b of grid.children){b.classList.remove('selected');const tag=b.querySelector('.tag');if(tag)tag.remove()}if(selected){const cell=grid.children[selected.y*FIELD_SIZE+selected.x];cell.classList.add('selected');const tag=document.createElement('span');tag.className='tag';tag.textContent=TYPES[selected.type][0];cell.append(tag)}}
-function openRoomViewer(x,y){const room=at(x,y);if(!room)return;viewedRoom={x,y};selected=room;blueprint=null;renderSelection();syncRoomSelection();renderRoomViewer();if(!$('roomdialog').open)$('roomdialog').showModal()}
+let roomOptionPage=0,roomOptionsFrame=0;
+function fitRoomOptions(){
+ const dialog=$('roomdialog'),actions=$('room-actions'),nav=$('room-pages');
+ if(!dialog.open)return;
+ dialog.classList.remove('is-paged');
+ nav.hidden=true;
+ const overflow=()=>dialog.scrollHeight>dialog.clientHeight+1;
+ if(!overflow())return;
+ dialog.classList.add('is-paged');
+ if(!overflow())return;
+ const options=[...actions.children],pages=[];
+ const prev=$('room-page-prev'),next=$('room-page-next'),count=$('room-page-count');
+ actions.replaceChildren();
+ nav.hidden=false;
+ count.textContent='1 / 1';
+ let page=[];
+ function add(option){
+  actions.append(option);
+  if(!overflow()){page.push(option);return}
+  option.remove();
+  if(page.length){
+   pages.push(page);page=[];actions.replaceChildren();
+   add(option);return;
+  }
+  // Split a tall group into its original controls, preserving their handlers.
+  const children=[...option.children];
+  if(children.length&&!option.matches('button,a,label,select,input,textarea')){
+   for(const child of children)add(child);
+   return;
+  }
+  actions.append(option);page.push(option);
+ }
+ for(const option of options)add(option);
+ if(page.length)pages.push(page);
+ if(!pages.length){nav.hidden=true;return}
+ function show(index){
+  if(!pages[index])return;
+  roomOptionPage=index;
+  actions.replaceChildren(...pages[index]);
+  count.textContent=`${index+1} / ${pages.length}`;
+  prev.disabled=index===0;next.disabled=index===pages.length-1;
+ }
+ nav.hidden=pages.length<2;
+ show(Math.min(roomOptionPage,pages.length-1));
+ prev.onclick=()=>show(roomOptionPage-1);
+ next.onclick=()=>show(roomOptionPage+1);
+}
+window.addEventListener('resize',()=>{if($('roomdialog').open)renderRoomViewer()});
+
+function openRoomViewer(x,y){const room=at(x,y);if(!room)return;if(viewedRoom?.x!==x||viewedRoom?.y!==y)roomOptionPage=0;viewedRoom={x,y};selected=room;blueprint=null;renderSelection();syncRoomSelection();renderRoomViewer();if(!$('roomdialog').open)$('roomdialog').showModal()}
 function renderRoomViewer(){
  if(!viewedRoom)return;const room=at(viewedRoom.x,viewedRoom.y);if(!room){viewedRoom=null;if($('roomdialog').open)$('roomdialog').close();return}
  selected=room;$('room-title').textContent=TYPES[room.type][0];$('room-image').src=room.type===17?GATE_WIDE_ART:art(room.type);$('room-image').style.transform=room.type===17?'':`rotate(${room.rot*90}deg)`;$('room-image').parentElement.style.aspectRatio=room.type===17?'3/1':'';$('roomdialog').classList.toggle('wide',room.type===17);
@@ -235,6 +284,8 @@ function renderRoomViewer(){
  if([1,6].includes(room.type)&&window.renderBarracks)renderBarracks(actions,room);
  if(window.renderRoomGuard)renderRoomGuard(room,actions);
  if(![0,17].includes(room.type)){const del=document.createElement('button');del.textContent=room.trap?'Remove trap before demolishing room':`Demolish room · ${DEMOLISH_COST} gold`;del.disabled=state.over||!!room.trap||state.gold<DEMOLISH_COST||!!state.invasion.active;if(state.invasion.active){del.textContent='Demolish locked during invasion';del.title='Finish the invasion first'}del.onclick=()=>{selected=room;demolish()};tools.append(del)}actions.append(tools);
+ cancelAnimationFrame(roomOptionsFrame);
+ roomOptionsFrame=requestAnimationFrame(fitRoomOptions);
 }
 
 /* ---------- Entrance window: prince, servants and guards mill about and talk ---------- */
@@ -455,3 +506,20 @@ window.addEventListener('message',e=>{
 
 function applyIdentity(id){state.strongholdName=id.name;state.motto=id.motto;state.banner=id.banner;try{localStorage.removeItem('medieval-world-castles-v1')}catch{}$('mapframe').removeAttribute('src')}
 function renderIdentity(){const f=$('holdflag');if(!f||!window.Banner)return;const u=Banner.url(state.banner,68,84);if(f.getAttribute('src')!==u)f.src=u;$('keepname').textContent=state.strongholdName||'Your Stronghold';$('keepname').title=state.motto||''}
+
+/* Dismiss modal backdrops through the normal cancel path, preserving dialog cleanup. */
+let backdropPress=null;
+function isDialogBackdrop(event,dialog){
+ if(event.target!==dialog||!dialog?.matches?.('dialog[open]'))return false;
+ const {left,right,top,bottom}=dialog.getBoundingClientRect();
+ return event.clientX<left||event.clientX>=right||event.clientY<top||event.clientY>=bottom;
+}
+document.addEventListener('pointerdown',event=>{
+ backdropPress=event.button===0&&isDialogBackdrop(event,event.target)?event.target:null;
+});
+document.addEventListener('pointercancel',()=>{backdropPress=null});
+document.addEventListener('click',event=>{
+ const dialog=backdropPress;backdropPress=null;
+ if(!dialog||!isDialogBackdrop(event,dialog))return;
+ if(dialog.dispatchEvent(new Event('cancel',{cancelable:true}))&&dialog.open)dialog.close();
+});
