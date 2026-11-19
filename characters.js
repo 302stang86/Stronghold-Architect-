@@ -112,6 +112,7 @@ function spawnInvader(){
 function chooseInvaderNext(inv){const throneKey=roomKey(state.tiles.find(t=>t.type===0));while(inv.route.length){const goal=inv.route[0];if(goal===inv.room){inv.route.shift();continue}const path=raidPath(inv.room,goal,goal!==throneKey);if(path&&path.length)return path[0];inv.route.shift()}return null}
 function enterInvaderRoom(){const inv=state.invasion.active,room=roomFromKey(inv.room);if(!room)return finishInvasion('escape','The invader withdrew.');if(inv.route[0]===inv.room)inv.route.shift();
  if(room.trap){window.StrongholdAudio?.play(room.trap);const floor=Math.ceil(inv.maxHp*TRAP_FLOOR_RATIO),before=inv.hp,damage=Math.round(trapStrength(room));inv.hp=before>floor?Math.max(floor,before-damage):before;note(`${inv.name} triggered ${TRAPS[room.trap].name} and lost ${fmt(before-inv.hp)} health.`);fxAt(room,'flash','');if(before-inv.hp>0)fxAt(room,'fx-dmg','−'+fmt(before-inv.hp));else fxAt(room,'fx-dmg','Resisted')}
+ triggerBasementTrap(inv,room);
  if(startRoomCombat(inv))return;
  save();refreshEconomyUI();
 }
@@ -142,9 +143,9 @@ function tickInvasion(ms){
 }
 function listText(parts){return parts.length<2?parts.join(''):parts.slice(0,-1).join(', ')+' and '+parts[parts.length-1]}
 function rollReward(inv){const scale=inv.atk/12*Math.min(2,1+.04*Math.max(0,state.day-3))*(1+.02*(inv.level-1))*(inv.house?1.5:1),reward={gold:Math.max(1,Math.round((10+Math.random()*15)*scale))};if(Math.random()<.7)reward.stone=Math.max(1,Math.round((5+Math.random()*10)*scale));if(Math.random()<.4)reward.food=Math.max(1,Math.round((3+Math.random()*5)*scale));return reward}
-function finishInvasion(result,message){const r=state.invasion,inv=r.active;if(!inv)return;let text=message;
+function finishInvasion(result,message,captured=false){const r=state.invasion,inv=r.active;if(!inv)return;let text=message;
  const rivalHouse=inv.houseId&&state.world?state.world.castles.find(c=>c.id===inv.houseId):null;
- if(result==='win'){if(rivalHouse){rivalHouse.guards=Math.max(0,(rivalHouse.guards||0)-1);text+=` ${rivalHouse.rulingName} loses a warrior.`}const reward=rollReward(inv);for(const [k,v]of Object.entries(reward))state[k]=roundResource(state[k]+v);const found=`Found ${listText(Object.entries(reward).map(([k,v])=>v+' '+RESOURCE_INFO[k].name.toLowerCase()))} on the invader’s body.`;text+=' '+found;toast(found)}
+ if(result==='win'){if(rivalHouse){rivalHouse.guards=Math.max(0,(rivalHouse.guards||0)-1);text+=` ${rivalHouse.rulingName} loses a warrior.`}if(!captured){const reward=rollReward(inv);for(const [k,v]of Object.entries(reward))state[k]=roundResource(state[k]+v);const found=`Found ${listText(Object.entries(reward).map(([k,v])=>v+' '+RESOURCE_INFO[k].name.toLowerCase()))} on the invader’s body.`;text+=' '+found;toast(found)}}
  else if(result==='loss'){const taken={};for(const [k,rate]of Object.entries(LOSS_RATES)){const amount=Math.floor(state[k]*rate);if(amount>0){taken[k]=amount;state[k]=roundResource(state[k]-amount)}}const parts=Object.entries(taken).map(([k,v])=>v+' '+(k==='rp'?'research points':RESOURCE_INFO[k].name.toLowerCase()));text+=parts.length?` The invader stole ${listText(parts)}.`:' The invader found nothing to steal.';if(rivalHouse)for(const [k,v]of Object.entries(taken))rivalHouse.treasury[k]=roundResource(rivalHouse.treasury[k]+v);toast('The prince was defeated. Resources were stolen.')}
  if(result!=='loss'&&inv.remaining?.length){
   const [next,...remaining]=inv.remaining;
@@ -181,7 +182,7 @@ function startRoomCombat(inv){
  if(roomFromKey(inv.room)?.type===0)allies.unshift(roomCombatant(null));
  if(!allies.length)return false;
  attachCompanion(allies,state.homeCompanion);
- for(const id of ['roomdialog','builddialog','helpdialog','servantdialog','rosterdialog','settingsdialog','researchdialog','mapdialog','packdialog'])if($(id)?.open)$(id).close();
+ for(const id of ['roomdialog','builddialog','helpdialog','servantdialog','rosterdialog','settingsdialog','researchdialog','mapdialog','packdialog','basement-dialog'])if($(id)?.open)$(id).close();
  const enemy=combatant(inv.name,inv.level,inv.maxHp,inv.dmg||1,inv.skill);
  enemy.hp=inv.hp;
  const combat={allies,enemy,auto:!allies.some(a=>a.player),turn:'ally',turnNumber:1,waitMs:700,noMoves:false,winner:null,
@@ -276,9 +277,11 @@ function resolveCombat(){
  if(!c||!inv)return;
  const allies=c.allies||[Object.assign(c.ally,{id:c.defenderId,player:c.kind==='mc'})];
  if(c.winner==='ally'){
-  gainXp('mc',30+inv.level*2);
-  for(const actor of allies){const servant=servantById(actor.id);if(servant)gainXp(servant,40+inv.level*2)}
-  return finishInvasion('win',`The defenders defeated ${inv.name}!`);
+  return offerInvaderCapture(c,inv,captured=>{
+   gainXp('mc',30+inv.level*2);
+   for(const actor of allies){const servant=servantById(actor.id);if(servant)gainXp(servant,40+inv.level*2)}
+   finishInvasion('win',captured?`The defenders captured ${inv.name}!`:`The defenders defeated ${inv.name}!`,captured);
+  });
  }
  if(allies.some(a=>a.player))return finishInvasion('loss','The prince was defeated.');
  inv.hp=c.enemy.hp;
