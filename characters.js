@@ -73,7 +73,7 @@ function checkScheduledInvasion(ms){
  if(r.alarmMs===0)spawnInvader();
 }
 function planInvaderRoute(startKey){const throne=state.tiles.find(t=>t.type===0),eligible=state.tiles.filter(t=>![0,12,13,14,15,17].includes(t.type)),maxRooms=Math.max(1,Math.floor(eligible.length*.5)),count=Math.min(eligible.length,1+Math.floor(Math.random()*maxRooms));const shuffled=eligible.slice().sort(()=>Math.random()-.5),served=shuffled.filter(t=>state.collectors.some(n=>n.home===roomKey(t))),rest=shuffled.filter(t=>!served.includes(t));let picks=[...served,...rest].slice(0,count).filter(t=>raidPath(startKey,roomKey(t),true));const route=[];let cur=startKey;while(picks.length){let bi=0,bl=Infinity;picks.forEach((t,i)=>{const p=raidPath(cur,roomKey(t),true);if(p&&p.length<bl){bl=p.length;bi=i}});const t=picks.splice(bi,1)[0];route.push(roomKey(t));cur=roomKey(t)}route.push(roomKey(throne));return route}
-function invasionPartyLimit(level){return level>=20?3:level>=10?2:1}
+function invasionPartyLimit(level){return level>=16?3:level>=8?2:1}
 function rollInvader(variants){
  const [variant]=variants.splice(Math.floor(Math.random()*variants.length),1);
  const level=Math.max(1,Math.min(MAX_LEVEL,state.prince.level+Math.floor(Math.random()*7)-3));
