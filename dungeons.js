@@ -53,7 +53,8 @@ function dungeonMapInfo(){
    warning:tier.warning,recommended:tier.recommended,remaining:Math.max(0,d.readyAt-dungeonClock(state)),
    dayMs:DAY_MS,hasProgress:!!d.layout?.progress,
    blocked:state.over?'Your keep has fallen.':state.expedition?'An expedition is already underway.':
-    state.invasion.active||state.invasion.combat?'Finish the invasion at your gate first.':''};
+    state.invasion.active||state.invasion.combat?'Finish the invasion at your gate first.':
+    !state.guards.length?'A dungeon needs your prince and one guard. Hire a guard at your Barracks.':''};
  });
 }
 

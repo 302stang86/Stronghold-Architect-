@@ -187,11 +187,11 @@ function showDungeonDetails(d){
  const status=document.createElement('p'),warning=document.createElement('p'),enter=document.createElement('button');
  status.className='relation';
  warning.className='foe-note';
- warning.textContent=`Recommended prince level ${d.recommended}+. ${d.warning} The prince explores solo.`;
+ warning.textContent=`Recommended prince level ${d.recommended}+. ${d.warning} Bring the prince and one guard. One servant may also join.`;
  enter.className='btn';
  enter.type='button';
  enter.onclick=()=>{
-  detailDialog.close();
+  if(enter.disabled)return;
   parent.postMessage({type:'startExpedition',mode:'dungeon',castleId:d.id},location.origin);
  };
  document.getElementById('castle-extra').replaceChildren(status,warning,enter);
