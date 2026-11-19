@@ -30,6 +30,12 @@ function battleLunge(f,target,scale,delay){const a=battleCenter(f),b=battleCente
 function battleHit(f,delay){setTimeout(()=>{f.hitUntil=performance.now()+420;f.el.classList.add('bf-hit');setTimeout(()=>f.el.classList.remove('bf-hit'),420);if(motionOK())f.mover.animate([{transform:'translateX(0)'},{transform:'translateX(-14px)'},{transform:'translateX(10px)'},{transform:'translateX(-6px)'},{transform:'translateX(0)'}],{duration:360})},delay)}
 const CARD_IMPACT_MS={"A01":175,"A02":358,"A03":248,"A04":360,"A05":275,"A06":420,"A07":360,"A08":225,"A09":390,"A10":420,"A11":390,"A12":420,"A13":420,"A14":420,"A15":420,"A16":420,"A17":420,"A18":420,"A19":420,"A20":420};
 const CARD_MOTION_MS={"A01":350,"A02":550,"A03":450,"A04":600,"A05":500,"A06":646,"A07":600,"A08":450,"A09":650,"A10":600,"A11":600,"A12":600,"A13":600,"A14":700,"A15":618,"A16":700,"A17":700,"A18":646,"A19":646,"A20":583};
+// Ranged attacks animate from their current position, even if they share melee card art.
+const RANGED_ATTACK_CARDS = new Set([
+ "A02", "A04", "A08", "A19",
+ "NA010", "NA026", "NA027", "NA028", "NA029", "NA030", "NA031", "NA032", "NA033", "NA034", "NA035", "NA036", "NA037", "NA038", "NA039", "NA040",
+ "NA041", "NA078", "NA086", "NA088", "NA089", "NA090", "NA091", "NA092", "NA093", "NA094", "NA095", "NA096", "NA097", "NA098", "NA099", "NA100"
+]);
 function cardMotionId(card){
  if(!card.artId)return card.id;
  return card.type==='attack'&&!card.artId.startsWith('A')?'A07':card.artId;
@@ -50,12 +56,12 @@ function battleEffect(c){
  if(c.allies&&P.allyId!==c.lastAllyId)return;
  window.StrongholdAudio?.play('card');
  const motion=cardMotionId(card);
- playCardMotion(by==='ally'?lead:en,motion);
+ playCardMotion(by==='ally'?lead:en,card.id.startsWith('N')?card.id:motion);
  if(card.type!=='attack')window.StrongholdAudio?.play(card.type);
  const A=c.ally,E=c.enemy;
  if(card.type==='attack'){
   const actor=by==='ally'?lead:en,target=by==='ally'?en:lead,sideAfter=by==='ally'?E:A,sideBefore=by==='ally'?P.enemy:P.ally;
-  battleLunge(actor,target,['A02','A04','A08','A19'].includes(motion)?0:.65,0);
+  if(!RANGED_ATTACK_CARDS.has(card.id))battleLunge(actor,target,.65,0);
   const dmg=Math.round(sideBefore.hp-sideAfter.hp),blk=Math.round(sideBefore.block-sideAfter.block);
   setTimeout(()=>{if(state.invasion.combat!==c||!target.el.isConnected)return;window.StrongholdAudio?.play(dmg>0?'hit':'block');battleHit(target,0);battleShake();battleBurst(target,26,'#ffd36b');battleFloat(target,dmg>0?'-'+dmg:'Blocked',dmg>0?'#ff7b7b':'#9cc8ff');if(blk>0&&dmg>0)setTimeout(()=>battleFloat(target,blk+' blocked','#9cc8ff'),250)},CARD_IMPACT_MS[motion]||300)}
  else if(card.type==='defense'){const g=(by==='ally'?[lead]:[en]);g.forEach(f=>{f.el.classList.add('bf-shield');setTimeout(()=>f.el.classList.remove('bf-shield'),1100);battleBurst(f,10,'#9cc8ff')});battleFloat(by==='ally'?lead:en,'+'+Math.round((by==='ally'?A:E).block-(by==='ally'?P.ally:P.enemy).block)+' block','#9cc8ff')}

@@ -1,0 +1,1239 @@
+/* ==========================================================================
+   STRONGHOLD ARCHITECT - NPC BATTLE CARD MOTIONS (NA001-NA114, ND001-ND038)
+   Same wrapper and rules as card-motions.css: the game adds `.motion-[ID]` to the
+   .bf-motion wrapper, with --dir 1 (player side) or -1 (enemy side).
+   Attack archetypes: dart, slash, thrust, overhead, heavy, flurry, riposte, feint,
+   ambush, bash, charge, sweep, lash, hook, throw, ranged (stand and recoil, no dash),
+   spell. Defense archetypes: brace, parry, dodge, fade, crouch, plant, ward.
+   ========================================================================== */
+
+/* NA001: Spectral Slash - slash */
+.motion-NA001 { animation: anim-NA001 0.47s ease-in-out; }
+@keyframes anim-NA001 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 30px), -6px) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 12px #a0e7ff) brightness(1.2); }
+}
+
+/* NA002: Grave Chill Cut - slash */
+.motion-NA002 { animation: anim-NA002 0.52s ease-in-out; }
+@keyframes anim-NA002 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 38px), -6px) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 12px #8be9fd) brightness(1.2); }
+}
+
+/* NA003: Wraith Lunge - thrust */
+.motion-NA003 { animation: anim-NA003 0.56s ease-in-out; }
+@keyframes anim-NA003 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 50px)) skewX(calc(var(--dir) * -10deg)); filter: drop-shadow(0 0 12px #b8a9ff) brightness(1.2); }
+}
+
+/* NA004: Soulrend Arc - slash */
+.motion-NA004 { animation: anim-NA004 0.57s ease-in-out; }
+@keyframes anim-NA004 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 46px), -6px) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 12px #c4a1ff) brightness(1.2); }
+}
+
+/* NA005: Cursed Riposte - riposte */
+.motion-NA005 { animation: anim-NA005 0.58s ease-in-out; }
+@keyframes anim-NA005 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -16px)) scaleX(.96); }
+  55% { transform: translateX(calc(var(--dir) * 38px)) skewX(calc(var(--dir) * -10deg)); filter: drop-shadow(0 0 10px #9f7aea) brightness(1.2); }
+}
+
+/* NA006: Phantom Thrust - thrust */
+.motion-NA006 { animation: anim-NA006 0.56s ease-in-out; }
+@keyframes anim-NA006 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 50px)) skewX(calc(var(--dir) * -10deg)); filter: drop-shadow(0 0 12px #b8a9ff) brightness(1.2); }
+}
+
+/* NA007: Hollow Cleave - overhead */
+.motion-NA007 { animation: anim-NA007 0.72s ease-in-out; }
+@keyframes anim-NA007 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * 10px), -30px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 38px), 4px) scaleY(.88) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 14px #a0aec0) brightness(1.3); }
+}
+
+/* NA008: Deathfrost Edge - slash */
+.motion-NA008 { animation: anim-NA008 0.57s ease-in-out; }
+@keyframes anim-NA008 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 46px), -6px) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 12px #7ce8ff) brightness(1.2); }
+}
+
+/* NA009: Revenant's Wrath - heavy */
+.motion-NA009 { animation: anim-NA009 0.81s ease-in-out; }
+@keyframes anim-NA009 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 40px), 3px) scale(1.08, .9); filter: drop-shadow(0 0 14px #ff5555) brightness(1.3); }
+  80% { transform: translate(calc(var(--dir) * 37px), 0) scale(1.03, .97); }
+}
+
+/* NA010: Bone Shard Fling - throw */
+.motion-NA010 { animation: anim-NA010 0.53s ease-in-out; }
+@keyframes anim-NA010 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -12px), -3px) rotate(calc(var(--dir) * -12deg)); }
+  62% { transform: translate(calc(var(--dir) * 12px), 1px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA011: Ghostfire Lash - lash */
+.motion-NA011 { animation: anim-NA011 0.63s ease-in-out; }
+@keyframes anim-NA011 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -8deg)); }
+  50% { transform: translateX(calc(var(--dir) * 28px)) rotate(calc(var(--dir) * 10deg)) skewX(calc(var(--dir) * -6deg)); filter: drop-shadow(0 0 10px #7cffb2) brightness(1.2); }
+  75% { transform: translateX(calc(var(--dir) * 20px)) rotate(calc(var(--dir) * -3deg)); }
+}
+
+/* NA012: Mourning Strike - overhead */
+.motion-NA012 { animation: anim-NA012 0.66s ease-in-out; }
+@keyframes anim-NA012 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * 10px), -22px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 30px), 4px) scaleY(.88) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 14px #a0aec0) brightness(1.3); }
+}
+
+/* NA013: Sepulcher Sweep - sweep */
+.motion-NA013 { animation: anim-NA013 0.70s ease-in-out; }
+@keyframes anim-NA013 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * 18px)) scaleX(.45); }
+  60% { transform: translateX(calc(var(--dir) * 40px)) scaleX(1.1); }
+}
+
+/* NA014: Dreadblade Flurry - flurry */
+.motion-NA014 { animation: anim-NA014 0.90s ease-in-out; }
+@keyframes anim-NA014 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  15% { transform: translateX(calc(var(--dir) * 38px)) rotate(calc(var(--dir) * 8deg)); }
+  30% { transform: translateX(calc(var(--dir) * 26px)) rotate(calc(var(--dir) * -8deg)); }
+  45% { transform: translateX(calc(var(--dir) * 38px)) rotate(calc(var(--dir) * 8deg)); filter: drop-shadow(0 0 14px #9f7aea) brightness(1.3); }
+  60% { transform: translateX(calc(var(--dir) * 26px)) rotate(calc(var(--dir) * -8deg)); }
+  78% { transform: translateX(calc(var(--dir) * 46px)) scale(1.06, .94); filter: drop-shadow(0 0 16px #9f7aea) brightness(1.4); }
+}
+
+/* NA015: Final Rattle - heavy */
+.motion-NA015 { animation: anim-NA015 0.81s ease-in-out; }
+@keyframes anim-NA015 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 40px), 3px) scale(1.08, .9); filter: drop-shadow(0 0 14px #cbd5e0) brightness(1.3); }
+  80% { transform: translate(calc(var(--dir) * 37px), 0) scale(1.03, .97); }
+}
+
+/* NA016: Mercenary Feint - feint */
+.motion-NA016 { animation: anim-NA016 0.50s ease-in-out; }
+@keyframes anim-NA016 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * 14px)) rotate(calc(var(--dir) * 5deg)); }
+  45% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -4deg)); }
+  70% { transform: translateX(calc(var(--dir) * 32px)) skewX(calc(var(--dir) * -8deg)); }
+}
+
+/* NA017: Coin-Bought Cleave - overhead */
+.motion-NA017 { animation: anim-NA017 0.72s ease-in-out; }
+@keyframes anim-NA017 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * 10px), -30px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 38px), 4px) scaleY(.88) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA018: Flanking Strike - ambush */
+.motion-NA018 { animation: anim-NA018 0.58s ease-in-out; }
+@keyframes anim-NA018 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateY(8px) scale(1.05, .86); opacity: .55; }
+  52% { transform: translateX(calc(var(--dir) * 50px)) skewX(calc(var(--dir) * -14deg)); opacity: 1; }
+}
+
+/* NA019: Brutal Overhand - overhead */
+.motion-NA019 { animation: anim-NA019 0.78s ease-in-out; }
+@keyframes anim-NA019 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * 10px), -40px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 46px), 4px) scaleY(.88) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA020: Shield Bash - bash */
+.motion-NA020 { animation: anim-NA020 0.65s ease-in-out; }
+@keyframes anim-NA020 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -10px)) scale(.97, 1.02); }
+  58% { transform: translateX(calc(var(--dir) * 34px)) scale(1.1, .92); }
+}
+
+/* NA021: Blade Storm - flurry */
+.motion-NA021 { animation: anim-NA021 0.90s ease-in-out; }
+@keyframes anim-NA021 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  15% { transform: translateX(calc(var(--dir) * 38px)) rotate(calc(var(--dir) * 8deg)); }
+  30% { transform: translateX(calc(var(--dir) * 26px)) rotate(calc(var(--dir) * -8deg)); }
+  45% { transform: translateX(calc(var(--dir) * 38px)) rotate(calc(var(--dir) * 8deg)); }
+  60% { transform: translateX(calc(var(--dir) * 26px)) rotate(calc(var(--dir) * -8deg)); }
+  78% { transform: translateX(calc(var(--dir) * 46px)) scale(1.06, .94); }
+}
+
+/* NA022: Pommel Smash - heavy */
+.motion-NA022 { animation: anim-NA022 0.67s ease-in-out; }
+@keyframes anim-NA022 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 26px), 3px) scale(1.08, .9); }
+  80% { transform: translate(calc(var(--dir) * 23px), 0) scale(1.03, .97); }
+}
+
+/* NA023: Veteran's Riposte - riposte */
+.motion-NA023 { animation: anim-NA023 0.58s ease-in-out; }
+@keyframes anim-NA023 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -16px)) scaleX(.96); }
+  55% { transform: translateX(calc(var(--dir) * 38px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA024: Contract Kill - ambush */
+.motion-NA024 { animation: anim-NA024 0.62s ease-in-out; }
+@keyframes anim-NA024 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateY(8px) scale(1.05, .86); opacity: .55; }
+  52% { transform: translateX(calc(var(--dir) * 58px)) skewX(calc(var(--dir) * -14deg)); opacity: 1; filter: drop-shadow(0 0 10px #ff5555) brightness(1.2); }
+}
+
+/* NA025: Banner Charge - charge */
+.motion-NA025 { animation: anim-NA025 0.77s ease-in-out; }
+@keyframes anim-NA025 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -14px)) scaleY(.92); }
+  60% { transform: translateX(calc(var(--dir) * 78px)) skewX(calc(var(--dir) * -16deg)); filter: drop-shadow(0 0 14px #ffd700) brightness(1.3); }
+}
+
+/* NA026: Ashcloak Volley - ranged3 */
+.motion-NA026 { animation: anim-NA026 0.80s ease-in-out; }
+@keyframes anim-NA026 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  15% { transform: translateX(calc(var(--dir) * -11px)) rotate(calc(var(--dir) * -4deg)); }
+  25% { transform: translateX(calc(var(--dir) * -3px)); }
+  40% { transform: translateX(calc(var(--dir) * -11px)) rotate(calc(var(--dir) * -4deg)); }
+  50% { transform: translateX(calc(var(--dir) * -3px)); }
+  66% { transform: translateX(calc(var(--dir) * -13px)) rotate(calc(var(--dir) * -5deg)); }
+  82% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA027: Piercing Shot - ranged */
+.motion-NA027 { animation: anim-NA027 0.58s ease-in-out; }
+@keyframes anim-NA027 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -6px)) scaleX(.97); }
+  52% { transform: translateX(calc(var(--dir) * -14px)) rotate(calc(var(--dir) * -5deg)); }
+  75% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA028: Barbed Arrow - ranged */
+.motion-NA028 { animation: anim-NA028 0.54s ease-in-out; }
+@keyframes anim-NA028 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -6px)) scaleX(.97); }
+  52% { transform: translateX(calc(var(--dir) * -10px)) rotate(calc(var(--dir) * -5deg)); }
+  75% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA029: Throwing Knife - throw */
+.motion-NA029 { animation: anim-NA029 0.53s ease-in-out; }
+@keyframes anim-NA029 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -12px), -3px) rotate(calc(var(--dir) * -12deg)); }
+  62% { transform: translate(calc(var(--dir) * 12px), 1px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA030: Poisoned Dart - throw */
+.motion-NA030 { animation: anim-NA030 0.53s ease-in-out; }
+@keyframes anim-NA030 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -12px), -3px) rotate(calc(var(--dir) * -12deg)); }
+  62% { transform: translate(calc(var(--dir) * 12px), 1px) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 8px #68d391) brightness(1.15); }
+}
+
+/* NA031: Twin Bolt - ranged2 */
+.motion-NA031 { animation: anim-NA031 0.62s ease-in-out; }
+@keyframes anim-NA031 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  22% { transform: translateX(calc(var(--dir) * -12px)) rotate(calc(var(--dir) * -4deg)); }
+  32% { transform: translateX(calc(var(--dir) * -3px)); }
+  52% { transform: translateX(calc(var(--dir) * -13px)) rotate(calc(var(--dir) * -4deg)); }
+  68% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA032: Longbow Draw - ranged */
+.motion-NA032 { animation: anim-NA032 0.62s ease-in-out; }
+@keyframes anim-NA032 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -6px)) scaleX(.97); }
+  52% { transform: translateX(calc(var(--dir) * -18px)) rotate(calc(var(--dir) * -5deg)); }
+  75% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA033: Snare Shot - ranged */
+.motion-NA033 { animation: anim-NA033 0.54s ease-in-out; }
+@keyframes anim-NA033 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -6px)) scaleX(.97); }
+  52% { transform: translateX(calc(var(--dir) * -10px)) rotate(calc(var(--dir) * -5deg)); }
+  75% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA034: Quick Nock - ranged */
+.motion-NA034 { animation: anim-NA034 0.54s ease-in-out; }
+@keyframes anim-NA034 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -6px)) scaleX(.97); }
+  52% { transform: translateX(calc(var(--dir) * -10px)) rotate(calc(var(--dir) * -5deg)); }
+  75% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA035: Hunter's Mark Shot - ranged */
+.motion-NA035 { animation: anim-NA035 0.58s ease-in-out; }
+@keyframes anim-NA035 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -6px)) scaleX(.97); }
+  52% { transform: translateX(calc(var(--dir) * -14px)) rotate(calc(var(--dir) * -5deg)); filter: drop-shadow(0 0 8px #ff6b6b) brightness(1.15); }
+  75% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA036: Whistling Arrow - ranged */
+.motion-NA036 { animation: anim-NA036 0.54s ease-in-out; }
+@keyframes anim-NA036 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -6px)) scaleX(.97); }
+  52% { transform: translateX(calc(var(--dir) * -10px)) rotate(calc(var(--dir) * -5deg)); }
+  75% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA037: Caltrop Toss - throw */
+.motion-NA037 { animation: anim-NA037 0.53s ease-in-out; }
+@keyframes anim-NA037 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -12px), -3px) rotate(calc(var(--dir) * -12deg)); }
+  62% { transform: translate(calc(var(--dir) * 12px), 1px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA038: Smoke Flask - throw */
+.motion-NA038 { animation: anim-NA038 0.56s ease-in-out; }
+@keyframes anim-NA038 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -12px), -3px) rotate(calc(var(--dir) * -12deg)); }
+  62% { transform: translate(calc(var(--dir) * 12px), 1px) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 8px #a0aec0) brightness(1.15); }
+}
+
+/* NA039: Ranger's Flurry - ranged3 */
+.motion-NA039 { animation: anim-NA039 0.80s ease-in-out; }
+@keyframes anim-NA039 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  15% { transform: translateX(calc(var(--dir) * -11px)) rotate(calc(var(--dir) * -4deg)); }
+  25% { transform: translateX(calc(var(--dir) * -3px)); }
+  40% { transform: translateX(calc(var(--dir) * -11px)) rotate(calc(var(--dir) * -4deg)); }
+  50% { transform: translateX(calc(var(--dir) * -3px)); }
+  66% { transform: translateX(calc(var(--dir) * -13px)) rotate(calc(var(--dir) * -5deg)); }
+  82% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA040: Pinning Shot - ranged */
+.motion-NA040 { animation: anim-NA040 0.58s ease-in-out; }
+@keyframes anim-NA040 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -6px)) scaleX(.97); }
+  52% { transform: translateX(calc(var(--dir) * -14px)) rotate(calc(var(--dir) * -5deg)); }
+  75% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA041: Bodkin Shot - ranged */
+.motion-NA041 { animation: anim-NA041 0.62s ease-in-out; }
+@keyframes anim-NA041 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -6px)) scaleX(.97); }
+  52% { transform: translateX(calc(var(--dir) * -18px)) rotate(calc(var(--dir) * -5deg)); }
+  75% { transform: translateX(calc(var(--dir) * -2px)); }
+}
+
+/* NA042: Backstab - ambush */
+.motion-NA042 { animation: anim-NA042 0.58s ease-in-out; }
+@keyframes anim-NA042 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateY(8px) scale(1.05, .86); opacity: .55; }
+  52% { transform: translateX(calc(var(--dir) * 50px)) skewX(calc(var(--dir) * -14deg)); opacity: 1; }
+}
+
+/* NA043: Throat Slit - ambush */
+.motion-NA043 { animation: anim-NA043 0.62s ease-in-out; }
+@keyframes anim-NA043 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateY(8px) scale(1.05, .86); opacity: .55; }
+  52% { transform: translateX(calc(var(--dir) * 58px)) skewX(calc(var(--dir) * -14deg)); opacity: 1; filter: drop-shadow(0 0 10px #ff5555) brightness(1.2); }
+}
+
+/* NA044: Ambush Strike - ambush */
+.motion-NA044 { animation: anim-NA044 0.62s ease-in-out; }
+@keyframes anim-NA044 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateY(8px) scale(1.05, .86); opacity: .55; }
+  52% { transform: translateX(calc(var(--dir) * 58px)) skewX(calc(var(--dir) * -14deg)); opacity: 1; }
+}
+
+/* NA045: Cheap Shot - dart */
+.motion-NA045 { animation: anim-NA045 0.39s ease-in-out; }
+@keyframes anim-NA045 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -5px)); }
+  50% { transform: translateX(calc(var(--dir) * 24px)) skewX(calc(var(--dir) * -6deg)); }
+}
+
+/* NA046: Gutter Jab - dart */
+.motion-NA046 { animation: anim-NA046 0.39s ease-in-out; }
+@keyframes anim-NA046 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -5px)); }
+  50% { transform: translateX(calc(var(--dir) * 24px)) skewX(calc(var(--dir) * -6deg)); }
+}
+
+/* NA047: Sand in Eyes - throw */
+.motion-NA047 { animation: anim-NA047 0.53s ease-in-out; }
+@keyframes anim-NA047 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -12px), -3px) rotate(calc(var(--dir) * -12deg)); }
+  62% { transform: translate(calc(var(--dir) * 12px), 1px) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 8px #d6b87a) brightness(1.15); }
+}
+
+/* NA048: Hooked Dagger - slash */
+.motion-NA048 { animation: anim-NA048 0.47s ease-in-out; }
+@keyframes anim-NA048 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 30px), -6px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA049: Mugger's Lunge - thrust */
+.motion-NA049 { animation: anim-NA049 0.52s ease-in-out; }
+@keyframes anim-NA049 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 38px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA050: Garrote Pull - hook */
+.motion-NA050 { animation: anim-NA050 0.60s ease-in-out; }
+@keyframes anim-NA050 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * 34px)) rotate(calc(var(--dir) * 6deg)); }
+  60% { transform: translateX(calc(var(--dir) * -12px)) rotate(calc(var(--dir) * -8deg)); }
+}
+
+/* NA051: Pickpocket Cut - dart */
+.motion-NA051 { animation: anim-NA051 0.39s ease-in-out; }
+@keyframes anim-NA051 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -5px)); }
+  50% { transform: translateX(calc(var(--dir) * 24px)) skewX(calc(var(--dir) * -6deg)); }
+}
+
+/* NA052: Alley Ambush - ambush */
+.motion-NA052 { animation: anim-NA052 0.58s ease-in-out; }
+@keyframes anim-NA052 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateY(8px) scale(1.05, .86); opacity: .55; }
+  52% { transform: translateX(calc(var(--dir) * 50px)) skewX(calc(var(--dir) * -14deg)); opacity: 1; }
+}
+
+/* NA053: Low Blow - dart */
+.motion-NA053 { animation: anim-NA053 0.39s ease-in-out; }
+@keyframes anim-NA053 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -5px)); }
+  50% { transform: translateX(calc(var(--dir) * 24px)) skewX(calc(var(--dir) * -6deg)); }
+}
+
+/* NA054: Rusty Blade Slash - slash */
+.motion-NA054 { animation: anim-NA054 0.47s ease-in-out; }
+@keyframes anim-NA054 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 30px), -6px) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 12px #c05621) brightness(1.2); }
+}
+
+/* NA055: Cutpurse Flick - dart */
+.motion-NA055 { animation: anim-NA055 0.39s ease-in-out; }
+@keyframes anim-NA055 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -5px)); }
+  50% { transform: translateX(calc(var(--dir) * 24px)) skewX(calc(var(--dir) * -6deg)); }
+}
+
+/* NA056: Ruffian's Rush - charge */
+.motion-NA056 { animation: anim-NA056 0.73s ease-in-out; }
+@keyframes anim-NA056 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -14px)) scaleY(.92); }
+  60% { transform: translateX(calc(var(--dir) * 68px)) skewX(calc(var(--dir) * -16deg)); }
+}
+
+/* NA057: Quick Shiv - dart */
+.motion-NA057 { animation: anim-NA057 0.39s ease-in-out; }
+@keyframes anim-NA057 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -5px)); }
+  50% { transform: translateX(calc(var(--dir) * 24px)) skewX(calc(var(--dir) * -6deg)); }
+}
+
+/* NA058: Hidden Knife - ambush */
+.motion-NA058 { animation: anim-NA058 0.54s ease-in-out; }
+@keyframes anim-NA058 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateY(8px) scale(1.05, .86); opacity: .55; }
+  52% { transform: translateX(calc(var(--dir) * 40px)) skewX(calc(var(--dir) * -14deg)); opacity: 1; }
+}
+
+/* NA059: Pike Skewer - thrust */
+.motion-NA059 { animation: anim-NA059 0.60s ease-in-out; }
+@keyframes anim-NA059 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 62px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA060: Glaive Sweep - sweep */
+.motion-NA060 { animation: anim-NA060 0.70s ease-in-out; }
+@keyframes anim-NA060 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * 18px)) scaleX(.45); }
+  60% { transform: translateX(calc(var(--dir) * 40px)) scaleX(1.1); }
+}
+
+/* NA061: Billhook Pull - hook */
+.motion-NA061 { animation: anim-NA061 0.60s ease-in-out; }
+@keyframes anim-NA061 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * 34px)) rotate(calc(var(--dir) * 6deg)); }
+  60% { transform: translateX(calc(var(--dir) * -12px)) rotate(calc(var(--dir) * -8deg)); }
+}
+
+/* NA062: Phalanx Jab - thrust */
+.motion-NA062 { animation: anim-NA062 0.52s ease-in-out; }
+@keyframes anim-NA062 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 38px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA063: Impaling Charge - charge */
+.motion-NA063 { animation: anim-NA063 0.77s ease-in-out; }
+@keyframes anim-NA063 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -14px)) scaleY(.92); }
+  60% { transform: translateX(calc(var(--dir) * 78px)) skewX(calc(var(--dir) * -16deg)); }
+}
+
+/* NA064: Bracing Thrust - thrust */
+.motion-NA064 { animation: anim-NA064 0.56s ease-in-out; }
+@keyframes anim-NA064 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 50px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA065: Partisan Slash - slash */
+.motion-NA065 { animation: anim-NA065 0.52s ease-in-out; }
+@keyframes anim-NA065 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 38px), -6px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA066: Reaching Stab - thrust */
+.motion-NA066 { animation: anim-NA066 0.56s ease-in-out; }
+@keyframes anim-NA066 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 50px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA067: Pole Vault Strike - overhead */
+.motion-NA067 { animation: anim-NA067 0.78s ease-in-out; }
+@keyframes anim-NA067 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * 10px), -40px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 46px), 4px) scaleY(.88) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA068: Frostbite Lance - thrust */
+.motion-NA068 { animation: anim-NA068 0.60s ease-in-out; }
+@keyframes anim-NA068 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 62px)) skewX(calc(var(--dir) * -10deg)); filter: drop-shadow(0 0 12px #7ce8ff) brightness(1.2); }
+}
+
+/* NA069: Guisarme Hook - hook */
+.motion-NA069 { animation: anim-NA069 0.60s ease-in-out; }
+@keyframes anim-NA069 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * 34px)) rotate(calc(var(--dir) * 6deg)); }
+  60% { transform: translateX(calc(var(--dir) * -12px)) rotate(calc(var(--dir) * -8deg)); }
+}
+
+/* NA070: Winged Spear Jab - thrust */
+.motion-NA070 { animation: anim-NA070 0.52s ease-in-out; }
+@keyframes anim-NA070 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 38px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA071: Serpent Thrust - thrust */
+.motion-NA071 { animation: anim-NA071 0.56s ease-in-out; }
+@keyframes anim-NA071 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 50px)) skewX(calc(var(--dir) * -10deg)); filter: drop-shadow(0 0 12px #68d391) brightness(1.2); }
+}
+
+/* NA072: Overreach Chop - overhead */
+.motion-NA072 { animation: anim-NA072 0.72s ease-in-out; }
+@keyframes anim-NA072 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * 10px), -30px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 38px), 4px) scaleY(.88) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA073: Chain Lash - lash */
+.motion-NA073 { animation: anim-NA073 0.63s ease-in-out; }
+@keyframes anim-NA073 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -8deg)); }
+  50% { transform: translateX(calc(var(--dir) * 28px)) rotate(calc(var(--dir) * 10deg)) skewX(calc(var(--dir) * -6deg)); }
+  75% { transform: translateX(calc(var(--dir) * 20px)) rotate(calc(var(--dir) * -3deg)); }
+}
+
+/* NA074: Manacle Swing - sweep */
+.motion-NA074 { animation: anim-NA074 0.70s ease-in-out; }
+@keyframes anim-NA074 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * 18px)) scaleX(.45); }
+  60% { transform: translateX(calc(var(--dir) * 40px)) scaleX(1.1); }
+}
+
+/* NA075: Iron Fist - heavy */
+.motion-NA075 { animation: anim-NA075 0.74s ease-in-out; }
+@keyframes anim-NA075 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 32px), 3px) scale(1.08, .9); }
+  80% { transform: translate(calc(var(--dir) * 29px), 0) scale(1.03, .97); }
+}
+
+/* NA076: Bludgeon Blow - heavy */
+.motion-NA076 { animation: anim-NA076 0.74s ease-in-out; }
+@keyframes anim-NA076 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 32px), 3px) scale(1.08, .9); }
+  80% { transform: translate(calc(var(--dir) * 29px), 0) scale(1.03, .97); }
+}
+
+/* NA077: Skull Cracker - overhead */
+.motion-NA077 { animation: anim-NA077 0.78s ease-in-out; }
+@keyframes anim-NA077 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * 10px), -40px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 46px), 4px) scaleY(.88) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA078: Shackle Throw - throw */
+.motion-NA078 { animation: anim-NA078 0.56s ease-in-out; }
+@keyframes anim-NA078 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -12px), -3px) rotate(calc(var(--dir) * -12deg)); }
+  62% { transform: translate(calc(var(--dir) * 12px), 1px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA079: Cudgel Smash - overhead */
+.motion-NA079 { animation: anim-NA079 0.72s ease-in-out; }
+@keyframes anim-NA079 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * 10px), -30px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 38px), 4px) scaleY(.88) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA080: Maul Slam - heavy */
+.motion-NA080 { animation: anim-NA080 0.81s ease-in-out; }
+@keyframes anim-NA080 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 40px), 3px) scale(1.08, .9); }
+  80% { transform: translate(calc(var(--dir) * 37px), 0) scale(1.03, .97); }
+}
+
+/* NA081: Spiked Club Hit - heavy */
+.motion-NA081 { animation: anim-NA081 0.74s ease-in-out; }
+@keyframes anim-NA081 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 32px), 3px) scale(1.08, .9); }
+  80% { transform: translate(calc(var(--dir) * 29px), 0) scale(1.03, .97); }
+}
+
+/* NA082: Keyring Flail - lash */
+.motion-NA082 { animation: anim-NA082 0.59s ease-in-out; }
+@keyframes anim-NA082 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -8deg)); }
+  50% { transform: translateX(calc(var(--dir) * 22px)) rotate(calc(var(--dir) * 10deg)) skewX(calc(var(--dir) * -6deg)); }
+  75% { transform: translateX(calc(var(--dir) * 14px)) rotate(calc(var(--dir) * -3deg)); }
+}
+
+/* NA083: Crushing Grip - bash */
+.motion-NA083 { animation: anim-NA083 0.70s ease-in-out; }
+@keyframes anim-NA083 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -10px)) scale(.97, 1.02); }
+  58% { transform: translateX(calc(var(--dir) * 40px)) scale(1.1, .92); }
+}
+
+/* NA084: Jailer's Backhand - sweep */
+.motion-NA084 { animation: anim-NA084 0.66s ease-in-out; }
+@keyframes anim-NA084 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * 18px)) scaleX(.45); }
+  60% { transform: translateX(calc(var(--dir) * 30px)) scaleX(1.1); }
+}
+
+/* NA085: Heavy Slam - heavy */
+.motion-NA085 { animation: anim-NA085 0.81s ease-in-out; }
+@keyframes anim-NA085 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 40px), 3px) scale(1.08, .9); }
+  80% { transform: translate(calc(var(--dir) * 37px), 0) scale(1.03, .97); }
+}
+
+/* NA086: Shadow Bolt - spell */
+.motion-NA086 { animation: anim-NA086 0.75s ease-in-out; }
+@keyframes anim-NA086 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -16px) scale(1.04); filter: drop-shadow(0 0 14px #6b46c1) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 14px), -12px) scale(1.03); filter: drop-shadow(0 0 24px #6b46c1) brightness(1.4000000000000001); }
+}
+
+/* NA087: Necrotic Touch - spell */
+.motion-NA087 { animation: anim-NA087 0.75s ease-in-out; }
+@keyframes anim-NA087 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -16px) scale(1.04); filter: drop-shadow(0 0 14px #68d391) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 14px), -12px) scale(1.03); filter: drop-shadow(0 0 24px #68d391) brightness(1.4000000000000001); }
+}
+
+/* NA088: Soul Drain - spell */
+.motion-NA088 { animation: anim-NA088 0.85s ease-in-out; }
+@keyframes anim-NA088 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -24px) scale(1.04); filter: drop-shadow(0 0 18px #b794f4) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 18px), -20px) scale(1.06); filter: drop-shadow(0 0 30px #b794f4) brightness(1.5); }
+}
+
+/* NA089: Hellfire Blast - spell */
+.motion-NA089 { animation: anim-NA089 0.95s ease-in-out; }
+@keyframes anim-NA089 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -32px) scale(1.04); filter: drop-shadow(0 0 22px #ff4500) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 22px), -28px) scale(1.09); filter: drop-shadow(0 0 36px #ff4500) brightness(1.6); }
+}
+
+/* NA090: Ice Lance - spell */
+.motion-NA090 { animation: anim-NA090 0.85s ease-in-out; }
+@keyframes anim-NA090 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -24px) scale(1.04); filter: drop-shadow(0 0 18px #7ce8ff) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 18px), -20px) scale(1.06); filter: drop-shadow(0 0 30px #7ce8ff) brightness(1.5); }
+}
+
+/* NA091: Lightning Arc - spell */
+.motion-NA091 { animation: anim-NA091 0.95s ease-in-out; }
+@keyframes anim-NA091 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -32px) scale(1.04); filter: drop-shadow(0 0 22px #fff066) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 22px), -28px) scale(1.09); filter: drop-shadow(0 0 36px #fff066) brightness(1.6); }
+}
+
+/* NA092: Withering Curse - spell */
+.motion-NA092 { animation: anim-NA092 0.85s ease-in-out; }
+@keyframes anim-NA092 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -24px) scale(1.04); filter: drop-shadow(0 0 18px #9f7aea) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 18px), -20px) scale(1.06); filter: drop-shadow(0 0 30px #9f7aea) brightness(1.5); }
+}
+
+/* NA093: Bone Spike - spell */
+.motion-NA093 { animation: anim-NA093 0.85s ease-in-out; }
+@keyframes anim-NA093 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -24px) scale(1.04); filter: drop-shadow(0 0 18px #e2e8f0) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 18px), -20px) scale(1.06); filter: drop-shadow(0 0 30px #e2e8f0) brightness(1.5); }
+}
+
+/* NA094: Summon Wisp - spell */
+.motion-NA094 { animation: anim-NA094 0.75s ease-in-out; }
+@keyframes anim-NA094 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -16px) scale(1.04); filter: drop-shadow(0 0 14px #7cffb2) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 14px), -12px) scale(1.03); filter: drop-shadow(0 0 24px #7cffb2) brightness(1.4000000000000001); }
+}
+
+/* NA095: Dark Pulse - spell */
+.motion-NA095 { animation: anim-NA095 0.85s ease-in-out; }
+@keyframes anim-NA095 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -24px) scale(1.04); filter: drop-shadow(0 0 18px #805ad5) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 18px), -20px) scale(1.06); filter: drop-shadow(0 0 30px #805ad5) brightness(1.5); }
+}
+
+/* NA096: Ember Rain - spell */
+.motion-NA096 { animation: anim-NA096 0.85s ease-in-out; }
+@keyframes anim-NA096 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -24px) scale(1.04); filter: drop-shadow(0 0 18px #ed8936) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 18px), -20px) scale(1.06); filter: drop-shadow(0 0 30px #ed8936) brightness(1.5); }
+}
+
+/* NA097: Void Grasp - spell */
+.motion-NA097 { animation: anim-NA097 0.95s ease-in-out; }
+@keyframes anim-NA097 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -32px) scale(1.04); filter: drop-shadow(0 0 22px #6b46c1) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 22px), -28px) scale(1.09); filter: drop-shadow(0 0 36px #6b46c1) brightness(1.6); }
+}
+
+/* NA098: Plague Cloud - spell */
+.motion-NA098 { animation: anim-NA098 0.85s ease-in-out; }
+@keyframes anim-NA098 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -24px) scale(1.04); filter: drop-shadow(0 0 18px #9ae65c) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 18px), -20px) scale(1.06); filter: drop-shadow(0 0 30px #9ae65c) brightness(1.5); }
+}
+
+/* NA099: Searing Hex - spell */
+.motion-NA099 { animation: anim-NA099 0.85s ease-in-out; }
+@keyframes anim-NA099 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -24px) scale(1.04); filter: drop-shadow(0 0 18px #ff6a00) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 18px), -20px) scale(1.06); filter: drop-shadow(0 0 30px #ff6a00) brightness(1.5); }
+}
+
+/* NA100: Arcane Missile - spell */
+.motion-NA100 { animation: anim-NA100 0.75s ease-in-out; }
+@keyframes anim-NA100 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * -6px), -16px) scale(1.04); filter: drop-shadow(0 0 14px #63b3ed) brightness(1.2); }
+  65% { transform: translate(calc(var(--dir) * 14px), -12px) scale(1.03); filter: drop-shadow(0 0 24px #63b3ed) brightness(1.4000000000000001); }
+}
+
+/* NA101: Warden's Strike - slash */
+.motion-NA101 { animation: anim-NA101 0.52s ease-in-out; }
+@keyframes anim-NA101 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 38px), -6px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA102: Sentinel Slash - slash */
+.motion-NA102 { animation: anim-NA102 0.52s ease-in-out; }
+@keyframes anim-NA102 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 38px), -6px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA103: Bulwark Smash - bash */
+.motion-NA103 { animation: anim-NA103 0.70s ease-in-out; }
+@keyframes anim-NA103 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -10px)) scale(.97, 1.02); }
+  58% { transform: translateX(calc(var(--dir) * 40px)) scale(1.1, .92); }
+}
+
+/* NA104: Guarded Thrust - thrust */
+.motion-NA104 { animation: anim-NA104 0.52s ease-in-out; }
+@keyframes anim-NA104 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 38px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA105: Riposte Cut - riposte */
+.motion-NA105 { animation: anim-NA105 0.58s ease-in-out; }
+@keyframes anim-NA105 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -16px)) scaleX(.96); }
+  55% { transform: translateX(calc(var(--dir) * 38px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA106: Oathbound Blow - overhead */
+.motion-NA106 { animation: anim-NA106 0.72s ease-in-out; }
+@keyframes anim-NA106 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  35% { transform: translate(calc(var(--dir) * 10px), -30px) rotate(calc(var(--dir) * -10deg)); }
+  65% { transform: translate(calc(var(--dir) * 38px), 4px) scaleY(.88) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 14px #ffd700) brightness(1.3); }
+}
+
+/* NA107: Counter Slash - riposte */
+.motion-NA107 { animation: anim-NA107 0.58s ease-in-out; }
+@keyframes anim-NA107 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -16px)) scaleX(.96); }
+  55% { transform: translateX(calc(var(--dir) * 38px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA108: Vault Breaker - heavy */
+.motion-NA108 { animation: anim-NA108 0.81s ease-in-out; }
+@keyframes anim-NA108 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 40px), 3px) scale(1.08, .9); }
+  80% { transform: translate(calc(var(--dir) * 37px), 0) scale(1.03, .97); }
+}
+
+/* NA109: Pommel Jab - dart */
+.motion-NA109 { animation: anim-NA109 0.39s ease-in-out; }
+@keyframes anim-NA109 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  20% { transform: translateX(calc(var(--dir) * -5px)); }
+  50% { transform: translateX(calc(var(--dir) * 24px)) skewX(calc(var(--dir) * -6deg)); }
+}
+
+/* NA110: Measured Cleave - slash */
+.motion-NA110 { animation: anim-NA110 0.52s ease-in-out; }
+@keyframes anim-NA110 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 38px), -6px) rotate(calc(var(--dir) * 12deg)); }
+}
+
+/* NA111: Protector's Arc - sweep */
+.motion-NA111 { animation: anim-NA111 0.70s ease-in-out; }
+@keyframes anim-NA111 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * 18px)) scaleX(.45); }
+  60% { transform: translateX(calc(var(--dir) * 40px)) scaleX(1.1); }
+}
+
+/* NA112: Keeper's Lunge - thrust */
+.motion-NA112 { animation: anim-NA112 0.56s ease-in-out; }
+@keyframes anim-NA112 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -12px)); }
+  55% { transform: translateX(calc(var(--dir) * 50px)) skewX(calc(var(--dir) * -10deg)); }
+}
+
+/* NA113: Sworn Strike - slash */
+.motion-NA113 { animation: anim-NA113 0.52s ease-in-out; }
+@keyframes anim-NA113 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  25% { transform: translateX(calc(var(--dir) * -9px)) rotate(calc(var(--dir) * -9deg)); }
+  55% { transform: translate(calc(var(--dir) * 38px), -6px) rotate(calc(var(--dir) * 12deg)); filter: drop-shadow(0 0 12px #ffd700) brightness(1.2); }
+}
+
+/* NA114: Steadfast Blow - heavy */
+.motion-NA114 { animation: anim-NA114 0.74s ease-in-out; }
+@keyframes anim-NA114 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translate(calc(var(--dir) * -10px), -8px); }
+  60% { transform: translate(calc(var(--dir) * 32px), 3px) scale(1.08, .9); }
+  80% { transform: translate(calc(var(--dir) * 29px), 0) scale(1.03, .97); }
+}
+
+/* ND001: Grave Shroud - fade */
+.motion-ND001 { animation: anim-ND001 0.68s ease-in-out; }
+@keyframes anim-ND001 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-4px); opacity: 0.7; filter: drop-shadow(0 0 18px #8be9fd) brightness(1.2); }
+}
+
+/* ND002: Spectral Veil - fade */
+.motion-ND002 { animation: anim-ND002 0.76s ease-in-out; }
+@keyframes anim-ND002 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-4px); opacity: 0.55; filter: drop-shadow(0 0 22px #b8a9ff) brightness(1.2); }
+}
+
+/* ND003: Bone Ward - brace */
+.motion-ND003 { animation: anim-ND003 0.65s ease-in-out; }
+@keyframes anim-ND003 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -6px), 2px) scale(1.07, 0.93); filter: drop-shadow(0 0 16px #e2e8f0) brightness(1.3); }
+}
+
+/* ND004: Deathless Guard - brace */
+.motion-ND004 { animation: anim-ND004 0.75s ease-in-out; }
+@keyframes anim-ND004 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -8px), 2px) scale(1.10, 0.9); filter: drop-shadow(0 0 20px #a0aec0) brightness(1.4000000000000001); }
+}
+
+/* ND005: Tomb Bulwark - brace */
+.motion-ND005 { animation: anim-ND005 0.75s ease-in-out; }
+@keyframes anim-ND005 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -8px), 2px) scale(1.10, 0.9); filter: drop-shadow(0 0 20px #8c857b) brightness(1.4000000000000001); }
+}
+
+/* ND006: Parrying Stance - parry */
+.motion-ND006 { animation: anim-ND006 0.46s ease-in-out; }
+@keyframes anim-ND006 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -8deg)); }
+  55% { transform: translateX(calc(var(--dir) * 4px)) rotate(calc(var(--dir) * 5deg)); }
+}
+
+/* ND007: Seasoned Block - parry */
+.motion-ND007 { animation: anim-ND007 0.43s ease-in-out; }
+@keyframes anim-ND007 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -8deg)); }
+  55% { transform: translateX(calc(var(--dir) * 4px)) rotate(calc(var(--dir) * 5deg)); }
+}
+
+/* ND008: Banner Wall - brace */
+.motion-ND008 { animation: anim-ND008 0.75s ease-in-out; }
+@keyframes anim-ND008 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -8px), 2px) scale(1.10, 0.9); filter: drop-shadow(0 0 20px #ffd700) brightness(1.4000000000000001); }
+}
+
+/* ND009: Leather Jerkin - brace */
+.motion-ND009 { animation: anim-ND009 0.55s ease-in-out; }
+@keyframes anim-ND009 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -4px), 2px) scale(1.04, 0.96); }
+}
+
+/* ND010: Evasive Roll - dodge */
+.motion-ND010 { animation: anim-ND010 0.53s ease-in-out; }
+@keyframes anim-ND010 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  40% { transform: translateX(calc(var(--dir) * -18px)) rotate(calc(var(--dir) * -10deg)) scale(.96, .94); }
+  70% { transform: translateX(calc(var(--dir) * -9.0px)) rotate(calc(var(--dir) * -3deg)); }
+}
+
+/* ND011: Cloak Shroud - fade */
+.motion-ND011 { animation: anim-ND011 0.76s ease-in-out; }
+@keyframes anim-ND011 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-4px); opacity: 0.55; }
+}
+
+/* ND012: Brush Cover - crouch */
+.motion-ND012 { animation: anim-ND012 0.50s ease-in-out; }
+@keyframes anim-ND012 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translateY(8px) scale(1.04, .86); filter: drop-shadow(0 0 6px #68d391) brightness(1.05); }
+}
+
+/* ND013: Quick Step - dodge */
+.motion-ND013 { animation: anim-ND013 0.49s ease-in-out; }
+@keyframes anim-ND013 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  40% { transform: translateX(calc(var(--dir) * -12px)) rotate(calc(var(--dir) * -10deg)) scale(.96, .94); }
+  70% { transform: translateX(calc(var(--dir) * -6.0px)) rotate(calc(var(--dir) * -3deg)); }
+}
+
+/* ND014: Deflecting Vambrace - parry */
+.motion-ND014 { animation: anim-ND014 0.43s ease-in-out; }
+@keyframes anim-ND014 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -8deg)); }
+  55% { transform: translateX(calc(var(--dir) * 4px)) rotate(calc(var(--dir) * 5deg)); }
+}
+
+/* ND015: Padded Vest - brace */
+.motion-ND015 { animation: anim-ND015 0.55s ease-in-out; }
+@keyframes anim-ND015 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -4px), 2px) scale(1.04, 0.96); }
+}
+
+/* ND016: Shadow Dodge - fade */
+.motion-ND016 { animation: anim-ND016 0.76s ease-in-out; }
+@keyframes anim-ND016 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-4px); opacity: 0.55; filter: drop-shadow(0 0 22px #553c9a) brightness(1.2); }
+}
+
+/* ND017: Dodge Roll - dodge */
+.motion-ND017 { animation: anim-ND017 0.53s ease-in-out; }
+@keyframes anim-ND017 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  40% { transform: translateX(calc(var(--dir) * -18px)) rotate(calc(var(--dir) * -10deg)) scale(.96, .94); }
+  70% { transform: translateX(calc(var(--dir) * -9.0px)) rotate(calc(var(--dir) * -3deg)); }
+}
+
+/* ND018: Dirty Block - parry */
+.motion-ND018 { animation: anim-ND018 0.43s ease-in-out; }
+@keyframes anim-ND018 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -8deg)); }
+  55% { transform: translateX(calc(var(--dir) * 4px)) rotate(calc(var(--dir) * 5deg)); }
+}
+
+/* ND019: Stolen Shield - brace */
+.motion-ND019 { animation: anim-ND019 0.55s ease-in-out; }
+@keyframes anim-ND019 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -4px), 2px) scale(1.04, 0.96); }
+}
+
+/* ND020: Alley Cover - crouch */
+.motion-ND020 { animation: anim-ND020 0.50s ease-in-out; }
+@keyframes anim-ND020 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translateY(8px) scale(1.04, .86); }
+}
+
+/* ND021: Scavenged Mail - brace */
+.motion-ND021 { animation: anim-ND021 0.65s ease-in-out; }
+@keyframes anim-ND021 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -6px), 2px) scale(1.07, 0.93); }
+}
+
+/* ND022: Flinch Guard - parry */
+.motion-ND022 { animation: anim-ND022 0.43s ease-in-out; }
+@keyframes anim-ND022 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -8deg)); }
+  55% { transform: translateX(calc(var(--dir) * 4px)) rotate(calc(var(--dir) * 5deg)); }
+}
+
+/* ND023: Duck and Weave - dodge */
+.motion-ND023 { animation: anim-ND023 0.53s ease-in-out; }
+@keyframes anim-ND023 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  40% { transform: translateX(calc(var(--dir) * -18px)) rotate(calc(var(--dir) * -10deg)) scale(.96, .94); }
+  70% { transform: translateX(calc(var(--dir) * -9.0px)) rotate(calc(var(--dir) * -3deg)); }
+}
+
+/* ND024: Pike Wall - plant */
+.motion-ND024 { animation: anim-ND024 0.60s ease-in-out; }
+@keyframes anim-ND024 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateY(-6px); }
+  55% { transform: translateY(4px) scale(1.08, .92); }
+}
+
+/* ND025: Bracing Stance - plant */
+.motion-ND025 { animation: anim-ND025 0.60s ease-in-out; }
+@keyframes anim-ND025 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateY(-6px); }
+  55% { transform: translateY(4px) scale(1.08, .92); }
+}
+
+/* ND026: Set Spear Guard - plant */
+.motion-ND026 { animation: anim-ND026 0.60s ease-in-out; }
+@keyframes anim-ND026 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateY(-6px); }
+  55% { transform: translateY(4px) scale(1.08, .92); }
+}
+
+/* ND027: Phalanx Block - brace */
+.motion-ND027 { animation: anim-ND027 0.75s ease-in-out; }
+@keyframes anim-ND027 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -8px), 2px) scale(1.10, 0.9); }
+}
+
+/* ND028: Iron Door Guard - brace */
+.motion-ND028 { animation: anim-ND028 0.75s ease-in-out; }
+@keyframes anim-ND028 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -8px), 2px) scale(1.10, 0.9); filter: drop-shadow(0 0 20px #c0c8d8) brightness(1.4000000000000001); }
+}
+
+/* ND029: Shackle Block - parry */
+.motion-ND029 { animation: anim-ND029 0.46s ease-in-out; }
+@keyframes anim-ND029 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateX(calc(var(--dir) * -8px)) rotate(calc(var(--dir) * -8deg)); }
+  55% { transform: translateX(calc(var(--dir) * 4px)) rotate(calc(var(--dir) * 5deg)); }
+}
+
+/* ND030: Dungeon Plate - brace */
+.motion-ND030 { animation: anim-ND030 0.75s ease-in-out; }
+@keyframes anim-ND030 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -8px), 2px) scale(1.10, 0.9); filter: drop-shadow(0 0 20px #c0c8d8) brightness(1.4000000000000001); }
+}
+
+/* ND031: Barred Stance - plant */
+.motion-ND031 { animation: anim-ND031 0.60s ease-in-out; }
+@keyframes anim-ND031 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  30% { transform: translateY(-6px); }
+  55% { transform: translateY(4px) scale(1.08, .92); }
+}
+
+/* ND032: Warden's Wall - brace */
+.motion-ND032 { animation: anim-ND032 0.75s ease-in-out; }
+@keyframes anim-ND032 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  45% { transform: translate(calc(var(--dir) * -8px), 2px) scale(1.10, 0.9); filter: drop-shadow(0 0 20px #d4af37) brightness(1.4000000000000001); }
+}
+
+/* ND033: Shadow Shroud - fade */
+.motion-ND033 { animation: anim-ND033 0.76s ease-in-out; }
+@keyframes anim-ND033 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-4px); opacity: 0.55; filter: drop-shadow(0 0 22px #6b46c1) brightness(1.2); }
+}
+
+/* ND034: Mana Shield - ward */
+.motion-ND034 { animation: anim-ND034 0.79s ease-in-out; }
+@keyframes anim-ND034 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-10px) scale(1.06); filter: drop-shadow(0 0 22px #63b3ed) brightness(1.41); }
+}
+
+/* ND035: Necrotic Veil - ward */
+.motion-ND035 { animation: anim-ND035 0.79s ease-in-out; }
+@keyframes anim-ND035 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-10px) scale(1.06); filter: drop-shadow(0 0 22px #68d391) brightness(1.41); }
+}
+
+/* ND036: Warding Sigil - ward */
+.motion-ND036 { animation: anim-ND036 0.86s ease-in-out; }
+@keyframes anim-ND036 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-14px) scale(1.09); filter: drop-shadow(0 0 26px #50fa7b) brightness(1.49); }
+}
+
+/* ND037: Spectral Barrier - ward */
+.motion-ND037 { animation: anim-ND037 0.86s ease-in-out; }
+@keyframes anim-ND037 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-14px) scale(1.09); filter: drop-shadow(0 0 26px #8be9fd) brightness(1.49); }
+}
+
+/* ND038: Hex Mirror - ward */
+.motion-ND038 { animation: anim-ND038 0.86s ease-in-out; }
+@keyframes anim-ND038 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; filter: none; }
+  50% { transform: translateY(-14px) scale(1.09); filter: drop-shadow(0 0 26px #b794f4) brightness(1.49); }
+}
