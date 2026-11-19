@@ -72,17 +72,19 @@ function renderBarracks(target,room){
  box.append(h,p,b,n);target.append(box);
 }
 
-function canHostGuard(room){return ![12,13,14,15].includes(room.type)}
-function guardAt(room){return state.guards.find(g=>g.home===roomKey(room))||null}
-function assignGuard(id,room){const g=state.guards.find(x=>x.id===id);if(state.over||!g||unitAway(g)||isKnockedOut(g)||state.invasion.active||!state.tiles.includes(room)||!canHostGuard(room))return false;const cur=guardAt(room);if(cur&&cur!==g){toast('That room already has a guard.');return false}g.home=roomKey(room);g.path=[];sendServantHome(g);note(`${g.name} was posted to the ${TYPES[room.type][0]}.`);save();render();renderRoomViewer();return true}
+function assignGuard(id,room){const g=state.guards.find(x=>x.id===id);if(state.over||!g||unitAway(g)||isKnockedOut(g)||state.invasion.active||!state.tiles.includes(room))return false;if(!canAssignGuardTo(room,g)){toast('This room has no open guard slot.');return false}g.home=roomKey(room);g.path=[];sendServantHome(g);note(`${g.name} was posted to the ${TYPES[room.type][0]}.`);save();render();renderRoomViewer();return true}
 function unassignGuard(id){const g=state.guards.find(x=>x.id===id);if(state.over||!g||!g.home||unitAway(g)||isKnockedOut(g)||state.invasion.active)return false;g.home=null;g.path=[];g.mode='wander';g.waitMs=600;note(`${g.name} now roams the keep.`);save();render();renderRoomViewer();return true}
 function renderRoomGuard(room,target){
- if(!canHostGuard(room)||!state.guards.length&&room.type!==1)return;
- const box=document.createElement('section');box.className='room-guard';const h=document.createElement('h3');h.textContent='Guard';box.append(h);
- const cur=guardAt(room);
- if(cur){const p=document.createElement('p');p.className='muted';p.textContent=`${cur.name} · Level ${guardLevel()} is posted here. If an invader reaches this room, the guard fights first.`;const rem=document.createElement('button');rem.textContent='Let this guard roam';rem.disabled=state.over||!!state.expedition;rem.onclick=()=>unassignGuard(cur.id);box.append(p,rem)}
- else{const p=document.createElement('p');p.className='muted';p.textContent=state.guards.length?'Post a guard here, or leave guards roaming. A roaming guard fights any invader who enters the room it is standing in.':'No guards yet. Hire guards at the Barracks.';box.append(p);for(const g of state.guards){const b=document.createElement('button');b.className='roster-row';const where=g.home?roomFromKey(g.home):null;b.textContent=`Post ${g.name}`+(where?` (now in the ${TYPES[where.type][0]})`:' (roaming)');b.disabled=state.over||!!state.expedition;b.onclick=()=>assignGuard(g.id,room);box.append(b)}}
- target.append(box)}
+ if(!state.guards.length)return;
+ const box=document.createElement('section');box.className='room-guard';
+ const heading=document.createElement('h3'),guards=roomGuards(room);
+ heading.textContent=`Guards posted · ${guards.length}/${guardCapacity(!!roomCollector(room))}`;box.append(heading);
+ for(const guard of guards){
+  const button=document.createElement('button');button.type='button';button.textContent=guard.name;
+  button.onclick=()=>openServantDialog(guard.id);box.append(button);
+ }
+ target.append(box);
+}
 function unitLevel(m){return m.level||guardLevel()}
 function availableUnits(){return [...state.guards.map(g=>({id:g.id,kind:'guard',name:g.name,look:g.look,level:guardLevel(),paladin:g.paladin===true})),...state.collectors.map(n=>({id:n.id,kind:'servant',name:n.name,look:n.look,level:n.level||1}))]}
 function partyIssue(mode,ids){

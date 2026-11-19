@@ -16,7 +16,7 @@ function battleBuild(c){
   party.push({id,kind:c.kind==='mc'?'mc':combatSpriteKind(fighter||{}),idx:fighter?.look||0,role:'lead'});
  }
  const slots=[[28,78,1],[14,75,.82],[40,74,.8],[7,81,.86]];
- const order=party.map((p,i)=>({p,s:slots[i]})).sort((a,b)=>a.s[1]-b.s[1]);
+ const order=party.map((p,i)=>({p,s:slots[i]||[12+((i-4)%5)*9,65-Math.floor((i-4)/5)*5,.65]})).sort((a,b)=>a.s[1]-b.s[1]);
  const mk=(p,x,y,sc,enemy)=>{const el=document.createElement('div');el.className='bf'+(enemy?' enemy':'')+(p.role==='lead'?' lead':'');el.style.cssText=`left:${x}%;top:${y}%;--sc:${sc};z-index:${Math.round(y)}`;el.innerHTML='<div class="bf-shadow"></div><div class="bf-move"><div class="bf-guard"></div><div class="bf-art"></div></div>';if(p.companion&&Object.hasOwn(COMPANIONS,p.companion)){const pet=document.createElement('img');pet.src='assets/companion-'+p.companion+'-v2.webp';pet.alt=COMPANIONS[p.companion].name;const size=28*COMPANIONS[p.companion].size;pet.style.cssText='position:absolute;left:2%;bottom:6%;object-fit:contain;pointer-events:none;width:'+size+'%;height:'+size+'%';el.querySelector('.bf-move').append(pet)}stage.append(el);const f=battleFig(el,p.kind,p.idx,p.role);f.enemy=!!enemy;f.id=p.id;f.base={x,y};BATTLE_FX.figs.push(f);return f};
  for(const o of order){const f=mk(o.p,o.s[0],o.s[1],o.s[2],false);if(o.p.role==='lead')BATTLE_FX.lead=f}
  BATTLE_FX.enemy=mk({kind:'invader',idx:inv.variant,name:inv.name,role:'lead'},74,77,1.05,true);BATTLE_FX.enemy.atlas=COMBAT_ART.invader[inv.variant]||COMBAT_ART.invader[0];
